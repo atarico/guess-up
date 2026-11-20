@@ -105,7 +105,7 @@ alter table api_usage    enable row level security;
 Notes for the agent:
 
 - **Supabase exposure.** We use Supabase as plain Postgres. Tables in `public` can be reachable through Supabase's auto-generated Data API. We do both: `001_init.sql` enables row level security on every table with no policies (the backend's database role bypasses it), and the Data API is turned off in project settings. `users.password_hash` must never be readable with the anon key.
-- **Connection string.** Use the pooler connection string in *session* mode from the Supabase dashboard (Render's network is IPv4). Keep the pool small (`max: 5`).
+- **Connection string.** Use the pooler connection string in *session* mode from the Supabase dashboard (Render's network is IPv4). Keep the pool small (`max: 5`). General timeouts, so a database that never answers cannot hang a request: `connectionTimeoutMillis` 10 s and `query_timeout` 30 s, generous enough for the seed's transaction of about 5,000 rows per symbol.
 - Size: about 60 symbols × up to 5,000 rows is roughly 300k rows, well inside the free database.
 
 ## 4. Auth
@@ -235,7 +235,7 @@ Errors always look like `{ "error": { "code": "…", "message": "…" } }`. Code
 ### `GET /status`
 The health check. Not `/health`: EasyPrivacy, a filter list that Brave Shields and uBlock Origin apply by default, blocks cross-site requests to `onrender.com/health` (`DECISIONS.md`). The path is one constant on each side, `HEALTH_PATH` in `routes/health.ts` and in `frontend/src/lib/api.ts`.
 
-`200 { ok: true, db: true, symbolsReady: 58, credits: { usedToday: 61, dailyCap: 750 } }`. Runs `select 1`; used by the cold-start screen and by the daily keep-alive ping (P1). It answers `200` whenever the process is up: if `select 1` fails, the body is `{ ok: true, db: false }` with no other fields, so Render keeps the deploy live and the cold-start screen stops waiting (`03-frontend.md` §8).
+`200 { ok: true, db: true, symbolsReady: 58, credits: { usedToday: 61, dailyCap: 750 } }`. Runs `select 1`; used by the cold-start screen and by the daily keep-alive ping (P1). It answers `200` whenever the process is up: if `select 1` fails, or the database checks take longer than 2 s (`HEALTH_DB_TIMEOUT_MS`; Render's health check needs an answer within 5 s), the body is `{ ok: true, db: false }` with no other fields, so Render keeps the deploy live and the cold-start screen stops waiting (`03-frontend.md` §8).
 
 ### `POST /rounds` — create or resume
 Returns the user's open round if there is one, otherwise creates one.
