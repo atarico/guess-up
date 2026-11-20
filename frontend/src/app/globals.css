@@ -72,3 +72,68 @@ body {
     opacity: 0.6;
   }
 }
+
+/*
+ * The chart (03 §6). Each element's normal style is its final state; the keyframes only describe
+ * where it comes from. So with reduced motion, where the animations are off, the reveal shows at once.
+ */
+.chart-ink {
+  fill: none;
+  stroke: var(--color-ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* With pathLength="1", a dash of 1 is the whole line: offset 1 hides it, offset 0 draws it. */
+.chart-future {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: chart-draw 900ms ease-in-out 200ms backwards;
+}
+
+/* 1. The history redraws on the new scale with a 200 ms cross-fade; the path data is not animated. */
+.chart-fade-out {
+  opacity: 0;
+  animation: chart-from-visible 200ms ease-out backwards;
+}
+
+.chart-fade-in {
+  animation: chart-from-hidden 200ms ease-out backwards;
+}
+
+/* 3. The labels fade in once the future line is drawn. */
+.chart-labels {
+  animation: chart-from-hidden 300ms ease-out 1100ms backwards;
+}
+
+@keyframes chart-from-visible {
+  from {
+    opacity: 1;
+  }
+}
+
+@keyframes chart-from-hidden {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes chart-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-future,
+  .chart-fade-out,
+  .chart-fade-in,
+  .chart-labels {
+    animation: none;
+  }
+}

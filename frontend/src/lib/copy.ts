@@ -46,6 +46,12 @@ export const copy = {
     signedInAs: 'Sesión iniciada como',
     logOut: 'Cerrar sesión',
   },
+  // 03 §6, §10
+  chart: {
+    sealedLabel: 'Gráfica de precios anónima, un año de precios diarios',
+    revealedLabel: (symbol: string, from: string, to: string) => `Gráfica de ${symbol}, del ${from} al ${to}`,
+    unknown: '?',
+  },
   // 03 §3: sector names arrive in English from the API; anything not listed is shown as it comes.
   sectors: {
     Technology: 'Tecnología',
