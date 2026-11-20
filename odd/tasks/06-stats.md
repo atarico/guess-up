@@ -52,7 +52,14 @@ Route evidence: no writer is delegated; each task builds on the one before, and 
 
 ### Phone checklist (T7)
 
-Written at T7.
+On the phone, against production, in Brave with Shields on. Production has one `ready` stock until `pnpm seed` runs; the stats work the same.
+
+1. **`/play` top bar.** `Racha: N` on the left, `Gráfica N` in the middle (rounds already decided + 1), `Estadísticas` on the right. Decide: the streak updates; `Siguiente gráfica`: the number goes up by one.
+2. **`Estadísticas`.** With fewer than 10 decided rounds: `Faltan N gráficas para tu primer veredicto.` (or `Falta 1 gráfica…`), the three figures (`—` where there is nothing to average), aciertos, the two streaks, `Gráficas jugadas` with `N compras · N pases`, the small print, then `Seguir jugando` and `Cerrar sesión`. Nothing scrolls sideways.
+3. **Reach 10 rounds,** with at least one buy and one pass. The verdict sentence with its figures in bold, `Contra una moneda`, the band with your marker and its value above it, the two ends below, and the coin sentence. Check the arithmetic: the points equal the difference of the two percentages in the sentence.
+4. **Reload `Estadísticas`.** Exactly the same range and sentence.
+5. **`Seguir jugando`, decide one more chart, come back.** The coin's range has changed (and the counts in its sentence went up by one).
+6. **`Cerrar sesión`.** The welcome screen.
 
 ## Log
 
@@ -152,3 +159,4 @@ Verdict: Todavía no has comprado ninguna gráfica. Aún no hay nada que medir.
 Coin: (none)
 ````
 - **L4** (2026-11-20, the author, verbatim): "Las cuentas estan bien, ok para la pantalla. Suma un test de que un promedio con ruido de punto flotante como el del caso 6 se muestra 0.0% y nunca -0.0%." Added as T5b before the screen.
+- **L5** (2026-11-20). T6 committed (`49b2eaf`); the slice `2303b16..49b2eaf` was `medium`, `under_budget` at 1,211 lines. The AI raised it with item 6 (the stats screen, the band and the top bar count have no committed test) and ran four lenses with the author's standing consent (A12): approved, acknowledged (lineage in the review store); risk found nothing. Eleven non-blocking findings, three of them the same one (a late or failed `/stats` leaves `Gráfica N` blank), are pending in `DECISIONS.md` with proposed fixes, together with the tie in "superas al 100%" that the probe showed. The phone checklist is under Author steps.
