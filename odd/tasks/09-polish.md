@@ -78,3 +78,5 @@ Documento en odd/tasks/09-polish.md. Un commit por tarea sobre main. RDD como en
 ````
 
 - **L2** (16:06 UTC) P1 advice given in the reply, nothing built: the daily ping is worth it (about 10 minutes, a scheduled workflow; Supabase pauses a free project after a week without activity, 02 §10); the last 20 rounds are a maybe (about 40–50 minutes, an endpoint, the list, a date format); `--max-age-days` is not worth it for this delivery (about 20–30 minutes).
+
+- **L3** (about 16:30 UTC) RDD on `44355a7`: assessed `medium`; the AI raised it with item 2 (the live route is an ownership and anonymity guard, written by a delegated writer), so the open slice `58de031..44355a7` was due. Consent relayed; the author chose "Revisar este cambio" (`granted`). Lenses risk, resilience, reliability, lineage `review-1b10e6f09e39c913`: approved and acknowledged, with four warnings, none blocking: the README in that commit still called the live price not built (resolved by the README commit), a quote whose close is null or empty would read as a price of 0, and two on credits (failures not cached, no per-user limit, concurrent first asks not merged). All four are in `DECISIONS.md`.

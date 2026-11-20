@@ -34,8 +34,9 @@ In the **reveal**, right after the decision (01 §7, 03 §5.3). Before it, the s
 | The chart: 252 trading days, then the next 63 drawn in, green or red | Daily closes, split-adjusted |
 | Three-month price return, with your call | Frozen when the round was created (invariant 5) |
 | Price at the cutoff and three months later, in `USD` | `daily_closes` |
+| Today's price and the change since the cutoff (P1) | Twelve Data `/quote`, through the same client and budget, cached 15 minutes per symbol. Optional: the reveal is complete without it, and a muted note says when it is unavailable |
 
-**Stats** turns your decisions into averages: your picks, buying everything, what you passed on, your edge in percentage points, the coin's range and the verdict, hit rate and streaks (03 §5.4). Today's live price in the reveal (P1) is **not built** yet; see [What was left out](#what-was-left-out).
+**Stats** turns your decisions into averages: your picks, buying everything, what you passed on, your edge in percentage points, the coin's range and the verdict, hit rate and streaks (03 §5.4). Of the four P1 items, only today's price was built; see [What was left out](#what-was-left-out).
 
 ## Run it locally
 
@@ -76,14 +77,14 @@ pnpm dev
 | `NEXT_PUBLIC_API_URL` | The backend's URL |
 | `NEXT_PUBLIC_DEMO_EMAIL`, `NEXT_PUBLIC_DEMO_PASSWORD` | Optional. Without both, the demo link is not rendered |
 
-**Checks**, in each package: `pnpm test` (Vitest, no network and no database), `pnpm typecheck`, `pnpm lint`, `pnpm build`. Followed on a clean clone on 2026-11-20 without any secret: install, test, typecheck, lint and build pass in both packages (backend 177 tests, frontend 63). `migrate`, `seed` and `dev` need the variables above. Without them, the backend refuses to start and names what is missing.
+**Checks**, in each package: `pnpm test` (Vitest, no network and no database; backend 203 tests, frontend 73), `pnpm typecheck`, `pnpm lint`, `pnpm build`. These steps were followed on a clean clone on 2026-11-20 without any secret: install, test, typecheck, lint and build pass in both packages. `migrate`, `seed` and `dev` need the variables above. Without them, the backend refuses to start and names what is missing.
 
 ## Architecture
 
 ```
 Browser ── Next.js on Vercel ──HTTPS, JWT──▶ Express 5 on Render ──▶ Postgres on Supabase
                                                       │
-                          seed script (and the P1 live price) ──▶ Twelve Data, through one client and one credit budget
+                          seed script and today's price (P1) ──▶ Twelve Data, through one client and one credit budget
 ```
 
 | Part | Where | Notes |
@@ -100,8 +101,9 @@ Browser ── Next.js on Vercel ──HTTPS, JWT──▶ Express 5 on Render �
 Twelve Data's free plan gives 8 credits a minute and 800 a day (02 §5.1). The design spends them once, not per player (01 §10, 02 §5):
 
 - **History is downloaded once.** `pnpm seed` makes one request per symbol, one credit, for up to 5,000 daily closes, and stores them in Postgres: about 60 credits for the whole universe. A series is a snapshot: refreshed whole, never appended, because split adjustments rewrite history (02 §5.2).
-- **Playing costs no credits.** Rounds, reveals and stats are built from the database, so the limit cannot stop the game.
+- **The game costs no credits.** Rounds, reveals and stats are built from the database, so the limit cannot stop the game. Only the optional live line spends credits.
 - **One budget** (`marketdata/creditBudget.ts`): at most 7 a minute (a sliding window in memory) and 750 a day (a row in `api_usage`, taken in one atomic statement). The seed waits for a free minute slot and stops at the daily cap; a later run resumes where it stopped.
+- **Today's price (P1)** takes a credit with `tryAcquire`, which never waits: over budget, the reveal shows the muted note. A quote is cached 15 minutes per symbol, and the frontend's call skips the cold-start wait, so a slow quote never covers the reveal (02 §5.6).
 - **Known limit:** the minute window lives in each process, so seed while the deployed server is idle (02 §5.3).
 
 ## Decisions and trade-offs
@@ -120,6 +122,7 @@ The full log, with the reason and the cost of each, is [`DECISIONS.md`](DECISION
 | Large spin-offs left out of the universe | Prices are adjusted for splits only | Small spin-offs remain (known limitation) |
 | Weekend bars discarded on ingest | Twelve Data returned a bad Sunday bar for CVS | — |
 | Cold start: wait up to 90 s, resend only what the server never got | Render's free tier sleeps | An offline visitor waits up to 90 s before the error |
+| Today's price is an optional call | A slow quote must never cover a complete reveal | The line can be missing; a muted note says so |
 | Demo account played by a coin with a fixed seed | A reviewer sees the verdict without playing ten rounds | Anyone can keep playing on it; `seed:demo --reset` restores it |
 | Supabase as plain Postgres, TLS pinned to its root certificate | One database, no second auth system | A local Postgres cannot be used as is |
 
@@ -133,7 +136,7 @@ The full log, with the reason and the cost of each, is [`DECISIONS.md`](DECISION
 | Leaderboards, sharing | The comparison that matters is against a coin |
 | Play before sign-up, password reset, email verification | Time |
 | Dividends | Price return only, labelled as such |
-| P1 not built: today's live price in the reveal, the last-20-rounds list, the daily health ping, `seed --max-age-days` | Time; built in the order of 01 §11 if time remains |
+| P1 not built: the last-20-rounds list, the daily health ping, `seed --max-age-days` | Time. Today's price, first in the order of 01 §11, was built |
 
 ## Known limitations
 
@@ -145,6 +148,7 @@ From 01 §12, stated in the app or here:
 - **Three months is arbitrary,** and another horizon would give another verdict.
 - **Price return, no costs:** no dividends, fees, taxes or slippage.
 - **Small samples.** Fifty rounds cannot prove skill; the coin range is there to show it.
+- **Split after the last refresh.** Today's "since then" figure can be wrong until that series is refreshed.
 - **Spin-offs.** Small ones remain in the universe and can show as false drops (MRK 2021, PFE 2020, BIIB 2017, APD 2016, O 2021).
 
 ## What I would do next
@@ -154,10 +158,11 @@ The pending entries of [`DECISIONS.md`](DECISIONS.md), most useful first:
 1. **Database privileges:** revoke the default privileges of Supabase's `anon` and `authenticated` roles, and give `migrate` a `schema_migrations` table (unit 1).
 2. **An open round can get stuck** if a refresh ever left fewer than 252 closes before its cutoff: void it and open a new one, and make the seed refuse such a refresh (unit 4).
 3. **Cache the coin** per user and number of decided rounds instead of rerunning 2,000 trials on every `/stats` call (unit 6).
-4. **Offline visitors:** fail at once when `navigator.onLine` is false instead of waiting 90 s; share one `/status` poll between calls (unit 8).
-5. **The chart colours the future from the closes** and the headline from the frozen return; at exactly zero they differ. One helper for both (unit 5).
-6. **Smaller follow-ups:** proxy-hop and token-subject tests, an email length cap, naming and magic numbers (units 3, 5, 6).
-7. **Guest play** before sign-up (01 §11), and the P1 items above.
+4. **Guard the live price's credits:** cache a failed quote for a minute, limit the live route per user, and reject a quote whose close is not a positive number (unit 9 review).
+5. **Offline visitors:** fail at once when `navigator.onLine` is false instead of waiting 90 s; share one `/status` poll between calls (unit 8).
+6. **The chart colours the future from the closes** and the headline from the frozen return; at exactly zero they differ. One helper for both (unit 5).
+7. **Smaller follow-ups:** proxy-hop and token-subject tests, an email length cap, naming and magic numbers (units 3, 5, 6).
+8. **Guest play** before sign-up (01 §11), and the P1 items above.
 
 ## Time spent
 
