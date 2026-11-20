@@ -161,8 +161,11 @@ Call lines:
 | --- | --- | --- |
 | Buy | up | `Compraste. Buena decisión.` |
 | Buy | down | `Compraste. Bajó.` |
+| Buy | flat | `Compraste. No cambió.` |
 | Pass | down or flat | `Pasaste. Buena decisión.` |
 | Pass | up | `Pasaste. Subió sin ti.` |
+
+The outcome comes from the raw return, with the boundary of `isCorrect` (02): flat is a return of exactly zero. A rise too small to show, printed as `0.0%`, is still up: `Compraste. Buena decisión.` When the return is exactly zero, the headline number has no arrow and is in `ink`, neither `up` nor `down`.
 
 Announce the headline and the call through an `aria-live="polite"` region.
 
@@ -306,7 +309,7 @@ Accessibility labels and titles, also from `copy.ts`:
 ## 11. Checks
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` clean.
-- Unit tests for `format.ts` only (`pnpm test`, Vitest), asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`. Components are checked by hand; there is no time budget for a browser test suite.
+- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3. Components are checked by hand; there is no time budget for a browser test suite.
 - Copy check before each deploy: search the frontend source for a bare `$` followed by a digit, for English interface text, and for voseo forms. All three searches come back empty.
 - Manual pass before each deploy, at 390 px and at desktop width: sign up → play three rounds → stats → log out → demo account → stats. Then once with the backend stopped, to see every error state.
 

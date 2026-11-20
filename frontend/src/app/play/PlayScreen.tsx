@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Chart } from '@/components/Chart';
 import { DecisionButtons } from '@/components/DecisionButtons';
-import { callLine, direction, RevealCard } from '@/components/RevealCard';
+import { RevealCard } from '@/components/RevealCard';
 import { api, ApiError } from '@/lib/api';
 import type { DecisionResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
 import { percent } from '@/lib/format';
+import { callLine, direction } from '@/lib/reveal';
 
 type Screen =
   | { kind: 'loading' }

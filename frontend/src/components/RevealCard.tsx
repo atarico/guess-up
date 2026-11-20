@@ -2,22 +2,7 @@ import type { Ref } from 'react';
 import type { Reveal } from '@/lib/api-types';
 import { copy } from '@/lib/copy';
 import { dateFull, money, percent } from '@/lib/format';
-
-/**
- * The call line of 03 §5.3. The spec has no line for a buy when the return is exactly zero; until the
- * author gives one, that case uses the "buy, down" line, which is how isCorrect scores it (a wrong buy).
- */
-export function callLine(decision: Reveal['decision'], r: number): string {
-  if (decision === 'buy') return r > 0 ? copy.play.calls.buyUp : copy.play.calls.buyDown;
-  return r > 0 ? copy.play.calls.passUp : copy.play.calls.passDownOrFlat;
-}
-
-/** The arrow and its accessible label (03 §4, §10): a gain or a loss is never shown by colour alone. */
-export function direction(r: number): { arrow: string; label: string; colour: string } | null {
-  if (r > 0) return { arrow: '▲', label: copy.play.up, colour: 'text-up' };
-  if (r < 0) return { arrow: '▼', label: copy.play.down, colour: 'text-down' };
-  return null;
-}
+import { callLine, direction } from '@/lib/reveal';
 
 type Props = {
   reveal: Reveal;
@@ -40,7 +25,8 @@ export function RevealCard({ reveal, onNext, nextRef }: Props) {
       {place && <p className="truncate text-sm text-muted">{place}</p>}
       <p className="text-sm">{copy.play.window(dateFull(reveal.startDate), dateFull(reveal.cutoffDate))}</p>
       <p className="text-sm">{copy.play.horizon(dateFull(reveal.endDate))}</p>
-      <p className={`mt-1 font-mono text-3xl ${dir?.colour ?? ''}`}>
+      {/* Exactly zero has no direction: no arrow, and the number in ink (03 §5.3). */}
+      <p className={`mt-1 font-mono text-3xl ${dir?.colour ?? 'text-ink'}`}>
         {dir && (
           <span role="img" aria-label={dir.label}>
             {dir.arrow}

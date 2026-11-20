@@ -70,6 +70,7 @@ export const copy = {
     calls: {
       buyUp: 'Compraste. Buena decisión.',
       buyDown: 'Compraste. Bajó.',
+      buyFlat: 'Compraste. No cambió.',
       passDownOrFlat: 'Pasaste. Buena decisión.',
       passUp: 'Pasaste. Subió sin ti.',
     },
