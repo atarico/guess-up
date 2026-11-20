@@ -257,15 +257,16 @@ One component, hand-written SVG. About 315 points do not need a library, and no 
 
 **Sealed state**
 
-- The accent line, 2 px, `vector-effect: non-scaling-stroke`, round joins, across the full width, with a gradient area under it and a dot with a halo at its end.
+- The accent line, 2 px, `vector-effect: non-scaling-stroke`, round joins, over the left 80% of the width, with a gradient area under it and a dot with a halo at its end.
+- The right 20% is an empty zone with a dashed edge, the `cut` line where the cutoff will be, and a gold `?` in a ring. That empty space is the question, and it means nothing moves sideways at the reveal.
 - No axes, no grid values, no dates, no tooltip, no hover or touch read-out. Four `grid` hairlines are allowed for shape reference; they carry no labels.
 - `role="img"`, `aria-label="Gráfica anónima de un año de precios, sin nombre, fechas ni escala"`.
 
 **Revealed state**, in sequence (all CSS, every element's normal style is its final state):
 
-1. The history is drawn once in its final coordinates (the x scale over history and future, the y scale over both). It starts from the sealed placement, given as a CSS `transform` (`--chart-from`, a scale and a translation: both maps are affine), and settles in 450 ms while it turns `past` and its area fades to 35%. Path data is never animated.
-2. The future line draws into the room the history made, over 900 ms with `stroke-dashoffset`, with a gradient area of its colour: `up` when the final close is above the cutoff close, else `down`.
-3. The dashed `cut` line with `Corte`, the end dot, and the three dates under the chart (start left, cutoff right-aligned at the cut, end right) fade in.
+1. The history is drawn once in its final coordinates: the same x as when sealed, and the y scale over history and future. It starts from the sealed placement, given as a CSS `transform` on y (`--chart-from`, a scale and a translation: the map is affine), and settles in 450 ms while it turns `past` and its area fades to 35%. Path data is never animated.
+2. The future line draws into the question's zone, over 900 ms with `stroke-dashoffset`, with a gradient area of its colour: `up` when the final close is above the cutoff close, else `down`.
+3. The dashed `cut` line was the zone's edge and stays; `Corte`, the end dot and the three dates under the chart (start left, cutoff right-aligned at the cut, end right) fade in.
 4. The label becomes `aria-label="Gráfica de NVIDIA Corporation: un año hasta el corte y los tres meses siguientes"`.
 
 The chart is drawn in the pixels of its own box and stays sharp from 320 px to 480 px wide.
