@@ -56,7 +56,7 @@ The submitted version is tagged `submission` (`f1ba936`, the merge of PR #1). Wo
 
 | Log | What was done | What the AI got wrong |
 | --- | --- | --- |
-| [`11-onboarding.md`](sessions/11-onboarding.md) | An audit of the screens against 03 §5 and §6, with the origin of each difference; 03 brought up to the code; orientation for a first-time player: the stats link as text, the streak's meaning, the countdown to the first verdict, a short card the first time, the `?` zone back in the sealed chart, room for the chart on very short phones; PR #2 | [section](sessions/11-onboarding.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
+| [`11-onboarding.md`](sessions/11-onboarding.md) | An audit of the screens against 03 §5 and §6, with the origin of each difference; 03 brought up to the code; orientation for a first-time player: the stats link as text, the streak's meaning, the countdown to the first verdict, a short card the first time, the `?` zone back in the sealed chart, room for the chart on very short phones; PR #2. Then the README draft, checked against the code | [section](sessions/11-onboarding.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
 
 ## Folders
 

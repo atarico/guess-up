@@ -10,12 +10,13 @@ Built as a take-home technical test for RUUT (Fullstack role), with AI as a pair
 | **API** | https://guess-up-api.onrender.com (`GET /status` to check it is up) |
 | **Demo account** | `demo@test.com` / `TODO(author): demo password` (or use the **Probar la cuenta demo** link) |
 | **Sign-up** | Open: any email and a password of 8+ characters |
+| **Submitted version** | Commit [`f1ba936`](https://github.com/atarico/guess-up/tree/f1ba936), 20 November 2026. What changed after it is in [After the submission](#after-the-submission). |
 
 **Two-minute tour**
 
 1. Open the app and tap **Probar la cuenta demo**.
-2. Play one chart: **Comprar** or **Pasar**. The reveal that follows is the financial-data view.
-3. Open the stats screen from the top bar. The demo account started with 40 rounds played by a coin, so the verdict is there without playing ten rounds yourself.
+2. Play one chart: **Comprar** or **Pasar**. The first time, a three-line card says how a round works. The reveal that follows is the financial-data view.
+3. Tap **Estadísticas** in the top bar. The demo account started with 40 rounds played by a coin, so the verdict is there without playing ten rounds yourself.
 
 > The backend runs on Render's free plan and sleeps after 15 minutes without traffic. The first request can take up to a minute: the app shows a "Despertando el servidor" screen and continues on its own.
 
@@ -33,8 +34,9 @@ Built as a take-home technical test for RUUT (Fullstack role), with AI as a pair
 6. [What I left out, and why](#what-i-left-out-and-why)
 7. [Known limitations](#known-limitations)
 8. [How I worked with AI](#how-i-worked-with-ai)
-9. [Time spent](#time-spent)
-10. [What I would do with more time](#what-i-would-do-with-more-time)
+9. [After the submission](#after-the-submission)
+10. [Time spent](#time-spent)
+11. [What I would do with more time](#what-i-would-do-with-more-time)
 
 ---
 
@@ -187,7 +189,7 @@ pnpm test && pnpm typecheck && pnpm lint && pnpm build
 
 No test touches the network or a real database: the provider is faked and repositories run in memory.
 
-**Deployment.** Render (root directory `backend`, build `corepack enable && pnpm install --frozen-lockfile && pnpm build`, start `node dist/index.js`, `NODE_VERSION=24`, `TRUST_PROXY_HOPS=3`) and Vercel (root directory `frontend`, plus `ENABLE_EXPERIMENTAL_COREPACK=1`). Both redeploy on every push to `main`.
+**Deployment.** Render (root directory `backend`, build `corepack enable && pnpm install --frozen-lockfile && pnpm build`, start `node dist/index.js`, `NODE_VERSION=24`, `TRUST_PROXY_HOPS=3`) and Vercel (root directory `frontend`, plus `ENABLE_EXPERIMENTAL_COREPACK=1`). Both redeploy on every push to `main`. Vercel also builds a preview for every other branch; to reach the API, its address has to be added to `CORS_ORIGIN`, and removed after the merge.
 
 ## Key decisions and trade-offs
 
@@ -200,6 +202,7 @@ The full log, with dates and alternatives, is in [`DECISIONS.md`](DECISIONS.md).
 - **No rerolls.** One open round per user, enforced by a partial unique index in Postgres. Closing the app does not skip a hard chart, and two taps at once still leave one open round.
 - **Results are frozen.** A round stores its forward return when it is created, so later data refreshes can never change a recorded result.
 - **Honest numbers.** The sample size sits next to every verdict. A rounded value never shows a sign the real value does not have. Coin ties count on neither side, and the share of coins you beat is rounded down, so it never flatters the user.
+- **No tutorial that holds up the game.** A three-line card the first time a browser plays, gone with the first decision, and a countdown to the first verdict. Added after the submission: first-time players did not know what was measured or when the verdict would come.
 - **Neutral Spanish for Mexico.** Tú, never voseo; `es-MX` dates and numbers; prices always labelled `USD`, because a bare `$` reads as pesos in Mexico.
 
 **Security**
@@ -271,10 +274,24 @@ Everything is in [`prompts/`](prompts/), and [`prompts/README.md`](prompts/READM
 2. **Project rules** in [`CLAUDE.md`](CLAUDE.md) (copied to [`prompts/system/`](prompts/system/)): the invariants, the stack and how the agent must work.
 3. **One work unit per session** with Claude Code, following Gentle-AI's ODD workflow. Each unit has a planning and evidence document in [`odd/tasks/`](odd/tasks/), and its prompts, verbatim and in order, in [`prompts/sessions/`](prompts/sessions/).
 4. **Tests first** for the domain logic, with each test seen failing before the code.
-5. **Reviews.** A separate agent with no context from the build reviewed the two security-sensitive units. It found, among other things, that a malformed JSON body could write a password to the logs, and that the login form could send the password in the URL before the JavaScript loaded. Both were fixed with tests. From unit 4 on I used Gentle-AI's built-in review (RDD) instead.
-6. **The spec is the source of truth.** The rule was that a deviation changes the spec in the same commit, with a line in `DECISIONS.md`. It did not always hold: a later audit found several changes that came in with the visual redesign without an explicit decision.
+5. **Reviews.** A separate agent with no context from the build reviewed the two security-sensitive units. It found, among other things, that a malformed JSON body could write a password to the logs, and that the login form could send the password in the URL before the JavaScript loaded. Both were fixed with tests. Gentle-AI's built-in review (RDD) assessed every commit from unit 1; from unit 4 on it was the only review.
+6. **The spec is the source of truth.** The rule was that a deviation changes the spec in the same commit, with a line in `DECISIONS.md`. It did not always hold: an audit after the submission found several changes that came in with the visual redesign without an explicit decision ([`DECISIONS.md`](DECISIONS.md), [session 11](prompts/sessions/11-onboarding.md)).
 
 Every session log has a section on what the AI got wrong and what I fixed by hand.
+
+## After the submission
+
+The submitted version is commit [`f1ba936`](https://github.com/atarico/guess-up/tree/f1ba936). Later changes go through pull requests and are logged like the rest, under "After the submission" in [`prompts/README.md`](prompts/README.md).
+
+- **The welcome chart** (`ea32269`): its two dotted futures appear only after the line is drawn.
+- **An audit of the screens against the frontend spec** (PR #2). The visual redesign had brought changes nobody decided. Each one was traced to its origin and then decided, and the spec was brought up to the code.
+- **Orientation for a first-time player** (PR #2):
+  - a three-line card the first time, which `¿Cómo funciona?` brings back;
+  - a streak that says what it counts;
+  - a countdown to the first verdict, and a notice when it is ready;
+  - `Estadísticas` as text instead of an icon, and `puntos` instead of `pp`;
+  - the `?` zone back in the sealed chart, so nothing moves sideways at the reveal;
+  - room for the chart on very short phones.
 
 ## Time spent
 
@@ -298,6 +315,7 @@ The brief estimates about 3 hours. My own plan in the product spec already added
 | 8. Cold-start screen | 10 min | |
 | 9. P1 items, README, final checks | 25 min | |
 | 10. Visual redesign | Not in the plan | Done after unit 9; it also rewrote parts of the frontend spec |
+| 11. Audit and onboarding | After the submission | Not counted in the hours above; see [After the submission](#after-the-submission) |
 
 Where the time went:
 

@@ -1,10 +1,10 @@
 # Session 11 — After the submission: the audit and the onboarding
 
-- **Date:** 2026-11-20, from about 18:45 to 20:35 UTC, after the submission.
+- **Date:** 2026-11-20, from about 18:45 to 20:45 UTC, after the submission.
 - **Tool:** Claude Code 2.1.329, with the Gentle AI ODD rules, RDD and Engram memory. One Sonnet subagent ran the read-only audit of the code against 03 §5 and §6. The parent read the unit 10 design canvas with the Artifact tool, and the unit 10 scope question from the session transcript. Browser checks used the Playwright MCP against `next dev`, with a fake API in the session scratchpad, so neither the production backend nor its database was touched.
 - **Model:** Claude Opus 5.5 (`claude-opus-5-5`).
 - **Plan and logbook:** `odd/tasks/11-onboarding.md` (branch `ux/onboarding`, from `fixes`).
-- **Time:** about an hour and fifty minutes.
+- **Time:** about two hours.
 - **Secrets:** none in this file.
 
 ## Prompts
@@ -130,6 +130,38 @@ En la descripcion del PR pone que cambia, como probarlo y la URL de la rama que 
 
 **Outcome:** the tag `submission` holds `README.md` as last changed by `35d9732`, the same README the branch has. A `tiny` variant for phones 600 px tall or less: 140 px of chart at 375 × 548, where it was 78 (`8bab444`). `fixes` and `ux/onboarding` pushed; `fixes` was needed as the PR's base and points at `ea32269`, already public on `main`. The tag was not pushed. The branch alias for `CORS_ORIGIN` was read from Vercel's commit status (scope and project) and checked: it redirects to Vercel's login, while an alias for a branch that does not exist answers 404. PR #2 opened against `fixes`, not merged.
 
+### Prompt 7 (with the README draft pasted)
+
+The pasted README is not repeated here: it is committed verbatim as `d45cc0d`. Only the words around it are copied.
+
+````text
+este es el ultimo modelo que tenemos del readme 
+
+[pasted: the author's README draft, committed verbatim as d45cc0d]
+
+ quiero que lo revises actualices y cuando le de el ok lo subimos
+````
+
+**Outcome:** none. The AI began comparing the draft with the repository's README, and the author interrupted.
+
+### Prompt 8 (interrupting, with the same draft pasted again)
+
+````text
+volve a la rama main 
+
+[pasted: the same draft, between "este es el ultimo modelo que tenemos del readme" and "quiero que lo revises actualices y cuando le de el ok lo subimos"; it reached the AI indented, with 241 lines collapsed by the terminal, so the AI worked from the full copy of prompt 7]
+````
+
+**Outcome:** `main` checked out. A fetch showed that the author had merged PR #2 into `fixes` and PR #3 into `main`, so `main` was fast-forwarded to `ef6049e`. The draft was checked against the code and the logs. Every technical claim held except two. "From unit 4 on I used RDD instead" was wrong: RDD assessed commits from unit 1, and what stopped after unit 3 was the separate reviewer. `NODE_VERSION=24` on Render appears in no file, so it could not be checked. The AI proposed eight changes for the work merged after the submission and left the two `TODO(author)` markers to the author. It asked for the go-ahead before committing to `main`.
+
+### Prompt 9
+
+````text
+sisi
+````
+
+**Outcome:** two commits on `main`: the draft verbatim (`d45cc0d`), then the review with this log. Pushed.
+
 ## What the AI got wrong / what was fixed by hand
 
 - **The streak pill read `Racha:6aciertos`.** Its text sat loose in a flex row, where each piece becomes a flex item and loses its edge spaces. Change 1 was committed that way; a screenshot showed it four commits later, and the fix is its own commit (`9533256`).
@@ -142,6 +174,7 @@ En la descripcion del PR pone que cambia, como probarlo y la URL de la rama que 
 - **The first try at very short phones did not fit.** Tighter spacing and type alone left the block without the card needing 342 px of 310 at 375 × 548; the hint and today's price row had to go there. Each try was measured before the commit.
 - **The tap area of `¿Cómo funciona?` could reach `Comprar` on a very short phone.** Its 44 px box reaches 12 px below its text. With the block full, that box overlapped the decision button, where a tap meant for the card would have bought. Found while measuring the `tiny` variant; the buttons now keep 12 px more below it.
 - **The `branch-pr` skill was written for the Gentle AI repository** (an approved issue, `type:*` labels, a template). This repository has none of them, so only its generic rules were followed.
+- **The AI fetched only after switching to `main`.** For a moment it worked from a local `main` two merges behind the remote. It saw this before writing anything and fast-forwarded.
 - **Nothing was fixed by hand by the author.**
 
 ## Resulting commits
@@ -160,4 +193,9 @@ On `ux/onboarding`, pushed, in PR #2 against `fixes` (the author merges). The ta
 - `6cb44cc` docs: close the onboarding work with its logbook and session log
 - `8bab444` fix(frontend): give the chart room on very short phones
 
-The logbook and this log, updated for prompt 6, are one more commit, made afterwards.
+- `eaaf5c5` docs: log the fix for very short phones and the publication
+
+On `main`, after the author merged PRs #2 and #3:
+
+- `d45cc0d` docs(readme): take the author's draft
+- the review of the README against the code, with this log, in the commit that follows it
