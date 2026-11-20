@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "migrate": "tsx --env-file=.env src/scripts/migrate.ts",
-    "seed": "tsx --env-file=.env src/scripts/seed.ts"
+    "seed": "tsx --env-file=.env src/scripts/seed.ts",
+    "seed:check": "tsx --env-file=.env src/scripts/seedCheck.ts"
   },
   "dependencies": {
     "cors": "^2.8.6",
