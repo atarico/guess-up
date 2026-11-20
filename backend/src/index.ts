@@ -3,12 +3,14 @@ import { createPool } from './db.js';
 import { loadEnv } from './env.js';
 import { apiUsageRepository } from './repositories/apiUsage.js';
 import { symbolsRepository } from './repositories/symbols.js';
+import { usersRepository } from './repositories/users.js';
 
 const env = loadEnv();
 const pool = createPool(env.DATABASE_URL);
 
 const app = createApp({
   corsOrigins: env.corsOrigins,
+  jwtSecret: env.JWT_SECRET,
   db: {
     async ping() {
       await pool.query('select 1');
@@ -16,6 +18,7 @@ const app = createApp({
   },
   symbols: symbolsRepository(pool),
   apiUsage: apiUsageRepository(pool),
+  users: usersRepository(pool),
 });
 
 app.listen(env.PORT, () => {

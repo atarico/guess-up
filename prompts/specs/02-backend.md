@@ -115,7 +115,7 @@ Notes for the agent:
 Our backend issues the token. Supabase Auth is not used: the brief asks for JWT between frontend and backend, and a 40-line implementation is fully explainable.
 
 - The `user` object is `{ id, email, isDemo }` everywhere it is returned.
-- `POST /auth/register` `{ email, password }` → `201 { token, user }`. Email lower-cased and validated; password 8 to 72 characters. Duplicate email → `409 EMAIL_TAKEN`.
+- `POST /auth/register` `{ email, password }` → `201 { token, user }`. Email trimmed, lower-cased and validated; password at least 8 characters and at most 72 bytes in UTF-8 (bcrypt ignores everything past byte 72, and a character such as `ñ` takes two bytes). Duplicate email → `409 EMAIL_TAKEN`, decided by the unique index (`insert … on conflict do nothing`), not by a lookup first.
 - `POST /auth/login` `{ email, password }` → `200 { token, user }`. Wrong email or password → `401 INVALID_CREDENTIALS`, same message for both.
 - `GET /auth/me` → `200 { user }`.
 - Hashing: `bcryptjs`, cost 10 (pure JS, no native build on the host).

@@ -1,5 +1,22 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
+/**
+ * A client error that carries its own code from 02 §7, for the codes the status alone cannot
+ * tell apart (`UNAUTHORIZED` and `INVALID_CREDENTIALS` are both 401). The message is ours and
+ * never quotes what the client sent.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(status: number, code: string, message: string) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 /** Unknown routes answer with the same error shape as every other error (02 §7). */
 export const notFound: RequestHandler = (_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
@@ -36,6 +53,12 @@ function typeOf(err: unknown): string {
 /** Last middleware (02 §8). */
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   const status = statusOf(err);
+
+  if (err instanceof ApiError && status < 500) {
+    console.warn(`Client error: ${status} ${err.code}`);
+    res.status(status).json({ error: { code: err.code, message: err.message } });
+    return;
+  }
 
   if (status < 500) {
     const type = typeOf(err);
