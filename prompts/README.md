@@ -50,6 +50,14 @@ Each log has the prompts, verbatim and in order, then a section **"What the AI g
 | [`09-polish.md`](sessions/09-polish.md) | Two fixes, this README and the project README, the closing checks, the live price | [section](sessions/09-polish.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
 | [`10-app-style.md`](sessions/10-app-style.md) | The list of pending items; then the author's design canvas on the `app-style` branch: dark theme, the design's copy, the coin histogram and the last 20 charts | [section](sessions/10-app-style.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
 
+## After the submission
+
+The submitted version is tagged `submission` (`f1ba936`, the merge of PR #1). Work after it goes on branches from `fixes`, each with a PR against `fixes`, and is logged here.
+
+| Log | What was done | What the AI got wrong |
+| --- | --- | --- |
+| [`11-onboarding.md`](sessions/11-onboarding.md) | An audit of the screens against 03 §5 and §6, with the origin of each difference; 03 brought up to the code; orientation for a first-time player: the stats link as text, the streak's meaning, the countdown to the first verdict, a short card the first time, the `?` zone back in the sealed chart | [section](sessions/11-onboarding.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
+
 ## Folders
 
 ```
