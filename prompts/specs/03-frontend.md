@@ -54,21 +54,28 @@ frontend/src/
 
 ## 4. Visual direction
 
-Quiet and exact, like a printed exam sheet. Paper background, ink line, generous space. Before the decision the screen is monochrome on purpose.
+A dark phone app, quiet until the reveal (the author's design canvas "Guess-Up · app móvil", work unit 10). The accent marks what is yours: your line, your picks, your edge. Up and down appear only after a decision; gold is the coin and the question.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `paper` | `#F6F4EF` | page background |
-| `ink` | `#14171A` | text, chart line, buttons |
-| `muted` | `#6B7075` | secondary text, grid, cutoff line |
-| `rule` | `#DAD6CC` | hairlines, card borders |
-| `up` | `#0E7C55` | revealed gain; never before the decision |
-| `down` | `#B93A26` | revealed loss; never before the decision |
+| `page` | `#0B0F17` | page background |
+| `surface` | `#131926` | cards, secondary buttons |
+| `raised` | `#161D2B` | the decision buttons, the logo tile |
+| `well` | `#1C2436` | bar tracks, the ticker box, the progress track |
+| `line` / `line-strong` / `edge` | `#1F2838` / `#2A3550` / `#34415F` | card borders; chips and axes; the decision buttons' border |
+| `grid` | `#151C2A` | the chart's hairlines |
+| `fg` / `muted` / `faint` | `#EEF1F6` / `#A3AEC2` / `#8E9AAF` | text; secondary text; tertiary labels |
+| `past` / `cut` | `#6E7B94` / `#5A6985` | the history line after the reveal; the cutoff line |
+| `off` / `passed` | `#3A465C` / `#66738C` | coin bins outside the 90% range; the "passed" bar |
+| `accent` / `accent-hover` | `#8FA8FF` / `#B4C4FF` | your line before the reveal, your figures, the primary button, focus |
+| `gold` | `#F2C14E` | the coin, the `?`, the demo banner |
+| `up` / `down` | `#3DDC97` / `#FF6B6B` | revealed gain and loss; never before the decision |
 
-- Type: one sans for text and one monospace with tabular figures for every number, both via `next/font`. Numbers must not jitter as they change.
+- Type: Inter for text and figures, Space Grotesk for titles, buttons and the big numbers, both via `next/font`. Every number uses tabular figures, so it does not jitter as it changes.
+- Cards and buttons have 16 px corners; buttons are 56 px tall, the decision buttons 64 px.
 - Gains and losses are never signalled by colour alone: always a sign and an arrow (`▲ +18.4%`, `▼ −12.4%`).
-- One theme. No dark mode in this version.
-- Motion is limited to the reveal. Honour `prefers-reduced-motion` by showing the final state at once.
+- One theme, dark. No light mode in this version.
+- Motion: the chart drawing in, the reveal, the stats' bars and the waking screen. Honour `prefers-reduced-motion` by showing the final state at once.
 
 ## 5. Screens
 

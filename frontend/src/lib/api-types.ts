@@ -55,6 +55,12 @@ export type ErrorCode =
   | 'INTERNAL';
 
 /** `GET /stats` (02 §7). Returns are decimals; null where a figure is undefined. */
+/**
+ * The coin's 2,000 edges in 40 equal bins, from the smallest edge (`start`) by `width`; every edge is
+ * counted once, the largest in the last bin. `width` is 0 when every edge is equal (02 §7).
+ */
+export type CoinHistogram = { start: number; width: number; counts: number[] };
+
 export type StatsResponse = {
   rounds: number;
   buys: number;
@@ -63,9 +69,23 @@ export type StatsResponse = {
   avgAll: number | null;
   avgPassed: number | null;
   edge: number | null;
-  coin: { p5: number; p95: number; percentile: number; beatenBy: number; trials: number } | null;
+  coin: { p5: number; p95: number; percentile: number; beatenBy: number; trials: number; histogram: CoinHistogram } | null;
   verdict: 'insufficient' | 'bought_none' | 'bought_all' | 'worse' | 'better' | 'coin';
   roundsUntilVerdict: number;
   hitRate: number | null;
   streak: { current: number; best: number };
 };
+
+/** (P1) One of the caller's decided rounds, for the last-20 list (02 §7, `GET /rounds?limit=20`). */
+export type RecentRound = {
+  id: string;
+  symbol: string;
+  name: string;
+  cutoffDate: string;
+  decision: 'buy' | 'pass';
+  forwardReturn: number;
+  correct: boolean;
+  decidedAt: string;
+};
+
+export type RecentRoundsResponse = { rounds: RecentRound[] };

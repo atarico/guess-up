@@ -4,6 +4,7 @@ import { type RefObject, useEffect, useRef, useState } from 'react';
 import type { Reveal } from '@/lib/api-types';
 import { copy } from '@/lib/copy';
 import { dateFull, money } from '@/lib/format';
+import './Chart.css';
 
 // 03 §6. Hand-written SVG: no axes, no values, no dates and no read-out on hover or touch before the
 // decision; there are no pointer handlers and no <title>, which a browser would show as a tooltip.

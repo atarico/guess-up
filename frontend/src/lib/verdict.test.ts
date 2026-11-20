@@ -3,6 +3,8 @@ import type { StatsResponse } from './api-types';
 import { coinParts, plain, verdictParts } from './verdict';
 
 const MINUS = '−';
+// The coin's bins are not read by these sentences; any valid histogram will do.
+const HISTOGRAM = { start: -0.05, width: 0.0025, counts: Array<number>(40).fill(50) };
 
 function stats(overrides: Partial<StatsResponse>): StatsResponse {
   return {
@@ -13,7 +15,7 @@ function stats(overrides: Partial<StatsResponse>): StatsResponse {
     avgAll: 0.034,
     avgPassed: 0.045,
     edge: -0.013,
-    coin: { p5: -0.021, p95: 0.02, percentile: 0.17, beatenBy: 0.81, trials: 2000 },
+    coin: { p5: -0.021, p95: 0.02, percentile: 0.17, beatenBy: 0.81, trials: 2000, histogram: HISTOGRAM },
     verdict: 'coin',
     roundsUntilVerdict: 0,
     hitRate: 0.52,
@@ -109,20 +111,20 @@ describe('coinParts (03 §5.4)', () => {
   });
 
   it('better: the share of coin trials the user beat', () => {
-    const parts = coinParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 0.96, beatenBy: 0.03, trials: 2000 } }))!;
+    const parts = coinParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 0.96, beatenBy: 0.03, trials: 2000, histogram: HISTOGRAM } }))!;
     expect(plain(parts)).toBe(`${opening} Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al 96% de los lanzamientos.`);
   });
 
   it('worse: the share of coin trials that beat the user, without the ties', () => {
     // 2% below the user, 1% tied, 97% above: the ties do not count as coin wins.
-    const parts = coinParts(stats({ verdict: 'worse', coin: { p5: -0.021, p95: 0.02, percentile: 0.02, beatenBy: 0.97, trials: 2000 } }))!;
+    const parts = coinParts(stats({ verdict: 'worse', coin: { p5: -0.021, p95: 0.02, percentile: 0.02, beatenBy: 0.97, trials: 2000, histogram: HISTOGRAM } }))!;
     expect(plain(parts)).toBe(`${opening} Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el 97% de las veces.`);
   });
 
   it('never shows a coin share above 99%', () => {
-    const better = coinParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 1, beatenBy: 0, trials: 2000 } }))!;
+    const better = coinParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 1, beatenBy: 0, trials: 2000, histogram: HISTOGRAM } }))!;
     expect(plain(better)).toContain('superas al 99% de los lanzamientos.');
-    const worse = coinParts(stats({ verdict: 'worse', coin: { p5: -0.021, p95: 0.02, percentile: 0, beatenBy: 0.9995, trials: 2000 } }))!;
+    const worse = coinParts(stats({ verdict: 'worse', coin: { p5: -0.021, p95: 0.02, percentile: 0, beatenBy: 0.9995, trials: 2000, histogram: HISTOGRAM } }))!;
     expect(plain(worse)).toContain('la moneda te gana el 99% de las veces.');
   });
 

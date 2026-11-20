@@ -1,18 +1,20 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Inter, Space_Grotesk } from 'next/font/google';
 import { ServerWaking } from '@/components/ServerWaking';
 import { AuthProvider } from '@/lib/auth';
 import { copy } from '@/lib/copy';
 import './globals.css';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+// Inter for text and figures, Space Grotesk for titles, buttons and the big numbers (03 §4).
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+const spaceGrotesk = Space_Grotesk({
+  variable: '--font-space-grotesk',
   subsets: ['latin'],
+  weight: ['500', '600', '700'],
 });
 
 export const metadata: Metadata = {
@@ -20,14 +22,14 @@ export const metadata: Metadata = {
   description: copy.tagline,
 };
 
-// The browser's toolbar takes the paper colour on phones (03 §4).
+// The browser's toolbar takes the page colour on phones (03 §4).
 export const viewport: Viewport = {
-  themeColor: '#f6f4ef',
+  themeColor: '#0b0f17',
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="es-MX" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="es-MX" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <AuthProvider>{children}</AuthProvider>
         {/* Over every page while a call waits for a sleeping server (03 §8). */}
