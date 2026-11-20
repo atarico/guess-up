@@ -64,8 +64,10 @@ export function LoginForm({ initialMode, sessionExpired }: { initialMode: Mode; 
         </p>
       )}
 
-      {/* noValidate: the browser's own messages would come in the browser's language; the API validates. */}
-      <form onSubmit={submit} noValidate className="mt-8 flex flex-col gap-5">
+      {/* noValidate: the browser's own messages would come in the browser's language; the API validates.
+          method="post": submitted before the JavaScript loads, a form defaults to GET and puts the
+          named fields, password included, in the URL. */}
+      <form method="post" onSubmit={submit} noValidate className="mt-8 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
           <label htmlFor="email" className="text-sm font-medium">
             {copy.login.emailLabel}
