@@ -33,7 +33,7 @@ Where the specs leave a choice open; each one is also in `DECISIONS.md`.
 | ID | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- | --- |
 | T1 | Universe check with `pnpm seed:check` (read-only) | S7 | inline | done | L2: 1 `ready` (AAPL), 59 `pending`, 0 `failed`, 0 moves above 40%. Not the full universe |
-| T2 | `pnpm seed:demo`: `runDemoSeed` and its config, test-first; script wiring; 02 §5.5 | S2, S5, S6 | inline | pending | |
+| T2 | `pnpm seed:demo`: `runDemoSeed` and its config, test-first; script wiring; 02 §5.5 | S2, S5, S6 | inline | done | `feat(backend): add pnpm seed:demo`; RED 10 of 10 failed against a stub / GREEN 10 passed in `test/demoSeed.test.ts`: 40 decided and none open on a new demo user; twice still 40 (added 0); `--reset` deletes 43 rounds (an open one too) and leaves 40 new ones; two fresh runs make the same decisions, with buys and passes; no ready stock: the message and no user, no round; an ordinary account with the same email is refused and untouched; `demoConfig`: missing `DEMO_EMAIL`, `DEMO_PASSWORD` or both, credentials `/auth` rejects, email normalised, `--reset`, any other argument refused. The script run with an empty environment: missing variables, usage, a short password and a missing `DATABASE_URL` each exit 1 before any connection. Backend 173 tests, typecheck, lint, build green |
 | T3 | Demo link on welcome and log-in; `lib/demo.ts` tested for none, one and both variables | S3, S5, S8 | inline | pending | |
 | T4 | Demo banner on Stats from `GET /auth/me` | S4, S8 | inline | pending | |
 | T5 | RDD per commit; review if due; blocking findings fixed in their own commit, the rest pending in `DECISIONS.md` | S9 | inline | pending | |

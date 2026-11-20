@@ -15,7 +15,8 @@
     "test": "vitest run",
     "migrate": "tsx --env-file=.env src/scripts/migrate.ts",
     "seed": "tsx --env-file=.env src/scripts/seed.ts",
-    "seed:check": "tsx --env-file=.env src/scripts/seedCheck.ts"
+    "seed:check": "tsx --env-file=.env src/scripts/seedCheck.ts",
+    "seed:demo": "tsx --env-file=.env src/scripts/seedDemo.ts"
   },
   "dependencies": {
     "bcryptjs": "3.0.3",

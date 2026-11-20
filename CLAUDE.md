@@ -87,7 +87,7 @@ backend/   pnpm dev         tsx watch, loads backend/.env, http://localhost:4000
            pnpm seed        fetches every universe symbol that is not ready yet; resumable (02 §5.5)
            pnpm seed --only AAPL   one symbol, one credit: end-to-end check of the real client
            pnpm seed:check  read-only report: status, bars and dates per symbol, moves above 40%
-           pnpm seed:demo   work unit 7
+           pnpm seed:demo   demo user + 40 decided rounds by a seeded coin; idempotent; --reset for new charts (02 §5.5)
 frontend/  pnpm dev         next dev, loads frontend/.env.local, http://localhost:3000
            pnpm test        Vitest; the format.ts tests arrive in work unit 5
            pnpm typecheck   next typegen, then tsc --noEmit

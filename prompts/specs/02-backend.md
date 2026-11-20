@@ -187,8 +187,11 @@ Known limit, documented rather than solved: the minute window is per process. Th
 - (P1) `--max-age-days <n>` also re-downloads `ready` symbols whose `fetched_at` is older than `n` days, replacing each series whole as §5.2 requires. Without the flag, a `ready` symbol is never fetched again.
 - Logs one line per symbol: bars stored, date range, credits used today.
 - `pnpm seed:demo` (P0) creates the demo user and 40 decided rounds whose decisions come from a seeded coin. It uses the same `roundService` as real play, so demo rounds obey the same rules.
-  - Needs at least one `ready` symbol; exits with a clear message otherwise.
-  - Idempotent: creates the user if missing (`is_demo = true`) and tops the history up to 40 decided rounds. `--reset` deletes the demo user's rounds first.
+  - Needs at least one `ready` symbol; exits with a clear message otherwise, before writing anything.
+  - Idempotent: creates the user if missing (`is_demo = true`) and tops the history up to 40 decided rounds. `--reset` deletes the demo user's rounds first, open or decided.
+  - The coin's seed is fixed (20 buys and 20 passes); the charts are picked with `Math.random`, as in play, so `--reset` gives new charts and possibly another verdict. It prints the verdict `GET /stats` will show, and says when the coin landed outside its own range.
+  - Refuses to start when `DEMO_EMAIL` or `DEMO_PASSWORD` is missing or would fail the `/auth` rules of §4 (the same schema), and stops without writing when `DEMO_EMAIL` belongs to an account that is not a demo account. An existing demo user keeps its password.
+  - The logic is `runDemoSeed` in `services/demoSeed.ts`, tested with the in-memory repositories; `scripts/seedDemo.ts` wires the database.
   - Credentials come from `DEMO_EMAIL` and `DEMO_PASSWORD`. They are **public by design**: printed in the README and shipped to the browser. They are not secrets and are not redacted in session logs.
   - The demo account is an ordinary account afterwards. Anyone can keep playing on it, and its stats will drift from the coin's.
 

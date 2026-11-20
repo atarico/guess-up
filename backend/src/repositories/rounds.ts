@@ -21,6 +21,8 @@ export type RoundsRepository = {
   findOwn(id: string, userId: string): Promise<StoredRound | null>;
   /** The user's decided rounds in the order they were decided, for the streak. */
   decidedInOrder(userId: string): Promise<DecidedRound[]>;
+  /** Deletes every round of the user, open or decided, and returns how many; only `pnpm seed:demo --reset` calls it. */
+  deleteForUser(userId: string): Promise<number>;
 };
 
 const STORED = `id, symbol, cutoff_date::text as "cutoffDate", forward_return::float8 as "forwardReturn", decision`;
@@ -70,6 +72,11 @@ export function roundsRepository(pool: pg.Pool): RoundsRepository {
         [userId],
       );
       return rows;
+    },
+
+    async deleteForUser(userId) {
+      const { rowCount } = await pool.query('delete from rounds where user_id = $1', [userId]);
+      return rowCount ?? 0;
     },
   };
 }

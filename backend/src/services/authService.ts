@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import { ApiError } from '../middleware/errors.js';
 import type { User, UsersRepository } from '../repositories/users.js';
 
@@ -11,6 +12,28 @@ const BCRYPT_COST = 10;
 // No refresh token: a 7-day token is acceptable for a game with no money in it (DECISIONS.md).
 const TOKEN_TTL = '7d';
 
+// bcrypt reads at most 72 bytes; past that, the rest of a password would not count. Characters
+// like ñ take two bytes in UTF-8, so the maximum is counted in bytes (02 §4, DECISIONS.md).
+const MAX_PASSWORD_BYTES = 72;
+
+/** The /auth rules for an email and a password (02 §4); `pnpm seed:demo` checks its credentials with them too. */
+export const credentials = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email()),
+  password: z
+    .string()
+    .min(8)
+    .refine((password) => Buffer.byteLength(password, 'utf8') <= MAX_PASSWORD_BYTES, {
+      error: `Too long: expected at most ${MAX_PASSWORD_BYTES} bytes in UTF-8`,
+    }),
+});
+
+export type Credentials = z.infer<typeof credentials>;
+
+/** The one way a password is hashed, for sign-up and for the demo user. */
+export function hashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, BCRYPT_COST);
+}
+
 export type AuthResult = { token: string; user: User };
 
 export function authService(users: UsersRepository, jwtSecret: string) {
@@ -21,7 +44,7 @@ export function authService(users: UsersRepository, jwtSecret: string) {
 
   return {
     async register(email: string, password: string): Promise<AuthResult> {
-      const user = await users.create(email, await bcrypt.hash(password, BCRYPT_COST));
+      const user = await users.create(email, await hashPassword(password));
       if (!user) throw new ApiError(409, 'EMAIL_TAKEN', 'An account with this email already exists');
       return issue(user);
     },

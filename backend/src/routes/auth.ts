@@ -1,26 +1,9 @@
 import { Router } from 'express';
 import { rateLimit } from 'express-rate-limit';
-import { z } from 'zod';
 import type { AppDeps } from '../app.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 import { validateBody } from '../middleware/validate.js';
-import { authService } from '../services/authService.js';
-
-// bcrypt reads at most 72 bytes; past that, the rest of a password would not count. Characters
-// like ñ take two bytes in UTF-8, so the maximum is counted in bytes (02 §4, DECISIONS.md).
-const MAX_PASSWORD_BYTES = 72;
-
-const credentials = z.object({
-  email: z.string().trim().toLowerCase().pipe(z.email()),
-  password: z
-    .string()
-    .min(8)
-    .refine((password) => Buffer.byteLength(password, 'utf8') <= MAX_PASSWORD_BYTES, {
-      error: `Too long: expected at most ${MAX_PASSWORD_BYTES} bytes in UTF-8`,
-    }),
-});
-
-type Credentials = z.infer<typeof credentials>;
+import { authService, credentials, type Credentials } from '../services/authService.js';
 
 export function authRouter(deps: Pick<AppDeps, 'users' | 'jwtSecret'>) {
   const router = Router();

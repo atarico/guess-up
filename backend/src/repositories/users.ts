@@ -8,19 +8,19 @@ export type UserWithHash = User & { passwordHash: string };
 
 export type UsersRepository = {
   /** `null` when the email is taken: the unique index decides, so two sign-ups cannot race past a lookup. */
-  create(email: string, passwordHash: string): Promise<User | null>;
+  create(email: string, passwordHash: string, isDemo?: boolean): Promise<User | null>;
   findByEmail(email: string): Promise<UserWithHash | null>;
   findById(id: string): Promise<User | null>;
 };
 
 export function usersRepository(pool: pg.Pool): UsersRepository {
   return {
-    async create(email, passwordHash) {
+    async create(email, passwordHash, isDemo = false) {
       const { rows } = await pool.query<User>(
-        `insert into users (email, password_hash) values ($1, $2)
+        `insert into users (email, password_hash, is_demo) values ($1, $2, $3)
          on conflict (email) do nothing
          returning id, email, is_demo as "isDemo"`,
-        [email, passwordHash],
+        [email, passwordHash, isDemo],
       );
       return rows[0] ?? null;
     },

@@ -14,9 +14,9 @@ export function inMemoryUsers(): UsersRepository & { rows: Map<string, UserWithH
   const publicFields = ({ id, email, isDemo }: UserWithHash) => ({ id, email, isDemo });
   return {
     rows,
-    async create(email, passwordHash) {
+    async create(email, passwordHash, isDemo = false) {
       if ([...rows.values()].some((row) => row.email === email)) return null;
-      const row = { id: randomUUID(), email, isDemo: false, passwordHash };
+      const row = { id: randomUUID(), email, isDemo, passwordHash };
       rows.set(row.id, row);
       return publicFields(row);
     },
@@ -131,6 +131,11 @@ export function inMemoryRounds(): RoundsRepository & { rows: Map<string, Row> } 
         .filter((r) => r.userId === userId && r.decision !== null)
         .sort((a, b) => (a.decidedAt ?? 0) - (b.decidedAt ?? 0))
         .map((r) => ({ decision: r.decision as 'buy' | 'pass', r: r.forwardReturn }));
+    },
+    async deleteForUser(userId) {
+      const ids = [...rows.values()].filter((r) => r.userId === userId).map((r) => r.id);
+      for (const id of ids) rows.delete(id);
+      return ids.length;
     },
   };
 }
