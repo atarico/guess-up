@@ -35,7 +35,7 @@ Assumptions, pending the author's ok:
 | ID | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- | --- |
 | T1 | Request log line (02 §8): method, path without query, status, ms; test | S7 | inline | done | `feat(backend): log one line per request`; 2 tests (failed before the middleware was wired, then passed); backend 29 tests green |
-| T2 | `MarketDataProvider` interface, typed errors, fake provider | S2 | inline | pending | |
+| T2 | `MarketDataProvider` interface, typed errors, fake provider | S2 | inline | done | `feat(backend): add the market data provider interface and fake provider`; 3 tests; `fetchQuote` left out (P1) |
 | T3 | Credit budget (02 §5.3), clock injected, daily counter in `api_usage`; TDD with RED observed | S3, S9 | inline | pending | |
 | T4 | Twelve Data client `fetchDailyCloses`: header auth, 5 s timeout, error mapping (02 §5.4); tests with an injected `fetch` | S2, S8 | inline | pending | |
 | T5 | Series validation (TDD with RED observed) and the snapshot write (02 §5.2) | S4, S9 | inline | pending | |
@@ -88,4 +88,4 @@ Al cerrar
 
 - **L2** (2026-11-20). Exploration. The approved universe is not written anywhere the author allowed: `git grep` finds the tickers together only in `prompts/sessions/00-spec-review.md`, which holds the author's prompts ("Universo: aprobado con un cambio. Sale KHC y entra CPB.") but not the table; Engram has only "Universe (60, KHC→CPB)". The table the author approved is in the AI's answer in the session 00 transcript (Claude Code's local file), which is neither the repo nor Engram. T6 is blocked until the author provides the list or allows that source. 02 §5.1–5.5 and §8 re-read as they stand after unit 1.
 - **L3** (2026-11-20). The author: "Ok al plan y a los supuestos A1 a A10." / "Copia la tabla de acciones textual de la sesion 00, con KHC reemplazada por CPB. Ya la aprobe ahi, no me la vuelvas a mostrar." / "Segui sin frenar hasta el final de la unidad, salvo que algo cambie significativamente, la spec o gaste creditos de mas." The table was extracted by script from the session 00 transcript (60 rows, 20 marked as having done badly, the 11 sector names of 03 §3). The CPB row replacing KHC: name "The Campbell's Company" from the Twelve Data `/stocks` response saved in session 00 (its "Common Stock" suffix dropped, as in the other names), sector Consumer Staples, marked as having done badly as the session 00 note said.
-- **Next:** T2.
+- **Next:** T3 (TDD).
