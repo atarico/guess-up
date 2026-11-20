@@ -8,5 +8,10 @@ export function symbolsRepository(pool: pg.Pool) {
       );
       return rows[0].n;
     },
+
+    /** A response was rejected or the provider could not serve it (02 §5.2, §5.5). A later seed run tries again. */
+    async markFailed(symbol: string): Promise<void> {
+      await pool.query("update symbols set status = 'failed' where symbol = $1", [symbol]);
+    },
   };
 }

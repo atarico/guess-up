@@ -23,6 +23,7 @@ backend/src/
 │   ├── pickRound.ts       choose cutoff, slice window, forward return
 │   ├── normalise.ts       min-max to [0,1]
 │   ├── stats.ts           picks / all / passed / edge / hit rate / streak
+│   ├── series.ts          checks one provider response before it is stored (§5.2)
 │   └── coin.ts            seeded benchmark
 ├── marketdata/
 │   ├── provider.ts        MarketDataProvider interface
@@ -150,7 +151,7 @@ Split-adjusted history is rewritten by the provider whenever a stock splits. The
 
 - A symbol's series is always written from **one** response, in **one** transaction: delete that symbol's rows, insert the new ones, update `symbols`. Never append new bars to old ones; mixing two adjustment bases produces a fake cliff in the chart.
 - Drop the most recent bar on ingest (it may be a partial trading day).
-- Reject the response and mark the symbol `failed` if it has fewer than 400 bars or any non-positive close.
+- Reject the response and mark the symbol `failed` if it has fewer than 400 bars or any non-positive close. Precisely (`domain/series.ts`): every close of the response must be positive, the latest one included; the count is taken after the latest bar is dropped, so at least 400 bars are stored.
 - A round's `forward_return` is a ratio of two closes from the same snapshot, so a later re-adjustment cannot change a recorded result (invariant 5).
 
 ### 5.3 Credit budget
