@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { copy } from '@/lib/copy';
+import { RedirectIfSignedIn } from './RedirectIfSignedIn';
 
-// Welcome, 03 §5.1. Server-rendered, so a first visit shows it at once.
+// Welcome, 03 §5.1. Server-rendered, so a first visit shows it at once; a signed-in visitor
+// may see it for an instant before the redirect.
 export default function Welcome() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-14 pb-8">
-      <p className="border-b border-rule pb-3 font-mono text-xs tracking-[0.2em] text-muted uppercase">{copy.appTitle}</p>
+      <RedirectIfSignedIn />
+      <p translate="no" className="border-b border-rule pb-3 font-mono text-xs tracking-[0.2em] text-muted uppercase">{copy.appTitle}</p>
 
       <h1 className="mt-10 text-4xl leading-[1.1] font-semibold tracking-tight text-balance">{copy.welcome.headline}</h1>
       <p className="mt-5 text-lg leading-relaxed text-pretty">{copy.tagline}</p>

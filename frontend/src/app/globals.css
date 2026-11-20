@@ -57,6 +57,16 @@ body {
     color: var(--color-ink);
   }
 
+  /* Hover stays monochrome: no colour before a decision (03 §4). */
+  .button:not(:disabled):hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .button-secondary:not(:disabled):hover {
+    background: var(--color-rule);
+  }
+
   .button:disabled {
     cursor: not-allowed;
     opacity: 0.6;
