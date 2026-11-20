@@ -19,6 +19,11 @@ export function directionOf(shown: string): Direction {
 
 export const ARROWS: Record<Direction, string | null> = { up: '▲', down: '▼', flat: null };
 
+/** The arrow's accessible label, the same words as the reveal's (03 §10); none where there is no arrow. */
+export function arrowLabel(direction: Direction): string | null {
+  return direction === 'up' ? copy.play.up : direction === 'down' ? copy.play.down : null;
+}
+
 /** The edge row: the value in percentage points with its arrow, or a dash when there is no edge. */
 export function edgeView(edge: number | null): { text: string; arrow: string | null; direction: Direction } {
   if (edge === null) return { text: copy.statsScreen.missing, arrow: null, direction: 'flat' };

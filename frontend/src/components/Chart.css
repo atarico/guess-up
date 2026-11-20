@@ -14,7 +14,7 @@
 
 /*
  * 1. The history was drawn once in its final coordinates. It starts as the sealed year was drawn
- * (wider x scale, tighter y scale), given by --chart-from, and settles to where it belongs. The stroke
+ * (the same x, a tighter y scale), given by --chart-from, and settles to where it belongs. The stroke
  * is non-scaling, so the line keeps its 2 px while the shape moves.
  */
 .chart-history {
@@ -31,6 +31,21 @@
 .chart-history-area {
   opacity: 0.35;
   animation: chart-from-visible 450ms ease-out backwards;
+}
+
+/* Sealed: the question in the empty zone on the right, in gold like the welcome picture's. */
+.chart-question-ring {
+  fill: var(--color-gold);
+  fill-opacity: 0.1;
+  stroke: var(--color-gold);
+  stroke-width: 1.5;
+}
+
+.chart-question-mark {
+  fill: var(--color-gold);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
 }
 
 /* 2. With pathLength="1", a dash of 1 is the whole line: offset 1 hides it, offset 0 draws it. */

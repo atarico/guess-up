@@ -72,8 +72,17 @@ export const copy = {
     onceNote: 'Tu decisión se registra una sola vez.',
     // Comprar is the left button, so the left arrow buys (03 §5.3).
     keys: '← Comprar · → Pasar',
-    streakLabel: 'Racha',
-    statsLabel: 'Ver estadísticas',
+    // The card above the chart, the first time this browser plays (lib/howItWorks.ts), and the button that shows it again.
+    howItWorks: {
+      lines: [
+        'Esta es la gráfica real de una acción, sin nombre ni fechas.',
+        'Decide si la comprarías o la dejarías pasar. Después verás qué acción era y qué pasó.',
+        'A las 10 gráficas recibes tu veredicto: si tu criterio le gana a lanzar una moneda.',
+      ],
+      open: '¿Cómo funciona?',
+    },
+    // The top bar pill says what the streak counts: right calls in a row.
+    streak: (n: number) => [text('Racha: '), figure(String(n)), text(n === 1 ? ' acierto' : ' aciertos')],
     // The reveal (03 §5.3).
     inThreeMonths: 'en 3 meses',
     cutLabel: 'Corte',
@@ -97,6 +106,8 @@ export const copy = {
     prices: (from: string, to: string) => `${from} → ${to}`,
     priceNote: 'Precios ajustados por splits.',
     next: 'Siguiente gráfica',
+    // On the reveal of the tenth chart, the whole sentence is the link to Stats (lib/progress.ts).
+    verdictReady: 'Tu primer veredicto está listo en Estadísticas.',
     // (P1) The live line (03 §5.3). `sinceThen` follows the headline's arrow and percent.
     live: {
       today: (price: string) => `Hoy: ${price} ·`,
@@ -161,8 +172,8 @@ export const copy = {
       passed: 'Las que pasaste',
       edge: 'Ventaja de tu criterio',
       edgeHint: 'Tus selecciones menos comprar todas',
-      // Percentage points, written short where space is tight.
-      points: (value: string) => `${value} pp`,
+      // Percentage points: "puntos" everywhere but the verdict sentence and the coin legend (03 §3).
+      points: (value: string) => `${value} puntos`,
     },
     coin: {
       heading: 'Tú contra la moneda',
@@ -172,6 +183,8 @@ export const copy = {
       you: (value: string) => `Tú ${value}`,
       legendRange: '90% de las monedas',
       legendYou: 'Tu ventaja, en puntos porcentuales',
+      // Under the histogram: why the coin's spread can have two humps.
+      twoHumps: 'Si ves dos montañas, es porque una sola acción se movió mucho: algunas monedas la compraron y otras no.',
       range: (low: string, high: string) => [
         text('El 90% de las monedas terminó entre '),
         figure(low, 'gold'),

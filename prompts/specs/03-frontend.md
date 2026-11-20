@@ -47,7 +47,7 @@ frontend/src/
 - **Neutral Spanish for users in Mexico.** Address the user as *tú*. Never voseo: no "comprá", "mirá", "tenés", "podés". No regional slang ("volado").
 - Vocabulary: *gráfica* (never "gráfico"), *acción* for a stock, *correo* for email, *racha* for streak, *lanzar una moneda* for a coin flip.
 - Button labels are infinitives: `Comprar`, `Pasar`, `Reintentar`. Sentence case. No exclamation marks.
-- *Puntos porcentuales* in the verdict sentence; *puntos* everywhere else. Both always mean percentage points.
+- *Puntos porcentuales* in the verdict sentence and in the coin card's legend, where the unit is introduced; *puntos* everywhere else, never `pp`. Both always mean percentage points.
 - Tickers, company names and exchange names are shown as the API returns them (names from the curated universe, exchanges from the provider; `02-backend.md` §5.5). Sector names arrive in English and are mapped to Spanish in `copy.ts`, falling back to the raw value: Technology → `Tecnología`, Health Care → `Salud`, Financials → `Finanzas`, Energy → `Energía`, Industrials → `Industria`, Consumer Discretionary → `Consumo discrecional`, Consumer Staples → `Consumo básico`, Communication Services → `Comunicaciones`, Utilities → `Servicios públicos`, Materials → `Materiales`, Real Estate → `Bienes raíces`.
 - The API's `error.message` is English and is never shown. The interface maps `error.code` to its own text (§8).
 - Prices are US dollars, written `USD 184.20`. A bare `$` is never used: in Mexico it reads as pesos. Nothing is converted.
@@ -83,6 +83,7 @@ A dark phone app, quiet until the reveal (the author's design canvas "Guess-Up �
 
 | Element | Text |
 | --- | --- |
+| Top | The logo (`components/Logo.tsx`): the mark and `Guess-Up` |
 | Picture | A year of an invented line, the hidden three months with a gold `?` and two dotted possible futures (`components/WelcomeChart.tsx`); `aria-label` `Gráfica anónima de un año de precios; los tres meses siguientes están ocultos` |
 | Under the picture | `Un año, sin nombre ni fechas` · `3 meses después` |
 | Headline | `¿De verdad sabes leer una gráfica?` |
@@ -96,7 +97,7 @@ Signed-in visitors go straight to `/play`.
 
 ### 5.2 Log in / sign up `/login`
 
-One form: email, password, submit. A switch toggles between the two modes.
+The logo at the top, a link back to the welcome screen. Then one form: email, password, submit. A switch toggles between the two modes.
 
 | Element | Create account | Log in |
 | --- | --- | --- |
@@ -124,27 +125,38 @@ One form: email, password, submit. A switch toggles between the two modes.
 
 Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "Revelación"):
 
-1. **Top bar** (44 px): the logo on the left; on the right a `Racha N` pill, a `Gráfica N` pill (hidden below 380 px wide, where the row does not fit) and a 44 × 44 icon link to Stats.
+1. **Top bar** (44 px): the logo on the left; on the right the streak pill and a text link to Stats, 44 px tall. Below 420 px wide the logo is the mark alone and its name is left to screen readers: with the name the row is 4 px too wide at 390 px. With the mark alone it fits at 320 px, a three-digit streak included.
 2. **Chart**, flexible, then a reserved 18 px row for the dates of the reveal. Sealed state.
-3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): three chips, the question, a hint, the two buttons, a note.
+3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): the round count and three chips (or, while it shows, the "how it works" card), the question, a hint, the progress to the first verdict, a `¿Cómo funciona?` button, the two buttons, a note.
 4. **Two buttons**, side by side, in the bottom thumb zone: buy on the left, pass on the right.
 
 | Element | Text |
 | --- | --- |
-| Streak pill | `Racha` and the number |
-| Round count | `Gráfica 17` |
-| Stats link (icon), `aria-label` | `Ver estadísticas` |
+| Streak pill | `Racha: 3 aciertos` (`Racha: 1 acierto`, `Racha: 0 aciertos`) |
+| Round count, the first chip | `Gráfica 17` |
+| Stats link | `Estadísticas` |
 | Chips | `Acción real` · `Un año` · `Sin nombre ni fechas` |
 | Question | `¿Compras o pasas?` |
 | Hint | `Después verás la empresa, las fechas y lo que pasó en los tres meses siguientes.` |
+| "How it works" card, three lines | `Esta es la gráfica real de una acción, sin nombre ni fechas.` · `Decide si la comprarías o la dejarías pasar. Después verás qué acción era y qué pasó.` · `A las 10 gráficas recibes tu veredicto: si tu criterio le gana a lanzar una moneda.` |
+| Button that shows the card again | `¿Cómo funciona?` |
+| Progress, until 10 decided charts | `Faltan 6 gráficas para tu primer veredicto.` (`Falta 1 gráfica para tu primer veredicto.`), the words of §5.4 |
 | Left button | `Comprar` |
 | Right button | `Pasar` |
 | Note under the buttons | `Tu decisión se registra una sola vez.` |
 | Key hints | `← Comprar · → Pasar` |
 
-The top bar's numbers come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
+The round count leads the chips because the top bar has no room for a second pill at 390 px (measured in work unit 10: the logo broke onto two lines). The streak and the round count come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. The streak pill is hidden until its first value arrives.
+
+The first time this browser plays, the "how it works" card takes the place of the chips and of the hint, which its second line repeats (`lib/howItWorks.ts`). It is per browser, not per account, so a visitor on the demo account sees it too. It goes with the decision, since the reveal takes the block, and `¿Cómo funciona?`, under the progress line while the card is hidden, brings it back until the next decision. The browser keeps only that a decision was made here (`guess-up.howItWorks.seen`), nothing about a round; if storage cannot be read, the card shows. Placed above the chart instead, it left the chart 74 px tall at 390 × 664 and pushed the buttons off a 320 × 568 screen; in the block the chart keeps its size and the buttons show without scrolling at 390 × 844, 390 × 664, 375 × 548, 360 × 640 and 320 × 568.
+
+The progress line counts down to the first verdict (`lib/progress.ts`): it starts from `roundsUntilVerdict` in the same `/stats` answer, follows the same rule for an answer asked before a decision, and goes down by one with each recorded decision. It is not shown while unknown, and is gone from the tenth decided chart on. On the reveal of the decision that leaves no chart to go, `/play` asks `GET /stats` once more; when it has a verdict against the coin (`coin`, `better` or `worse`), the reveal shows the tenth chart's notice. With every chart bought or every chart passed there is no such verdict, so there is no notice; a failed call means no notice either. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
 
 Button rules: identical size, weight, border and fill (`raised`, `edge`), 64 px tall with 12 px between them. No "primary" styling on either. Disabled the instant one is pressed.
+
+Short phones (`max-height: 760px`, the `short` variant in `globals.css`): both blocks tighten to 360 px, the headline number is smaller and the reveal leaves out its streak card, since the `Racha` pill already shows the current streak. At 390 × 664 the chart keeps about 190 px. When the tenth chart's notice shows on a short phone, today's price row (P1) gives way to it: with both, the next-chart button was 24 px out of the block.
+
+Very short phones (`max-height: 600px`, the `tiny` variant; 375 × 548 is an iPhone SE with Safari's bars): both blocks are 310 px, and the top padding, the chips, the card, the headline number, the call row and the next-chart button are tighter. Two things give way there: the hint, which the card repeats and `¿Cómo funciona?` brings back, and today's price row (P1). Measured: the chart is 140 px at 375 × 548 (it was 78) and 160 px at 320 × 568 (it was 98), every state of the block fits, and nothing scrolls. `¿Cómo funciona?` has a 44 px tap area that reaches 12 px below its text, so the decision buttons keep 12 px more space under it: a tap meant for it must never buy or pass.
 
 Desktop: the same column, centred, maximum width 480 px. Keyboard: `←` buy and `→` pass (they follow the buttons), `Enter` or `Space` for next chart. Show the key hints only on devices with a fine pointer.
 
@@ -162,7 +174,8 @@ Reveal block, in this order:
 | (P1) Live, unavailable (muted) | `El precio de hoy no está disponible en este momento (límite de la API).` |
 | (P1) Live, unavailable for another reason (muted) | `El precio de hoy no está disponible en este momento.` |
 | Price note, below the card (muted) | `Precios ajustados por splits.` |
-| Streak card | `Racha actual` N · `Mejor racha` N |
+| Streak card (left out on short phones) | `Racha actual` N · `Mejor racha` N |
+| Tenth chart's notice, in the streak card's place, the whole sentence a link to Stats | `Tu primer veredicto está listo en Estadísticas.` |
 | Button | `Siguiente gráfica` |
 
 The window and the horizon are no longer written out: the dates under the chart (start, cutoff, end) show them.
@@ -192,26 +205,27 @@ Top to bottom (the design canvas, artboard "Estadísticas"):
 2. For the demo account (`user.isDemo`), a gold dashed banner. The client keeps only the token (§7), so this screen asks `GET /auth/me` together with `GET /stats` and shows the scoreboard when both have answered. If `/auth/me` fails, there is no banner and the scoreboard still shows.
 3. **The verdict**: an overline with the number of decided charts, then the verdict sentence, your picks in `accent`, the cost in `down` or the gain in `up`.
 4. **The verdict card**, only when there is a verdict against the coin: a coin icon, the short verdict and the counts.
-5. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`).
-6. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
-7. **Hits card**: a ring with the hit rate, the count, and the current and best streak.
-8. (P1) **Recent card**, from `GET /rounds?limit=20`: a strip of bars (filled when bought, outlined when passed, height by the size of the return, newest on the right) and a row per chart: ticker, cutoff month, the call, the return, a check or a cross. Left out when the call fails or there is no decided chart.
-9. Small print, `Jugar otra gráfica`, `Cerrar sesión`.
+5. `Jugar otra gráfica`, the same button as at the bottom, so the game is one tap away after the verdict without scrolling.
+6. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`); the value drops below its label when the row is too narrow for both (at 320 px).
+7. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the legend, a sentence on why the spread can have two humps, and the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
+8. **Hits card**: a ring with the hit rate, the count, and the current and best streak.
+9. (P1) **Recent card**, from `GET /rounds?limit=20`: a strip of bars (filled when bought, outlined when passed, height by the size of the return, newest on the right) and a row per chart: ticker, cutoff month, the call, the return, a check or a cross. Left out when the call fails or there is no decided chart.
+10. Small print, `Jugar otra gráfica` again, `Cerrar sesión`.
 
 | Element | Text |
 | --- | --- |
 | Demo banner | `Cuenta demo: estas decisiones las tomó una moneda.` |
 | Overline | `Tu resultado · 48 gráficas decididas` (`1 gráfica decidida`) |
 | Verdict card | `Por ahora, tu criterio no se distingue de lanzar una moneda.` / `Por ahora, mejor que una moneda.` / `Por ahora, peor que una moneda.` · `29 compras · 19 pases` |
-| Averages card | `Rendimiento promedio a 3 meses` · `Tus selecciones` · `Comprar todas` · `Las que pasaste` · `Ventaja de tu criterio` · `Tus selecciones menos comprar todas` · `▼ −1.3 pp` |
-| Coin card | `Tú contra la moneda` · `2,000 monedas compraron 29 gráficas al azar de las mismas 48 que tú viste. Esta es la ventaja que obtuvo cada una.` · marker `Tú −1.3` · legend `90% de las monedas`, `Tu ventaja, en puntos porcentuales` |
+| Averages card | `Rendimiento promedio a 3 meses` · `Tus selecciones` · `Comprar todas` · `Las que pasaste` · `Ventaja de tu criterio` · `Tus selecciones menos comprar todas` · `▼ −1.3 puntos` |
+| Coin card | `Tú contra la moneda` · `2,000 monedas compraron 29 gráficas al azar de las mismas 48 que tú viste. Esta es la ventaja que obtuvo cada una.` · marker `Tú −1.3` · legend `90% de las monedas`, `Tu ventaja, en puntos porcentuales` · `Si ves dos montañas, es porque una sola acción se movió mucho: algunas monedas la compraron y otras no.` |
 | Hits card | `Aciertos y rachas` · `23 de 48 aciertos` · `Comprar y que suba, o pasar y que no suba` · `Racha actual` · `Mejor` |
 | (P1) Recent card | `Últimas 20 gráficas` (`Tu última gráfica` for one) · `Barra llena: compraste. Barra vacía: pasaste. La más reciente, a la derecha.` · `Compraste` / `Pasaste` · marks `Acierto` / `Fallo` |
 | Small print | `Rendimiento de precio a tres meses, sin dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todas". Con pocas gráficas, el rango de la moneda es amplio: todavía no hay forma de saber si es habilidad.` |
-| Back to the game | `Jugar otra gráfica` |
+| Back to the game, below the verdict and at the bottom | `Jugar otra gráfica` |
 | Log out | `Cerrar sesión` |
 
-**Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures set in the monospace face.
+**Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures, set bold with tabular figures (§4).
 
 | State | Text |
 | --- | --- |
@@ -245,15 +259,16 @@ One component, hand-written SVG. About 315 points do not need a library, and no 
 
 **Sealed state**
 
-- The accent line, 2 px, `vector-effect: non-scaling-stroke`, round joins, across the full width, with a gradient area under it and a dot with a halo at its end.
+- The accent line, 2 px, `vector-effect: non-scaling-stroke`, round joins, over the left 80% of the width, with a gradient area under it and a dot with a halo at its end.
+- The right 20% is an empty zone with a dashed edge, the `cut` line where the cutoff will be, and a gold `?` in a ring. That empty space is the question, and it means nothing moves sideways at the reveal.
 - No axes, no grid values, no dates, no tooltip, no hover or touch read-out. Four `grid` hairlines are allowed for shape reference; they carry no labels.
 - `role="img"`, `aria-label="Gráfica anónima de un año de precios, sin nombre, fechas ni escala"`.
 
 **Revealed state**, in sequence (all CSS, every element's normal style is its final state):
 
-1. The history is drawn once in its final coordinates (the x scale over history and future, the y scale over both). It starts from the sealed placement, given as a CSS `transform` (`--chart-from`, a scale and a translation: both maps are affine), and settles in 450 ms while it turns `past` and its area fades to 35%. Path data is never animated.
-2. The future line draws into the room the history made, over 900 ms with `stroke-dashoffset`, with a gradient area of its colour: `up` when the final close is above the cutoff close, else `down`.
-3. The dashed `cut` line with `Corte`, the end dot, and the three dates under the chart (start left, cutoff right-aligned at the cut, end right) fade in.
+1. The history is drawn once in its final coordinates: the same x as when sealed, and the y scale over history and future. It starts from the sealed placement, given as a CSS `transform` on y (`--chart-from`, a scale and a translation: the map is affine), and settles in 450 ms while it turns `past` and its area fades to 35%. Path data is never animated.
+2. The future line draws into the question's zone, over 900 ms with `stroke-dashoffset`, with a gradient area of its colour: `up` when the final close is above the cutoff close, else `down`.
+3. The dashed `cut` line was the zone's edge and stays; `Corte`, the end dot and the three dates under the chart (start left, cutoff right-aligned at the cut, end right) fade in.
 4. The label becomes `aria-label="Gráfica de NVIDIA Corporation: un año hasta el corte y los tres meses siguientes"`.
 
 The chart is drawn in the pixels of its own box and stays sharp from 320 px to 480 px wide.
@@ -311,9 +326,9 @@ All in `format.ts`, all via `Intl` with the locale `es-MX`. This is formatting o
 ## 10. Accessibility and feel
 
 - `<html lang="es-MX">`.
-- Everything reachable and operable by keyboard; visible focus ring on `ink`.
-- Text contrast at least 4.5:1 on `paper`; `up` and `down` as specified meet it.
-- Touch targets at least 48 px; the two decision buttons at least 56 px.
+- Everything reachable and operable by keyboard; visible focus ring in `accent`.
+- Text contrast at least 4.5:1 on `page`; `up` and `down` as specified meet it.
+- Touch targets at least 44 px; the two decision buttons at least 56 px (they are 64, §5.3).
 - No layout shift between sealed and revealed: reserve the reveal card's height.
 - `viewport` set so the game does not zoom on double-tap; text remains user-scalable.
 
@@ -321,17 +336,19 @@ Accessibility labels and titles, also from `copy.ts`:
 
 | Where | Text |
 | --- | --- |
-| Sealed chart | `Gráfica de precios anónima, un año de precios diarios` |
-| Revealed chart | `Gráfica de NVDA, del 12 mar 2018 al 11 jun 2019` |
-| Coin band | `Rango de la moneda: de −2.1 a +2.0 puntos. Tu resultado: −1.3 puntos.` |
-| (P1) Right / wrong mark in the list | `Acierto` / `Error` |
-| Up / down arrow | `Subió` / `Bajó` |
+| Sealed chart | `Gráfica anónima de un año de precios, sin nombre, fechas ni escala` |
+| Revealed chart | `Gráfica de NVIDIA Corporation: un año hasta el corte y los tres meses siguientes` |
+| Coin histogram | `Histograma de la ventaja de 2,000 monedas, con el rango donde cae el 90% y tu ventaja marcada` |
+| (P1) Right / wrong mark in the list | `Acierto` / `Fallo` |
+| (P1) Today's price while it loads | `Cargando el precio de hoy` |
+| (P1) Strip of the last charts | `Rendimiento a tres meses de tus últimas gráficas` |
+| Up / down arrow, on the reveal and on Stats (the edge and the last charts) | `Subió` / `Bajó` |
 | Page titles | `Guess-Up` · `Guess-Up · Iniciar sesión` · `Guess-Up · Jugar` · `Guess-Up · Estadísticas` |
 
 ## 11. Checks
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` clean.
-- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3; `demo.ts`, whether the demo link is rendered (§5.2). Components are checked by hand; there is no time budget for a browser test suite.
+- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3; `demo.ts`, whether the demo link is rendered (§5.2); `copy.ts`, the singular and plural of the streak pill (§5.3); `progress.ts`, the charts left, the progress line and when the tenth chart's notice shows (§5.3); `howItWorks.ts`, when the card shows (§5.3). Components are checked by hand; there is no time budget for a browser test suite.
 - Copy check before each deploy: search the frontend source for a bare `$` followed by a digit, for English interface text, and for voseo forms. All three searches come back empty.
 - Manual pass before each deploy, at 390 px and at desktop width: sign up → play three rounds → stats → log out → demo account → stats. Then once with the backend stopped, to see every error state.
 
@@ -343,4 +360,4 @@ Accessibility labels and titles, also from `copy.ts`:
 
 ## 13. Not built
 
-Dark mode, swipe gestures, sharing, sound and haptics, onboarding tutorial, installable PWA, a second interface language or a language switch, zoom or pan on the chart.
+Dark mode, swipe gestures, sharing, sound and haptics, an onboarding tutorial that holds up the game (the short card of §5.3 is built), installable PWA, a second interface language or a language switch, zoom or pan on the chart.

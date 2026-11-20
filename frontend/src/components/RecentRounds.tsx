@@ -1,7 +1,7 @@
 import type { RecentRound } from '@/lib/api-types';
 import { copy } from '@/lib/copy';
 import { monthYear, percent } from '@/lib/format';
-import { ARROWS, directionOf, STRIP_HEIGHT, stripBars, type Direction } from '@/lib/statsView';
+import { ARROWS, arrowLabel, directionOf, STRIP_HEIGHT, stripBars, type Direction } from '@/lib/statsView';
 
 // Whole class names, so Tailwind finds them. Flat (shows as 0.0%) is neutral, never up or down.
 const TEXT: Record<Direction, string> = { up: 'text-up', down: 'text-down', flat: 'text-fg' };
@@ -59,7 +59,11 @@ export function RecentRounds({ rounds }: { rounds: RecentRound[] }) {
               <span className="text-xs text-faint tabular">{monthYear(round.cutoffDate)}</span>
               <span className="truncate text-muted">{round.decision === 'buy' ? text.bought : text.passed}</span>
               <span className={`text-right font-semibold whitespace-nowrap tabular ${TEXT[direction]}`}>
-                {arrow && <span aria-hidden="true">{arrow} </span>}
+                {arrow && (
+                  <span role="img" aria-label={arrowLabel(direction) ?? undefined}>
+                    {arrow}{' '}
+                  </span>
+                )}
                 {shown}
               </span>
               <svg width="16" height="16" viewBox="0 0 16 16" role="img" aria-label={round.correct ? text.right : text.wrong} className="justify-self-end">

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { CSSProperties, Ref } from 'react';
 import type { LiveQuote, Reveal } from '@/lib/api-types';
 import { copy } from '@/lib/copy';
@@ -12,6 +13,8 @@ type Props = {
   live: LiveState;
   /** From the decision's response. */
   streak: { current: number; best: number };
+  /** The tenth chart, with a verdict against the coin waiting on Stats (lib/progress.ts). */
+  verdictReady: boolean;
   onNext: () => void;
   nextRef: Ref<HTMLButtonElement>;
 };
@@ -20,7 +23,7 @@ type Props = {
 const riseAt = (ms: number) => ({ '--rise-delay': `${ms}ms` }) as CSSProperties;
 
 /** The reveal block, in the order of 03 §5.3. Its height is set by the screen, so the chart keeps its size (03 §10). */
-export function RevealCard({ reveal, live, streak, onNext, nextRef }: Props) {
+export function RevealCard({ reveal, live, streak, verdictReady, onNext, nextRef }: Props) {
   const r = reveal.forwardReturn;
   const head = headline(r);
   const cutoffClose = reveal.history[reveal.history.length - 1].c;
@@ -29,10 +32,10 @@ export function RevealCard({ reveal, live, streak, onNext, nextRef }: Props) {
   const meta = sector && reveal.exchange ? copy.play.meta(sector, reveal.exchange) : (sector ?? reveal.exchange);
 
   return (
-    <div className="flex h-full flex-col gap-2.5 pt-2.5 short:gap-1.5 short:pt-1.5">
+    <div className="flex h-full flex-col gap-2.5 pt-2.5 short:gap-1.5 short:pt-1.5 tiny:gap-1 tiny:pt-0">
       {/* Number, arrow, colour and label all come from headline(): shown as 0.0%, no arrow and fg (03 §5.3). */}
       <p className="reveal-rise flex items-baseline gap-2.5">
-        <span className={`tabular font-display text-[50px] leading-[56px] font-bold tracking-[-0.02em] short:text-[40px] short:leading-[46px] ${head.colour}`}>
+        <span className={`tabular font-display text-[50px] leading-[56px] font-bold tracking-[-0.02em] short:text-[40px] short:leading-[46px] tiny:text-[32px] tiny:leading-9 ${head.colour}`}>
           {head.arrow && (
             <span role="img" aria-label={head.label ?? undefined}>
               {head.arrow}
@@ -44,7 +47,7 @@ export function RevealCard({ reveal, live, streak, onNext, nextRef }: Props) {
         <span className="text-[13px] text-muted">{copy.play.inThreeMonths}</span>
       </p>
 
-      <div className="reveal-rise flex h-8 items-center justify-between gap-3" style={riseAt(1150)}>
+      <div className="reveal-rise flex h-8 items-center justify-between gap-3 tiny:h-7" style={riseAt(1150)}>
         <p className="font-display text-xl leading-[26px] font-semibold">{callLine(reveal.decision, r)}</p>
         <p className="flex h-[30px] shrink-0 items-center gap-1.5 rounded-full border border-line-strong pr-3 pl-2.5 text-[13px] font-medium">
           <ResultIcon correct={reveal.correct} />
@@ -52,7 +55,7 @@ export function RevealCard({ reveal, live, streak, onNext, nextRef }: Props) {
         </p>
       </div>
 
-      <div className="card reveal-rise flex h-16 items-center gap-3 px-3.5" style={riseAt(1230)}>
+      <div className="card reveal-rise flex h-16 items-center gap-3 px-3.5 tiny:h-14" style={riseAt(1230)}>
         <div className="flex h-10 w-[52px] shrink-0 items-center justify-center rounded-[10px] bg-well font-display text-[13px] font-bold tracking-[0.04em]">
           {reveal.symbol}
         </div>
@@ -64,11 +67,12 @@ export function RevealCard({ reveal, live, streak, onNext, nextRef }: Props) {
 
       <div className="reveal-rise flex flex-col gap-1.5" style={riseAt(1310)}>
         <div className="card flex flex-col">
-          <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-3.5 py-1.5">
+          <div className={`flex min-h-12 items-center justify-between gap-3 border-b border-line px-3.5 py-1.5 tiny:min-h-10 tiny:border-b-0 ${verdictReady ? 'short:border-b-0' : ''}`}>
             <span className="text-[13px] text-muted">{copy.play.pricesRow}</span>
             <span className="tabular text-right text-[15px] font-semibold">{copy.play.prices(money(cutoffClose), money(endClose))}</span>
           </div>
-          <div className="flex min-h-[58px] items-center justify-between gap-3 px-3.5 py-1.5">
+          {/* Today's price is optional: it gives way to the tenth chart's notice on a short phone (measured: 24 px over), and always on a very short one. */}
+          <div className={`flex min-h-[58px] items-center justify-between gap-3 px-3.5 py-1.5 tiny:hidden ${verdictReady ? 'short:hidden' : ''}`}>
             <span className="text-[13px] text-muted">{copy.play.todayRow}</span>
             <LiveView live={live} />
           </div>
@@ -76,17 +80,28 @@ export function RevealCard({ reveal, live, streak, onNext, nextRef }: Props) {
         <p className="text-xs text-muted">{copy.play.priceNote}</p>
       </div>
 
-      {/* Left out on a short phone: the top bar's Racha pill already shows the current streak. */}
-      <div className="card reveal-rise flex h-11 items-center justify-between gap-3 px-3.5 text-[13px] text-muted short:hidden" style={riseAt(1390)}>
-        <p>
-          {copy.play.currentStreak} <span className="tabular text-[15px] font-semibold text-fg">{streak.current}</span>
-        </p>
-        <p>
-          {copy.play.bestStreak} <span className="tabular text-[15px] font-semibold text-fg">{streak.best}</span>
-        </p>
-      </div>
+      {verdictReady ? (
+        // Takes the streak card's place, on short phones too: the top bar's pill shows the streak (03 §5.3).
+        <Link
+          href="/stats"
+          className="reveal-rise flex min-h-11 items-center rounded-2xl border border-dashed border-gold px-3.5 text-[13px] leading-[18px] font-medium text-gold underline underline-offset-4"
+          style={riseAt(1390)}
+        >
+          {copy.play.verdictReady}
+        </Link>
+      ) : (
+        // Left out on a short phone: the top bar's Racha pill already shows the current streak.
+        <div className="card reveal-rise flex h-11 items-center justify-between gap-3 px-3.5 text-[13px] text-muted short:hidden" style={riseAt(1390)}>
+          <p>
+            {copy.play.currentStreak} <span className="tabular text-[15px] font-semibold text-fg">{streak.current}</span>
+          </p>
+          <p>
+            {copy.play.bestStreak} <span className="tabular text-[15px] font-semibold text-fg">{streak.best}</span>
+          </p>
+        </div>
+      )}
 
-      <button ref={nextRef} type="button" onClick={onNext} className="button button-primary reveal-rise mt-auto" style={riseAt(1470)}>
+      <button ref={nextRef} type="button" onClick={onNext} className="button button-primary reveal-rise mt-auto tiny:min-h-11" style={riseAt(1470)}>
         {copy.play.next}
       </button>
     </div>

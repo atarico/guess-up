@@ -36,6 +36,8 @@
 
 /* Phones with little height (390 x 664 and below): the play screen tightens so the chart keeps room (03 §10). */
 @custom-variant short (@media (max-height: 760px));
+/* Very short phones (375 x 548, an iPhone SE with Safari's bars): tighter still, so the chart is not a sliver (03 §5.3). */
+@custom-variant tiny (@media (max-height: 600px));
 
 :root {
   color-scheme: dark;
