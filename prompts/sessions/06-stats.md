@@ -109,3 +109,98 @@ On `main`, pushed together (`2303b16..312c421`):
 - `312c421` docs: record the unit 6 review findings and the phone checklist
 
 This log is one more commit, made afterwards.
+
+
+---
+
+# Session 06, part 2 — Fixes after unit 6
+
+- **Date:** 2026-11-20, 13:33 to about 13:50 UTC, in a new Claude Code session.
+- **Tool:** Claude Code 2.1.329, with the Gentle AI ODD rules, RDD assessments and Engram memory. No sub-agents and no independent verifier (those run once, at the end of the project). The browser check of fix 3 used the Playwright MCP against `next dev` with the whole API mocked in the browser, so no backend, database or production data was touched.
+- **Model:** Claude Opus 5.5 (`claude-opus-5-5`).
+- **Plan:** none written; three small fixes, each with its own commit, spec and `DECISIONS.md` entry ("Fixes after unit 6").
+- **Secrets:** none in this file.
+
+## Prompts
+
+Copied exactly as sent, extracted from the Claude Code transcript. Prompt 1 was pasted and arrived cut off in the middle of fix 2; fix 3 was missing. The AI did fix 1, which was complete, and asked for the rest instead of guessing it.
+
+### Prompt 1 — 13:33 UTC (pasted text, cut off)
+
+````text
+Tres arreglos, cada uno en su commit, con la spec y DECISIONS.md al día en el mismo commit. Las entradas pendientes que estos arreglos resuelven, marcalas como resueltas; no las borres.
+
+1. "Compraste. No cambió."
+- Sí al texto. Va en la tabla de 03 §5.3 y en copy.ts.
+- Aplica solo cuando el rendimiento es exactamente 0, igual que la regla de acierto del backend. Un rendimiento positivo que se muestra como 0.0% sigue siendo "Compraste. Buena decisión."
+- En ese caso el número va sin flecha y en color tinta, ni verde ni rojo.
+- Si la elección de la frase está en una función pura, sumale el caso al test.
+
+2. Los empates no cuentan
+- Test primero y en rojo, con un caso que tenga empates.
+- En "superas al X%", X cuenta solo las monedas con ventaja estrictamente menor que la del usuario. En "la moneda te gana el X%", solo las
+````
+
+**Outcome:** fix 1 committed (`72fdd33`), then the AI said where the message had been cut and asked for the rest.
+
+### Prompt 2 — 13:40 UTC
+
+````text
+Esto me pasa por apurado, ahi esta lo que faltaba
+
+
+2. Los empates no cuentan
+- Test primero y en rojo, con un caso que tenga empates.
+- En "superas al X%", X cuenta solo las monedas con ventaja estrictamente menor que la del usuario. En "la moneda te gana el X%", solo las estrictamente mayores. Un empate no suma para ningún lado.
+- El porcentaje que se muestra nunca pasa de 99: con 2.000 lanzamientos simulados, decir 100% afirma más de lo que la simulación puede probar.
+- Actualizá la definición en 02 §6 y la respuesta de GET /stats en 02 §7 si hace falta otro campo.
+
+3. El número de gráfica
+- Nunca queda vacío ni desfasado, aunque /stats tarde, llegue después de la primera decisión o falle.
+- Si no hay dato, la etiqueta no se muestra, y se vuelve a pedir al cargar la gráfica siguiente.
+- Dejá la cuenta en una función pura con su test: /stats antes de decidir, después de decidir y con fallo.
+- Sigue valiendo la regla de anonimato: nada de esto pide datos de la ronda abierta.
+
+Seed
+Lo estoy corriendo ahora. Cuando te avise que terminó, corré la verificación post-seed de solo lectura y pasame el resumen: cuántos símbolos quedaron ready, cuáles fallaron y los saltos de más de 40% de un día al otro.
+
+Cierre
+typecheck, lint, test y build en verde, la sesión registrada en prompts/sessions/06-stats.md, y mostrame los commits que van a salir. El push lo hago yo.
+````
+
+**Outcome:**
+- **Fix 2:** RED first in the domain (a tie case gave `percentile` 1, "superas al 100%") and in the sentence module (the tie counted as a coin win, `98%` instead of `97%`, and a `100%` share). `percentile` is now strictly below and the new `beatenBy` strictly above; the sentence caps at 99%.
+- **Fix 3:** RED against a stub, then `chartNumberAfter` in `lib/chartNumber.ts` and the wiring in `PlayScreen`. Checked at 390 px with the API mocked: four cases, below.
+- **Seed:** waiting for the author's signal; the read-only check and its summary go in a later note.
+
+## Evidence
+
+| Fix | Evidence |
+| --- | --- |
+| 1. `Compraste. No cambió.` | `lib/reveal.test.ts`, 8 tests; RED: only the exact-zero buy failed, with `Compraste. Bajó.`. A buy of +0.0004 (shown as `0.0%`) keeps `Compraste. Buena decisión.`. At zero, `direction` is null: no arrow, number in `text-ink`. Not seen in a browser: it needs equal closes at the cutoff and 63 days later |
+| 2. Ties count on neither side | `backend/test/stats.test.ts`: shares strictly below and above, and a tie case (`percentile` 0.25, `beatenBy` 0 with three ties); route test expects the new `beatenBy` key. `lib/verdict.test.ts`: `te gana el 97%` with 1% ties, and `99%` for shares of 1 and 0.9995 |
+| 3. `Gráfica N` | `lib/chartNumber.test.ts`, 6 tests: `/stats` before deciding, after deciding, failed, and the next chart. Browser, API mocked: normal `Gráfica 13` → `14` with one `/stats` call; failed: no label, then `14` after a second call; answer held until after the decision: dropped, no label, then `14`; round error plus failed `/stats`: the retry asks again, `4` → `5`. Only `POST /rounds`, `GET /stats` and `POST /rounds/:id/decision` were requested |
+| All | backend 163 tests, frontend 42; typecheck, lint and build green in both packages; no bare `$` with a digit and no voseo in `frontend/src` |
+
+## RDD
+
+Each commit was assessed against `a09aa59`: `medium` (`executable_change`) and `under_budget` (98, 167 and 280 lines), so no review was due. The assessment needs `--untracked-scope=exclude` because `frontend/AGENTS.md` is untracked.
+
+## What the AI got wrong / what was fixed by hand
+
+- **The first test could not import its subject.** The AI wrote it next to `RevealCard.tsx`; Vitest has no `@/` alias, so the import failed. `callLine` and `direction` moved to `lib/reveal.ts`, where the other tested pure functions live.
+- **03 §11 still said "`format.ts` only"** although unit 6 had added `verdict.test.ts`: a silent deviation from unit 6, corrected in fix 1's commit.
+- **Choices the AI made that the brief did not fix,** for the author to review: `percentile` keeps its name, with a new definition, and `beatenBy` is added, so the response only gains a field; the 99% cap is applied where the sentence is built, not in the API, so the hit rate can still be 100%; a decision counts as "since the answer was asked" when it is sent, not when it is answered.
+- **The probe left `.playwright-mcp/` in the repository root** (the browser console log). The AI deleted it before the last assessment; nothing was committed.
+- **`pkill -f` matched its own command** while stopping the dev server and ended that shell; the server stopped too.
+- **Nothing was fixed by hand by the author.**
+
+## Resulting commits
+
+On `main`, not pushed (the author pushes):
+
+- `72fdd33` fix(frontend): say "Compraste. No cambió." for a buy at exactly zero
+- `a347aa9` fix(stats): count coin ties on neither side and cap the shown share at 99%
+- `d95de64` fix(frontend): never show a blank or stale chart number
+
+This log is one more commit, made afterwards.
