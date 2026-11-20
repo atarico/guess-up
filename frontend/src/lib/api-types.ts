@@ -56,7 +56,7 @@ export type StatsResponse = {
   avgAll: number | null;
   avgPassed: number | null;
   edge: number | null;
-  coin: { p5: number; p95: number; percentile: number; trials: number } | null;
+  coin: { p5: number; p95: number; percentile: number; beatenBy: number; trials: number } | null;
   verdict: 'insufficient' | 'bought_none' | 'bought_all' | 'worse' | 'better' | 'coin';
   roundsUntilVerdict: number;
   hitRate: number | null;

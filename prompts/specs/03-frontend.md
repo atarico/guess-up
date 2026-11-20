@@ -219,7 +219,7 @@ The figures in these sentences (approved by the author in work unit 6): each per
 | `better` | Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al 96% de los lanzamientos. |
 | `worse` | Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el 97% de las veces. |
 
-Always include the counts ("19 de estas 42 gráficas"). In `better`, the percentage is the share of coin trials the user beat; in `worse`, it is the share that beat the user.
+Always include the counts ("19 de estas 42 gráficas"). In `better`, the percentage is the share of coin trials the user beat (`percentile`); in `worse`, it is the share that beat the user (`beatenBy`). A tie counts on neither side. The percentage shown never goes above 99%: with 2,000 simulated trials, 100% would claim more than the simulation can prove.
 
 ## 6. The chart
 
@@ -274,7 +274,7 @@ All in `format.ts`, all via `Intl` with the locale `es-MX`. This is formatting o
 | Percent | One decimal, sign shown on every value except zero (`signDisplay: "exceptZero"`), real minus sign `−` | `+2.1%`, `−12.4%`, `0.0%` |
 | Points | Absolute value, one decimal; the verb (costó / sumó) carries the direction | `1.3 puntos porcentuales`, `1.3 puntos` |
 | Range bounds | Signed, one decimal | `−2.1`, `+2.0` |
-| Share | A whole percent, rounded down so a claim is never overstated; the coin's "superas al" and "te gana el", and the hit rate | `96%` |
+| Share | A whole percent, rounded down so a claim is never overstated; the coin's "superas al" and "te gana el" (at most `99%`), and the hit rate | `96%` |
 | Money | Number with two decimals and `es-MX` grouping, prefixed with `USD` and a non-breaking space. Never a bare `$`. | `USD 184.20`, `USD 1,234.56` |
 | Date, full | Day, short month, year | `12 mar 2019` |
 | (P1) Date, list | Short month, year; used only by the last-20 list | `mar 2019` |

@@ -71,7 +71,7 @@ describe('GET /stats', () => {
     expect(Object.keys(body).sort()).toEqual(
       ['avgAll', 'avgPassed', 'avgPicks', 'buys', 'coin', 'edge', 'hitRate', 'passes', 'rounds', 'roundsUntilVerdict', 'streak', 'verdict'].sort(),
     );
-    expect(Object.keys(body.coin).sort()).toEqual(['p5', 'p95', 'percentile', 'trials']);
+    expect(Object.keys(body.coin).sort()).toEqual(['beatenBy', 'p5', 'p95', 'percentile', 'trials']);
     expect(body).toMatchObject({ rounds: 12, buys: 6, passes: 6, roundsUntilVerdict: 0 });
     expect(body.coin.trials).toBe(2000);
     expect(['coin', 'better', 'worse']).toContain(body.verdict);

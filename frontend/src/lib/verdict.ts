@@ -37,6 +37,12 @@ export function verdictParts(stats: StatsResponse): Part[] {
   }
 }
 
+/**
+ * A coin share as shown (03 §5.4): never above 99%. With 2,000 simulated trials, "100%" would claim
+ * more than the simulation can prove. The backend counts ties on neither side (02 §6).
+ */
+const coinShare = (p: number) => share(Math.min(p, 0.99));
+
 /** The coin sentence (03 §5.4), or null when the verdict is not measured against the coin. */
 export function coinParts(stats: StatsResponse): Part[] | null {
   if (!stats.coin) return null;
@@ -44,10 +50,9 @@ export function coinParts(stats: StatsResponse): Part[] | null {
   const opening = coin.opening(String(stats.buys), String(stats.rounds), signedPoints(stats.coin.p5), signedPoints(stats.coin.p95));
   const continuation =
     stats.verdict === 'better'
-      ? coin.above(share(stats.coin.percentile))
+      ? coin.above(coinShare(stats.coin.percentile))
       : stats.verdict === 'worse'
-        ? // The share of coin trials that beat the user: those strictly above their edge.
-          coin.below(share(1 - stats.coin.percentile))
+        ? coin.below(coinShare(stats.coin.beatenBy))
         : coin.within;
   return [...opening, { text: ' ', figure: false }, ...continuation];
 }

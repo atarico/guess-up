@@ -108,10 +108,19 @@ describe('computeStats (01 §8, 02 §6)', () => {
     expect(computeStats(rounds, { p5: edge - 0.1, p95: edge, edges: [edge] }).verdict).toBe('coin');
   });
 
-  it('reports the coin range, the trials and the share of coin edges at or below the user', () => {
-    const coin = { p5: -0.02, p95: 0.02, edges: [-0.05, -0.01, 0, 0.01, 0.05] };
-    const stats = computeStats(tenRounds(0.02, 0), coin); // edge +0.01
-    expect(stats.coin).toEqual({ p5: -0.02, p95: 0.02, percentile: 0.8, trials: 5 });
+  it('reports the coin range, the trials, and the shares of coin edges strictly below and strictly above the user', () => {
+    const rounds = tenRounds(0.02, 0);
+    const edge = computeStats(rounds, wideCoin).edge as number;
+    const coin = { p5: -0.02, p95: 0.02, edges: [edge - 0.03, edge - 0.01, edge, edge + 0.01, edge + 0.03] };
+    expect(computeStats(rounds, coin).coin).toEqual({ p5: -0.02, p95: 0.02, percentile: 0.4, beatenBy: 0.4, trials: 5 });
+  });
+
+  it('counts a tie with a coin trial on neither side', () => {
+    const rounds = tenRounds(0.02, 0);
+    const edge = computeStats(rounds, wideCoin).edge as number;
+    // The best possible picks tie every coin trial that picked the same charts.
+    const coin = { p5: -0.02, p95: 0.02, edges: [edge - 0.01, edge, edge, edge] };
+    expect(computeStats(rounds, coin).coin).toMatchObject({ percentile: 0.25, beatenBy: 0 });
   });
 
   it('counts a pass at zero as right in the hit rate, and keeps the streak', () => {

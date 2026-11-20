@@ -233,7 +233,7 @@ coinBenchmark(returns: number[], buys: number, seed: number, trials = 2000):
 
 - `rng` is injected everywhere; production uses `Math.random` for picking rounds and a small seeded generator (mulberry32) for the coin.
 - Coin seed: a hash of `userId` and the number of decided rounds, so the range is stable across reloads and changes only when a new round is decided.
-- `percentile` = share of coin edges that are less than or equal to the user's edge.
+- `percentile` = share of coin edges strictly less than the user's edge; `beatenBy` = share strictly greater. A tie counts on neither side, so the two can add up to less than 1.
 - Verdict: `insufficient` (fewer than 10 rounds) → `bought_none` / `bought_all` → `worse` (edge < p5) / `better` (edge > p95) / `coin`.
 
 ## 7. HTTP API
@@ -300,7 +300,7 @@ Decided rounds, newest first: `[{ id, symbol, name, cutoffDate, decision, forwar
   "rounds": 42, "buys": 19, "passes": 23,
   "avgPicks": 0.021, "avgAll": 0.034, "avgPassed": 0.045,
   "edge": -0.013,
-  "coin": { "p5": -0.021, "p95": 0.020, "percentile": 0.17, "trials": 2000 },
+  "coin": { "p5": -0.021, "p95": 0.020, "percentile": 0.17, "beatenBy": 0.81, "trials": 2000 },
   "verdict": "coin",
   "roundsUntilVerdict": 0,
   "hitRate": 0.52,

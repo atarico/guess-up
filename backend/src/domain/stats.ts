@@ -38,7 +38,7 @@ export type Stats = {
   avgAll: number | null;
   avgPassed: number | null;
   edge: number | null;
-  coin: { p5: number; p95: number; percentile: number; trials: number } | null;
+  coin: { p5: number; p95: number; percentile: number; beatenBy: number; trials: number } | null;
   verdict: Verdict;
   roundsUntilVerdict: number;
   hitRate: number | null;
@@ -87,8 +87,10 @@ export function computeStats(rounds: DecidedRound[], coin: { p5: number; p95: nu
   if (passed.length === 0) return { ...figures, coin: null, verdict: 'bought_all' };
   if (!coin || edge === null) throw new Error('computeStats needs the coin range when there is a verdict to make');
 
-  // Share of coin trials the user's edge is at or above (02 §6).
-  const percentile = coin.edges.filter((e) => e <= edge).length / coin.edges.length;
+  // Shares of coin trials strictly below and strictly above the user's edge (02 §6). A tie counts on
+  // neither side: picking the same charts as a coin trial does not beat it, and it does not lose to it.
+  const percentile = coin.edges.filter((e) => e < edge).length / coin.edges.length;
+  const beatenBy = coin.edges.filter((e) => e > edge).length / coin.edges.length;
   const verdict: Verdict = edge < coin.p5 ? 'worse' : edge > coin.p95 ? 'better' : 'coin';
-  return { ...figures, coin: { p5: coin.p5, p95: coin.p95, percentile, trials: coin.edges.length }, verdict };
+  return { ...figures, coin: { p5: coin.p5, p95: coin.p95, percentile, beatenBy, trials: coin.edges.length }, verdict };
 }
