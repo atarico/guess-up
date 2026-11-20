@@ -127,6 +127,32 @@ Listo. Log this session en prompts/sessions/00-spec-review.md. Acordate que mis 
 
 **Outcome:** this file.
 
+### Prompt 5 — session 2
+
+````text
+Podes hacer los commits y el push solo cuando yo lo indique.
+````
+
+**Outcome:** recorded as a standing rule in the project memory. No commit was made.
+
+### Prompt 6 — session 2
+
+````text
+Segui ODD como siempre. Al terminar no commitees: proponeme los commits, con el mensaje y los archivos de cada uno, y los hago yo.
+````
+
+**Outcome:** rule updated. The AI proposed four commits, each with its message and files.
+
+### Prompt 7 — session 2
+
+````text
+hacelos
+````
+
+**Outcome:** the AI made the four commits listed under "Resulting commits", on `main`, without pushing.
+
+The next prompt asks to push these commits and update this log, then starts work unit 1. It is logged in full in `01-setup.md`. The push could not run: the repository had no remote and `atarico/guess-up` did not exist on GitHub yet.
+
 ## What the AI got wrong / what was fixed by hand
 
 ### Done by hand by the author
@@ -164,4 +190,11 @@ Listo. Log this session en prompts/sessions/00-spec-review.md. Acordate que mis 
 
 ## Resulting commits
 
-None at the time of writing. The author reviews the changes and commits by hand.
+Made by the AI on the author's instruction (prompt 7), on `main`:
+
+- `64e56b6` chore: ignore local env files and add env examples
+- `37eaf44` docs: add project instructions for the coding agent
+- `7243174` docs(specs): add product, backend and frontend specs
+- `bb07698` docs(prompts): log session 00, spec review and provider checks
+
+This update of the log is a separate commit made afterwards.
