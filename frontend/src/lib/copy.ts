@@ -11,6 +11,7 @@ export const copy = {
   titles: {
     login: 'Guess-Up · Iniciar sesión',
     play: 'Guess-Up · Jugar',
+    stats: 'Guess-Up · Estadísticas',
   },
   // 03 §5.1
   welcome: {
@@ -49,6 +50,8 @@ export const copy = {
   // 03 §5.3, §8, §10
   play: {
     streak: (n: number) => `Racha: ${n}`,
+    roundCount: (n: number) => `Gráfica ${n}`,
+    statsLink: 'Estadísticas',
     question: '¿Comprarías esta acción?',
     pass: 'Pasar',
     buy: 'Comprar',
@@ -130,6 +133,27 @@ export const copy = {
         text(' de las veces.'),
       ],
     },
+  },
+  // 03 §5.4 and §10: the stats screen around the sentences.
+  statsScreen: {
+    picks: 'Tus selecciones',
+    all: 'Comprar todo',
+    passed: 'Lo que dejaste pasar',
+    coinHeading: 'Contra una moneda',
+    hitRate: 'Aciertos',
+    currentStreak: 'Racha actual',
+    bestStreak: 'Mejor racha',
+    played: 'Gráficas jugadas',
+    playedSplit: (buys: number, passes: number) =>
+      `${buys} ${buys === 1 ? 'compra' : 'compras'} · ${passes} ${passes === 1 ? 'pase' : 'pases'}`,
+    smallPrint:
+      'Rendimientos por precio a 63 jornadas bursátiles (unos 3 meses). No incluyen dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todo".',
+    logOut: 'Cerrar sesión',
+    // The author's text for the way back to the game (work unit 6).
+    keepPlaying: 'Seguir jugando',
+    // A figure that is undefined, such as the picks with no buys.
+    missing: '—',
+    coinBandLabel: (low: string, high: string, you: string) => `Rango de la moneda: de ${low} a ${high} puntos. Tu resultado: ${you} puntos.`,
   },
   // 03 §6, §10
   chart: {

@@ -190,6 +190,7 @@ Top to bottom:
 | (P1) List, the call | `Compraste` / `Pasaste` |
 | Small print | `Rendimientos por precio a 63 jornadas bursátiles (unos 3 meses). No incluyen dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todo".` |
 | Log out | `Cerrar sesión` |
+| Back to the game (work unit 6, author's text) | `Seguir jugando` |
 
 **Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures set in the monospace face.
 

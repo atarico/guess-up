@@ -1,12 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Chart } from '@/components/Chart';
 import { DecisionButtons } from '@/components/DecisionButtons';
 import { callLine, direction, RevealCard } from '@/components/RevealCard';
 import { api, ApiError } from '@/lib/api';
-import type { DecisionResponse, RoundResponse, Reveal } from '@/lib/api-types';
+import type { DecisionResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
 import { percent } from '@/lib/format';
@@ -20,15 +21,20 @@ type Screen =
 
 /**
  * The game (03 §5.3): one chart, one question, then the truth. Before the decision this screen asks
- * for the round and nothing else, keeps nothing in storage and writes nothing to the console.
+ * for the round and for GET /stats, which covers decided rounds only, keeps nothing in storage and
+ * writes nothing to the console.
  */
 export function PlayScreen() {
   const auth = useAuth();
   const router = useRouter();
   const token = auth.status === 'signedIn' ? auth.token : null;
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' });
-  // The streak comes only from decision responses until GET /stats exists (work unit 6).
+  // The top bar: GET /stats gives the first streak and the chart number on load (03 §5.3); after a
+  // decision the streak comes from its response, and the number goes up with the next chart.
   const [streak, setStreak] = useState<number | null>(null);
+  const [chartNumber, setChartNumber] = useState<number | null>(null);
+  // Once a decision has happened here, a late /stats answer must not overwrite its streak.
+  const decidedHere = useRef(false);
   // State reaches the buttons on the next render; the ref stops a second decision in between.
   const deciding = useRef(false);
   const nextButton = useRef<HTMLButtonElement>(null);
@@ -52,6 +58,15 @@ export function PlayScreen() {
     if (!token) return;
     let current = true;
     fetchRound(token).then((next) => current && setScreen(next));
+    // The top bar is optional: if /stats fails, it stays empty and the game goes on.
+    api<StatsResponse>('/stats', { token }).then(
+      (stats) => {
+        if (!current || decidedHere.current) return;
+        setStreak(stats.streak.current);
+        setChartNumber(stats.rounds + 1);
+      },
+      () => {},
+    );
     return () => {
       current = false;
     };
@@ -63,6 +78,12 @@ export function PlayScreen() {
     void fetchRound(token).then(setScreen);
   }, [token, fetchRound]);
 
+  /** The next chart: one more in the count. A retry after an error is `reload` alone. */
+  const next = useCallback(() => {
+    setChartNumber((n) => (n === null ? null : n + 1));
+    reload();
+  }, [reload]);
+
   const decide = useCallback(
     async (decision: 'buy' | 'pass') => {
       if (screen.kind !== 'sealed' || !token || deciding.current) return;
@@ -70,6 +91,7 @@ export function PlayScreen() {
       setScreen({ ...screen, pending: true, failed: false });
       try {
         const result = await api<DecisionResponse>(`/rounds/${screen.id}/decision`, { method: 'POST', body: { decision }, token });
+        decidedHere.current = true;
         setStreak(result.streak.current);
         setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal });
       } catch {
@@ -100,12 +122,12 @@ export function PlayScreen() {
       } else if (screen.kind === 'revealed' && (event.key === 'Enter' || event.key === ' ')) {
         if ((event.target as HTMLElement).closest('button, a')) return;
         event.preventDefault();
-        reload();
+        next();
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [screen, decide, reload]);
+  }, [screen, decide, next]);
 
   const reveal = screen.kind === 'revealed' ? screen.reveal : null;
   const dir = reveal ? direction(reveal.forwardReturn) : null;
@@ -116,7 +138,13 @@ export function PlayScreen() {
 
   return (
     <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4">
-      <header className="flex h-12 shrink-0 items-center font-mono text-sm">{streak !== null && copy.play.streak(streak)}</header>
+      <header className="grid h-12 shrink-0 grid-cols-3 items-center text-sm">
+        <span className="font-mono">{streak !== null && copy.play.streak(streak)}</span>
+        <span className="text-center font-mono">{chartNumber !== null && copy.play.roundCount(chartNumber)}</span>
+        <Link href="/stats" className="flex min-h-12 items-center justify-self-end underline underline-offset-4">
+          {copy.play.statsLink}
+        </Link>
+      </header>
 
       <div className="min-h-0 flex-1 py-2" aria-busy={screen.kind === 'loading'}>
         <Chart points={screen.kind === 'sealed' || screen.kind === 'revealed' ? screen.points : []} reveal={reveal} />
@@ -137,7 +165,7 @@ export function PlayScreen() {
           </>
         )}
 
-        {screen.kind === 'revealed' && <RevealCard reveal={screen.reveal} onNext={reload} nextRef={nextButton} />}
+        {screen.kind === 'revealed' && <RevealCard reveal={screen.reveal} onNext={next} nextRef={nextButton} />}
 
         {(screen.kind === 'noData' || screen.kind === 'error') && (
           <>
