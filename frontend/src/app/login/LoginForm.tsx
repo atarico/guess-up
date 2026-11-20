@@ -8,6 +8,7 @@ import type { AuthResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
 import { DEMO, demoArrival } from '@/lib/demo';
+import { Logo } from '@/components/Logo';
 
 type Mode = 'signup' | 'login';
 
@@ -88,16 +89,16 @@ export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-14 pb-8">
-      {/* min-h-12: a touch target of at least 48 px (03 §10). */}
-      <Link href="/" translate="no" className="-mt-5 inline-flex min-h-12 items-end self-start border-b border-rule pb-3 font-mono text-xs tracking-[0.2em] text-muted uppercase">
-        {copy.appTitle}
+    <main className="mx-auto flex min-h-svh w-full max-w-[480px] flex-col px-4 pt-5 pb-6">
+      {/* The logo goes back to the welcome screen; 44 px tall, a touch target (03 §10). */}
+      <Link href="/" className="flex min-h-11 items-center self-start">
+        <Logo />
       </Link>
 
-      <h1 className="mt-10 text-3xl font-semibold tracking-tight">{text.title}</h1>
+      <h1 className="font-display mt-8 text-[2rem] leading-9 font-bold tracking-[-0.02em]">{text.title}</h1>
 
       {sessionExpired && (
-        <p role="status" className="mt-4 border-l-2 border-ink pl-3 text-sm">
+        <p role="status" className="mt-4 rounded-xl border border-accent/50 bg-surface px-3.5 py-2.5 text-sm">
           {copy.login.sessionExpired}
         </p>
       )}
@@ -107,7 +108,7 @@ export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
           named fields, password included, in the URL. */}
       <form method="post" onSubmit={submit} noValidate className="mt-8 flex flex-col gap-5">
         <div className="flex flex-col gap-2">
-          <label htmlFor="email" className="text-sm font-medium">
+          <label htmlFor="email" className="text-sm font-medium text-muted">
             {copy.login.emailLabel}
           </label>
           <input
@@ -120,12 +121,12 @@ export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
             spellCheck={false}
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="min-h-12 rounded-[2px] border border-muted bg-transparent px-3 text-base"
+            className="min-h-12 rounded-xl border border-line-strong bg-surface px-3.5 text-base text-fg focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="password" className="text-sm font-medium">
+          <label htmlFor="password" className="text-sm font-medium text-muted">
             {copy.login.passwordLabel}
           </label>
           <input
@@ -136,7 +137,7 @@ export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
             aria-describedby={mode === 'signup' ? 'password-hint' : undefined}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="min-h-12 rounded-[2px] border border-muted bg-transparent px-3 text-base"
+            className="min-h-12 rounded-xl border border-line-strong bg-surface px-3.5 text-base text-fg focus:border-accent"
           />
           {mode === 'signup' && (
             <p id="password-hint" className="text-sm text-muted">
@@ -145,7 +146,7 @@ export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
           )}
         </div>
 
-        <p role="alert" className="min-h-6 text-sm">
+        <p role="alert" className="min-h-6 text-sm text-fg">
           {error}
         </p>
 
@@ -154,12 +155,12 @@ export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
         </button>
       </form>
 
-      <button type="button" onClick={switchMode} disabled={pending} className="mt-6 min-h-12 touch-manipulation self-center text-sm underline underline-offset-4 hover:decoration-2">
+      <button type="button" onClick={switchMode} disabled={pending} className="mt-6 min-h-11 touch-manipulation self-center text-sm text-accent underline underline-offset-4">
         {text.switchMode}
       </button>
 
       {demo && (
-        <button type="button" onClick={() => logInAsDemo(demo)} disabled={pending} className="mt-2 min-h-12 touch-manipulation self-center text-sm underline underline-offset-4 hover:decoration-2">
+        <button type="button" onClick={() => logInAsDemo(demo)} disabled={pending} className="mt-1 min-h-11 touch-manipulation self-center text-[0.9375rem] font-medium text-accent underline underline-offset-4">
           {copy.demoLink}
         </button>
       )}

@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { Logo } from '@/components/Logo';
+import { WelcomeChart } from '@/components/WelcomeChart';
 import { copy } from '@/lib/copy';
 import { DEMO } from '@/lib/demo';
 import { RedirectIfSignedIn } from './RedirectIfSignedIn';
@@ -7,14 +9,22 @@ import { RedirectIfSignedIn } from './RedirectIfSignedIn';
 // may see it for an instant before the redirect.
 export default function Welcome() {
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-14 pb-8">
+    <main className="mx-auto flex min-h-svh w-full max-w-[480px] flex-col px-4 pt-5 pb-6">
       <RedirectIfSignedIn />
-      <p translate="no" className="border-b border-rule pb-3 font-mono text-xs tracking-[0.2em] text-muted uppercase">{copy.appTitle}</p>
+      <div className="flex h-11 shrink-0 items-center">
+        <Logo />
+      </div>
 
-      <h1 className="mt-10 text-4xl leading-[1.1] font-semibold tracking-tight text-balance">{copy.welcome.headline}</h1>
-      <p className="mt-5 text-lg leading-relaxed text-pretty">{copy.tagline}</p>
+      <div className="mt-4 shrink-0">
+        <WelcomeChart />
+      </div>
 
-      <div className="mt-10 flex flex-col gap-3">
+      <h1 className="font-display mt-7 text-[2.125rem] leading-[2.375rem] font-bold tracking-[-0.02em] text-balance">{copy.welcome.headline}</h1>
+      <p className="mt-3 text-base leading-6 text-pretty text-muted">{copy.tagline}</p>
+
+      <div className="min-h-6 grow" />
+
+      <div className="flex shrink-0 flex-col gap-3">
         <Link href="/login?mode=signup" className="button button-primary">
           {copy.welcome.start}
         </Link>
@@ -23,13 +33,13 @@ export default function Welcome() {
         </Link>
         {/* The log-in form fills the demo credentials and submits them (03 §5.1, §5.2). */}
         {DEMO && (
-          <Link href="/login?demo=1" className="mt-3 inline-flex min-h-12 items-center self-center text-sm underline underline-offset-4">
+          <Link href="/login?demo=1" className="flex min-h-11 items-center justify-center text-[0.9375rem] font-medium text-accent underline underline-offset-4">
             {copy.demoLink}
           </Link>
         )}
       </div>
 
-      <footer className="mt-auto border-t border-rule pt-4 text-xs leading-relaxed text-muted">{copy.welcome.footer}</footer>
+      <footer className="mt-5 shrink-0 text-center text-xs leading-relaxed text-faint">{copy.welcome.footer}</footer>
     </main>
   );
 }

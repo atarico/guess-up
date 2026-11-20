@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { api, ApiError, isWaking, subscribeWaking } from './api';
+import { api, ApiError, isWaking, subscribeWaking, wakingSince } from './api';
 
 type Call = { url: string; init: RequestInit; resolve: (res: Response) => void; reject: (err: unknown) => void };
 
@@ -72,6 +72,24 @@ describe('api: the sleeping server (03 §8)', () => {
     await advance(100_000);
     expect(delivered).toHaveBeenCalledOnce();
     expect(net.original()).toHaveLength(1);
+  });
+
+  it('wakingSince is when the screen appeared, kept while calls wait, and null once none does', async () => {
+    const started = Date.now();
+    expect(wakingSince()).toBeNull();
+    const first = api('/stats', { token: 't' });
+    await advance(3_000);
+    expect(wakingSince()).toBe(started + 3_000);
+    // A second call that starts waiting later does not move the start of the screen.
+    const second = api('/rounds', { method: 'POST', token: 't' });
+    await advance(3_000);
+    expect(wakingSince()).toBe(started + 3_000);
+    net.original()[0].resolve(json(200, { rounds: 1 }));
+    await first;
+    expect(wakingSince()).toBe(started + 3_000);
+    net.original()[1].resolve(json(200, { resumed: false }));
+    await second;
+    expect(wakingSince()).toBeNull();
   });
 
   it('a network error, then /status answers: the request is sent again and succeeds', async () => {

@@ -83,9 +83,11 @@ A dark phone app, quiet until the reveal (the author's design canvas "Guess-Up �
 
 | Element | Text |
 | --- | --- |
+| Picture | A year of an invented line, the hidden three months with a gold `?` and two dotted possible futures (`components/WelcomeChart.tsx`); `aria-label` `Gráfica anónima de un año de precios; los tres meses siguientes están ocultos` |
+| Under the picture | `Un año, sin nombre ni fechas` · `3 meses después` |
 | Headline | `¿De verdad sabes leer una gráfica?` |
-| One line | `Una gráfica real de una acción, sin nombre ni fechas. Comprar o pasar. Después, la verdad.` |
-| Primary action (to sign up) | `Empezar` |
+| One line | `Una gráfica real y anónima, cortada en una fecha pasada al azar. Compras o pasas. Después, la verdad.` |
+| Primary action (to sign up) | `Crear cuenta` |
 | Secondary action | `Iniciar sesión` |
 | Text link | `Probar la cuenta demo` |
 | Footer, small | `Precios históricos reales de Twelve Data. Esto no es asesoría de inversión.` |
@@ -264,7 +266,7 @@ Keep 4% padding top and bottom so the line never touches the edge. The chart mus
 
 | Situation | Behaviour | Text |
 | --- | --- | --- |
-| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/status` (the health check, `02-backend.md` §7) every 3 s, then continue automatically. If it answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). The rules of the wait are below the table. | `Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.` |
+| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/status` (the health check, `02-backend.md` §7) every 3 s, then continue automatically. If it answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). The rules of the wait are below the table. | Full screen: the logo, a line that keeps drawing itself, the title `Despertando el servidor`, `El servidor se duerme tras 15 minutos sin uso. La primera carga puede tardar cerca de un minuto. Entrarás en cuanto responda.`, a sliding bar (`Esperando al servidor`) and `Reintentando · N s`, the seconds since the screen appeared. |
 | Loading a round | Chart-shaped skeleton; buttons visible and disabled. | — |
 | Submitting a decision | Both buttons disabled at once; no double submit. On failure, re-enable. The round is still open server-side, so retrying is safe. | `No se pudo guardar tu respuesta. Intenta de nuevo.` |
 | Open round resumed | Nothing special. The same chart appears. | — |
@@ -279,7 +281,7 @@ The wait for a sleeping server lives in `api.ts` alone, so it covers every call 
 - **Not only `/status`.** The original request stays in flight while `/status` is asked; when it answers, the wait ends, even if `/status` never did. The result is delivered once.
 - **A retry only when the server never got the request:** a network error, or a `502`, `503` or `504` whose body is not one of our API's errors. Any other answer is delivered as it is, `401`, `409`, `400` and our own `503 NO_DATA` included. The request is sent again once `/status` answers `db: true`. `/status` is asked one request at a time: Render holds a request while it wakes, so it answers late rather than never.
 - **At most 90 s.** Then the call fails, and each screen shows its failure state: the generic error with `Reintentar` on `/play` and `/stats`, the generic error under the form on `/login`, and the decision's own message after a decision. The waiting screen never stays up without an end.
-- **`ServerWaking`** is a full-screen notice over the page, in the root layout, with a live region that is on the page from the start, so screen readers announce the text when it appears.
+- **`ServerWaking`** is a full-screen screen over the page, in the root layout. A live region on the page from the start is filled with the title and the text when the wait begins, so screen readers announce them once; the visible copy and the counter are outside it, so the counter is not read every second. The counter counts from `wakingSince()` in `api.ts`, the moment the screen appeared.
 
 ## 9. Formatting
 
