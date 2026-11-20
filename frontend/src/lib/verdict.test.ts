@@ -130,4 +130,22 @@ describe('coinParts (03 §5.4)', () => {
     expect(coinParts(stats({ verdict: 'insufficient', coin: null }))).toBeNull();
     expect(coinParts(stats({ verdict: 'bought_all', coin: null }))).toBeNull();
   });
+
+  // What a response that breaks the contract would carry, such as an older backend without beatenBy.
+  const coinWith = (fields: Record<string, unknown>) => ({ p5: -0.021, p95: 0.02, percentile: 0.02, beatenBy: 0.97, trials: 2000, ...fields }) as StatsResponse['coin'];
+
+  it('is null, never NaN, when /stats lacks a field the coin section uses', () => {
+    expect(coinParts(stats({ verdict: 'worse', coin: coinWith({ beatenBy: undefined }) }))).toBeNull();
+    expect(coinParts(stats({ verdict: 'better', coin: coinWith({ percentile: undefined }) }))).toBeNull();
+    expect(coinParts(stats({ verdict: 'coin', coin: coinWith({ p5: undefined }) }))).toBeNull();
+    expect(coinParts(stats({ verdict: 'coin', buys: undefined as unknown as number }))).toBeNull();
+    expect(coinParts(stats({ verdict: 'coin', edge: undefined as unknown as number }))).toBeNull();
+  });
+
+  it('is null, never NaN, when a field the coin section uses is not a number', () => {
+    expect(coinParts(stats({ verdict: 'better', coin: coinWith({ percentile: '0.96' }) }))).toBeNull();
+    expect(coinParts(stats({ verdict: 'worse', coin: coinWith({ beatenBy: Number.NaN }) }))).toBeNull();
+    expect(coinParts(stats({ verdict: 'coin', coin: coinWith({ p95: null }) }))).toBeNull();
+    expect(coinParts(stats({ verdict: 'coin', rounds: '42' as unknown as number }))).toBeNull();
+  });
 });

@@ -43,9 +43,17 @@ export function verdictParts(stats: StatsResponse): Part[] {
  */
 const coinShare = (p: number) => share(Math.min(p, 0.99));
 
-/** The coin sentence (03 §5.4), or null when the verdict is not measured against the coin. */
+const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
+
+/**
+ * The coin sentence (03 §5.4), or null when the verdict is not measured against the coin. Also null
+ * when a number the coin section shows (the sentence, or the band's edge marker) is missing or not a
+ * number, as from a backend older than the frontend: no coin section, never `NaN` on screen.
+ */
 export function coinParts(stats: StatsResponse): Part[] | null {
   if (!stats.coin) return null;
+  const shownShare = stats.verdict === 'better' ? stats.coin.percentile : stats.verdict === 'worse' ? stats.coin.beatenBy : 0;
+  if (![stats.buys, stats.rounds, stats.edge, stats.coin.p5, stats.coin.p95, shownShare].every(isNumber)) return null;
   const { coin } = copy.stats;
   const opening = coin.opening(String(stats.buys), String(stats.rounds), signedPoints(stats.coin.p5), signedPoints(stats.coin.p95));
   const continuation =

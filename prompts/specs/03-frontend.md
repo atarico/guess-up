@@ -220,7 +220,7 @@ The figures in these sentences (approved by the author in work unit 6): each per
 | `better` | Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al 96% de los lanzamientos. |
 | `worse` | Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el 97% de las veces. |
 
-Always include the counts ("19 de estas 42 gráficas"). In `better`, the percentage is the share of coin trials the user beat (`percentile`); in `worse`, it is the share that beat the user (`beatenBy`). A tie counts on neither side. The percentage shown never goes above 99%: with 2,000 simulated trials, 100% would claim more than the simulation can prove.
+Always include the counts ("19 de estas 42 gráficas"). In `better`, the percentage is the share of coin trials the user beat (`percentile`); in `worse`, it is the share that beat the user (`beatenBy`). A tie counts on neither side. The percentage shown never goes above 99%: with 2,000 simulated trials, 100% would claim more than the simulation can prove. If a number the coin section shows is missing from `/stats` or is not a number (for example, from a backend older than the frontend during a deploy), the section is left out: `NaN` never reaches the screen.
 
 ## 6. The chart
 
