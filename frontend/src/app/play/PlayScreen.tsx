@@ -11,8 +11,7 @@ import type { DecisionResponse, RoundResponse, Reveal, StatsResponse } from '@/l
 import { useAuth } from '@/lib/auth';
 import { chartNumberAfter } from '@/lib/chartNumber';
 import { copy } from '@/lib/copy';
-import { percent } from '@/lib/format';
-import { callLine, direction } from '@/lib/reveal';
+import { callLine, headline } from '@/lib/reveal';
 
 type Screen =
   | { kind: 'loading' }
@@ -143,11 +142,10 @@ export function PlayScreen() {
   }, [screen, decide, next]);
 
   const reveal = screen.kind === 'revealed' ? screen.reveal : null;
-  const dir = reveal ? direction(reveal.forwardReturn) : null;
+  const head = reveal ? headline(reveal.forwardReturn) : null;
   // The headline and the call, read out once when the reveal arrives (03 §5.3).
-  const announcement = reveal
-    ? `${dir ? `${dir.label} ` : ''}${percent(reveal.forwardReturn)}. ${callLine(reveal.decision, reveal.forwardReturn)}`
-    : '';
+  const announcement =
+    reveal && head ? `${head.label ? `${head.label} ` : ''}${head.value}. ${callLine(reveal.decision, reveal.forwardReturn)}` : '';
 
   return (
     <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4">

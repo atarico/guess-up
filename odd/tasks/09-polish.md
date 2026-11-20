@@ -22,7 +22,7 @@ Quoted from the author's request (L1), verbatim.
 | --- | --- | --- | --- | --- | --- |
 | T0 | P1 advice in the reply, nothing built | S2 | inline | done | L2 |
 | T1 | `/login?demo=1` only without a session; the parameter removed after use; test | S3 | inline | done | `fix(frontend): use ?demo=1 only without a session, then drop it`; RED 3 of 8 against a stub / GREEN: `demoArrival` waits while the session is unread, logs in only without one, ignores it with one or without credentials. Browser, API mocked: no session, one `POST /auth/login` and `/play`; a session open, no log in, the URL back to `/login`, the token unchanged; a failed demo log in, then a reload: no second log in |
-| T2 | One function decides the headline's direction from the rounded number; test | S4 | inline | pending | |
+| T2 | One function decides the headline's direction from the rounded number; test | S4 | inline | done | `fix(frontend): decide the headline's arrow from the number as shown`; RED 1 of 3 against a raw-value stub (±0.0004 got an arrow) / GREEN: `headline` for +12.0%, −8.0%, 0, ±0.0004 (`0.0%`, no arrow, ink) and ±0.0006 (±0.1%). Browser: a +0.04% reveal shows `0.0%` in `text-ink` with no arrow and is announced `0.0%. Compraste. Buena decisión.` 63 frontend tests, typecheck, lint green |
 | T3 | `README.md`; local steps followed in a clean clone | S5 | inline | pending | |
 | T4 | `prompts/README.md`; the global instruction files, names and paths only, in the reply | S6 | inline | pending | |
 | T5 | Closing checks: 03 §11, manual pass list, 01 §13 table, a log per session, `prompts/system/CLAUDE.md`, secrets and user paths in the tree and the history | S7 | inline | pending | |

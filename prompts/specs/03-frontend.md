@@ -166,7 +166,7 @@ Call lines:
 | Pass | down or flat | `Pasaste. Buena decisión.` |
 | Pass | up | `Pasaste. Subió sin ti.` |
 
-The outcome comes from the raw return, with the boundary of `isCorrect` (02): flat is a return of exactly zero. A rise too small to show, printed as `0.0%`, is still up: `Compraste. Buena decisión.` When the return is exactly zero, the headline number has no arrow and is in `ink`, neither `up` nor `down`.
+The outcome comes from the raw return, with the boundary of `isCorrect` (02): flat is a return of exactly zero. A rise too small to show, printed as `0.0%`, is still up: `Compraste. Buena decisión.` The headline's number, arrow, colour and accessible label come from one function, `headline` in `lib/reveal.ts`, which reads the sign of the number as shown: a return shown as `0.0%` has no arrow and is in `ink`, neither `up` nor `down`. The call line keeps the raw return.
 
 Announce the headline and the call through an `aria-live="polite"` region.
 

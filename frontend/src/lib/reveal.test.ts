@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { callLine, direction } from './reveal';
+import { callLine, headline } from './reveal';
 
 describe('callLine (03 §5.3)', () => {
   it('a buy that went up is a good call', () => {
@@ -28,13 +28,21 @@ describe('callLine (03 §5.3)', () => {
   });
 });
 
-describe('direction (03 §4, §10)', () => {
-  it('a return of exactly zero has no arrow and no up or down colour', () => {
-    expect(direction(0)).toBeNull();
+describe('headline (03 §5.3, §4, §10): the number, its arrow, colour and label, decided once', () => {
+  it('a gain is up and a loss is down', () => {
+    expect(headline(0.12)).toEqual({ value: '+12.0%', arrow: '▲', label: 'Subió', colour: 'text-up' });
+    expect(headline(-0.08)).toEqual({ value: '−8.0%', arrow: '▼', label: 'Bajó', colour: 'text-down' });
   });
 
-  it('a gain is up and a loss is down', () => {
-    expect(direction(0.12)).toEqual({ arrow: '▲', label: 'Subió', colour: 'text-up' });
-    expect(direction(-0.08)).toEqual({ arrow: '▼', label: 'Bajó', colour: 'text-down' });
+  it('a number shown as 0.0% has no arrow and is in ink, whatever its sign before rounding', () => {
+    const flat = { value: '0.0%', arrow: null, label: null, colour: 'text-ink' };
+    expect(headline(0)).toEqual(flat);
+    expect(headline(0.0004)).toEqual(flat);
+    expect(headline(-0.0004)).toEqual(flat);
+  });
+
+  it('the smallest change that shows is up or down', () => {
+    expect(headline(0.0006)).toMatchObject({ value: '+0.1%', arrow: '▲' });
+    expect(headline(-0.0006)).toMatchObject({ value: '−0.1%', arrow: '▼' });
   });
 });

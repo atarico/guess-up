@@ -1,8 +1,8 @@
 import type { Ref } from 'react';
 import type { Reveal } from '@/lib/api-types';
 import { copy } from '@/lib/copy';
-import { dateFull, money, percent } from '@/lib/format';
-import { callLine, direction } from '@/lib/reveal';
+import { dateFull, money } from '@/lib/format';
+import { callLine, headline } from '@/lib/reveal';
 
 type Props = {
   reveal: Reveal;
@@ -13,7 +13,7 @@ type Props = {
 /** The reveal card, in the order of 03 §5.3. */
 export function RevealCard({ reveal, onNext, nextRef }: Props) {
   const r = reveal.forwardReturn;
-  const dir = direction(r);
+  const head = headline(r);
   const cutoffClose = reveal.history[reveal.history.length - 1].c;
   const endClose = reveal.future[reveal.future.length - 1].c;
   const sector = reveal.sector ? (copy.sectors[reveal.sector] ?? reveal.sector) : null;
@@ -25,15 +25,15 @@ export function RevealCard({ reveal, onNext, nextRef }: Props) {
       {place && <p className="truncate text-sm text-muted">{place}</p>}
       <p className="text-sm">{copy.play.window(dateFull(reveal.startDate), dateFull(reveal.cutoffDate))}</p>
       <p className="text-sm">{copy.play.horizon(dateFull(reveal.endDate))}</p>
-      {/* Exactly zero has no direction: no arrow, and the number in ink (03 §5.3). */}
-      <p className={`mt-1 font-mono text-3xl ${dir?.colour ?? 'text-ink'}`}>
-        {dir && (
-          <span role="img" aria-label={dir.label}>
-            {dir.arrow}
+      {/* Number, arrow, colour and label all come from headline(): shown as 0.0%, no arrow and ink (03 §5.3). */}
+      <p className={`mt-1 font-mono text-3xl ${head.colour}`}>
+        {head.arrow && (
+          <span role="img" aria-label={head.label ?? undefined}>
+            {head.arrow}
           </span>
         )}
-        {dir && ' '}
-        {percent(r)}
+        {head.arrow && ' '}
+        {head.value}
       </p>
       <p>{callLine(reveal.decision, r)}</p>
       <p className="font-mono text-sm">{copy.play.prices(money(cutoffClose), money(endClose))}</p>
