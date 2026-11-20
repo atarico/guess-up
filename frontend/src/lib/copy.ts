@@ -97,6 +97,8 @@ export const copy = {
     prices: (from: string, to: string) => `${from} → ${to}`,
     priceNote: 'Precios ajustados por splits.',
     next: 'Siguiente gráfica',
+    // On the reveal of the tenth chart, the whole sentence is the link to Stats (lib/progress.ts).
+    verdictReady: 'Tu primer veredicto está listo en Estadísticas.',
     // (P1) The live line (03 §5.3). `sinceThen` follows the headline's arrow and percent.
     live: {
       today: (price: string) => `Hoy: ${price} ·`,

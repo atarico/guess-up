@@ -13,12 +13,13 @@ import type { DecisionResponse, LiveResponse, RoundResponse, Reveal, StatsRespon
 import { useAuth } from '@/lib/auth';
 import { chartNumberAfter } from '@/lib/chartNumber';
 import { copy } from '@/lib/copy';
+import { progressParts, remainingAfter, verdictReady } from '@/lib/progress';
 import { callLine, headline } from '@/lib/reveal';
 
 type Screen =
   | { kind: 'loading' }
   | { kind: 'sealed'; id: string; points: number[]; pending: boolean; failed: boolean }
-  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal; live: LiveState; streak: DecisionResponse['streak'] }
+  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal; live: LiveState; streak: DecisionResponse['streak']; verdictReady: boolean }
   | { kind: 'noData' }
   | { kind: 'error' };
 
@@ -36,6 +37,8 @@ export function PlayScreen() {
   // streak comes from its response, and the number goes up with the next chart (lib/chartNumber.ts).
   const [streak, setStreak] = useState<number | null>(null);
   const [chartNumber, setChartNumber] = useState<number | null>(null);
+  // Charts left before the first verdict, the same way: from /stats, then down with each decision (lib/progress.ts).
+  const [remaining, setRemaining] = useState<number | null>(null);
   // Decisions sent from this page, so a /stats answer can tell whether one was sent after it was asked.
   const decisionsSent = useRef(0);
   // State reaches the buttons on the next render; the ref stops a second decision in between.
@@ -63,8 +66,12 @@ export function PlayScreen() {
         const decidedSinceAsked = decisionsSent.current !== asked;
         if (!decidedSinceAsked) setStreak(stats.streak.current);
         setChartNumber((n) => chartNumberAfter(n, { kind: 'stats', rounds: stats.rounds, decidedSinceAsked }));
+        setRemaining((n) => remainingAfter(n, { kind: 'stats', roundsUntilVerdict: stats.roundsUntilVerdict, decidedSinceAsked }));
       },
-      () => setChartNumber((n) => chartNumberAfter(n, { kind: 'statsFailed' })),
+      () => {
+        setChartNumber((n) => chartNumberAfter(n, { kind: 'statsFailed' }));
+        setRemaining((n) => remainingAfter(n, { kind: 'statsFailed' }));
+      },
     );
   }, []);
 
@@ -83,13 +90,13 @@ export function PlayScreen() {
     };
   }, [token, fetchRound, askStats]);
 
-  /** Loads the chart again; without a chart number yet, asks /stats again too (03 §5.3). */
+  /** Loads the chart again; without a chart number or a count of charts left yet, asks /stats again too (03 §5.3). */
   const reload = useCallback(() => {
     if (!token) return;
     setScreen({ kind: 'loading' });
     void fetchRound(token).then(setScreen);
-    if (chartNumber === null) askStats(token);
-  }, [token, fetchRound, chartNumber, askStats]);
+    if (chartNumber === null || remaining === null) askStats(token);
+  }, [token, fetchRound, chartNumber, remaining, askStats]);
 
   /** The next chart: one more in the count. A retry after an error is `reload` alone. */
   const next = useCallback(() => {
@@ -107,7 +114,20 @@ export function PlayScreen() {
       try {
         const result = await api<DecisionResponse>(`/rounds/${screen.id}/decision`, { method: 'POST', body: { decision }, token });
         setStreak(result.streak.current);
-        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' }, streak: result.streak });
+        setRemaining(remainingAfter(remaining, { kind: 'decided' }));
+        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' }, streak: result.streak, verdictReady: false });
+        // The decision that leaves no chart to go: ask /stats, now counting it, whether there is a verdict
+        // against the coin. It is optional: without an answer there is no notice.
+        if (remaining === 1) {
+          const id = screen.id;
+          api<StatsResponse>('/stats', { token }).then(
+            (stats) => {
+              if (!verdictReady(remaining, stats.verdict)) return;
+              setScreen((now) => (now.kind === 'revealed' && now.id === id ? { ...now, verdictReady: true } : now));
+            },
+            () => {},
+          );
+        }
       } catch {
         // The round is still open on the server, so trying again is safe (03 §8).
         setScreen({ ...screen, pending: false, failed: true });
@@ -115,7 +135,7 @@ export function PlayScreen() {
         deciding.current = false;
       }
     },
-    [screen, token],
+    [screen, token, remaining],
   );
 
   // After the decision, focus moves to the next-chart button (03 §5.3).
@@ -160,6 +180,7 @@ export function PlayScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [screen, decide, next]);
 
+  const progress = progressParts(remaining);
   const reveal = screen.kind === 'revealed' ? screen.reveal : null;
   const head = reveal ? headline(reveal.forwardReturn) : null;
   // The headline and the call, read out once when the reveal arrives (03 §5.3).
@@ -206,6 +227,11 @@ export function PlayScreen() {
             </ul>
             <h1 className="mt-[22px] font-display text-[34px] leading-[38px] font-bold tracking-[-0.02em] short:mt-4 short:text-[30px] short:leading-[34px]">{copy.play.question}</h1>
             <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted">{copy.play.questionHint}</p>
+            {progress && (
+              <p className="mt-3 text-[13px] leading-5 text-pretty text-muted">
+                <Sentence parts={progress} figureClassName="tabular font-semibold text-fg" />
+              </p>
+            )}
             <div className="mt-auto">
               {screen.kind === 'sealed' && screen.failed && (
                 <p role="alert" className="mb-3 text-sm">
@@ -220,7 +246,14 @@ export function PlayScreen() {
         )}
 
         {screen.kind === 'revealed' && (
-          <RevealCard reveal={screen.reveal} live={screen.live} streak={screen.streak} onNext={next} nextRef={nextButton} />
+          <RevealCard
+            reveal={screen.reveal}
+            live={screen.live}
+            streak={screen.streak}
+            verdictReady={screen.verdictReady}
+            onNext={next}
+            nextRef={nextButton}
+          />
         )}
 
         {(screen.kind === 'noData' || screen.kind === 'error') && (
