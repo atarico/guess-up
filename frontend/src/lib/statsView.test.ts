@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CoinHistogram } from './api-types';
-import { averageBars, directionOf, edgeView, histogramView, ringOffset, stripBars } from './statsView';
+import { arrowLabel, averageBars, directionOf, edgeView, histogramView, ringOffset, stripBars } from './statsView';
 
 const MINUS = '−';
 
@@ -9,6 +9,16 @@ describe('directionOf: one rule for arrow and colour, from the number as shown',
     expect(directionOf('+2.1%')).toBe('up');
     expect(directionOf(`${MINUS}12.4%`)).toBe('down');
     expect(directionOf('0.0%')).toBe('flat');
+  });
+});
+
+describe('arrowLabel: what a screen reader says for an arrow on Stats (03 §10)', () => {
+  it('names the up and down arrows', () => {
+    expect(arrowLabel('up')).toBe('Subió');
+    expect(arrowLabel('down')).toBe('Bajó');
+  });
+  it('has nothing to say where there is no arrow', () => {
+    expect(arrowLabel('flat')).toBeNull();
   });
 });
 

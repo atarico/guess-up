@@ -340,7 +340,7 @@ Accessibility labels and titles, also from `copy.ts`:
 | (P1) Right / wrong mark in the list | `Acierto` / `Fallo` |
 | (P1) Today's price while it loads | `Cargando el precio de hoy` |
 | (P1) Strip of the last charts | `Rendimiento a tres meses de tus últimas gráficas` |
-| Up / down arrow | `Subió` / `Bajó` |
+| Up / down arrow, on the reveal and on Stats (the edge and the last charts) | `Subió` / `Bajó` |
 | Page titles | `Guess-Up` · `Guess-Up · Iniciar sesión` · `Guess-Up · Jugar` · `Guess-Up · Estadísticas` |
 
 ## 11. Checks

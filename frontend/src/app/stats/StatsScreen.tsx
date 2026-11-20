@@ -13,7 +13,7 @@ import type { MeResponse, RecentRound, RecentRoundsResponse, StatsResponse } fro
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
 import { count, percent, share } from '@/lib/format';
-import { averageBars, edgeView, ringOffset, type Direction } from '@/lib/statsView';
+import { arrowLabel, averageBars, edgeView, ringOffset, type Direction } from '@/lib/statsView';
 import { coinCardParts, verdictParts } from '@/lib/verdict';
 import './stats.css';
 
@@ -191,7 +191,11 @@ function AveragesCard({ stats }: { stats: StatsResponse }) {
           <span className="text-xs leading-4 text-muted">{text.edgeHint}</span>
         </div>
         <span className={`ml-auto font-display text-xl leading-7 font-bold whitespace-nowrap tabular ${TEXT[edge.direction]}`}>
-          {edge.arrow && <span aria-hidden="true">{edge.arrow} </span>}
+          {edge.arrow && (
+            <span role="img" aria-label={arrowLabel(edge.direction) ?? undefined}>
+              {edge.arrow}{' '}
+            </span>
+          )}
           {edge.text}
         </span>
       </div>
