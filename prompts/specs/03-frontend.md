@@ -156,6 +156,8 @@ Button rules: identical size, weight, border and fill (`raised`, `edge`), 64 px 
 
 Short phones (`max-height: 760px`, the `short` variant in `globals.css`): both blocks tighten to 360 px, the headline number is smaller and the reveal leaves out its streak card, since the `Racha` pill already shows the current streak. At 390 × 664 the chart keeps about 190 px. When the tenth chart's notice shows on a short phone, today's price row (P1) gives way to it: with both, the next-chart button was 24 px out of the block.
 
+Very short phones (`max-height: 600px`, the `tiny` variant; 375 × 548 is an iPhone SE with Safari's bars): both blocks are 310 px, and the top padding, the chips, the card, the headline number, the call row and the next-chart button are tighter. Two things give way there: the hint, which the card repeats and `¿Cómo funciona?` brings back, and today's price row (P1). Measured: the chart is 140 px at 375 × 548 (it was 78) and 160 px at 320 × 568 (it was 98), every state of the block fits, and nothing scrolls. `¿Cómo funciona?` has a 44 px tap area that reaches 12 px below its text, so the decision buttons keep 12 px more space under it: a tap meant for it must never buy or pass.
+
 Desktop: the same column, centred, maximum width 480 px. Keyboard: `←` buy and `→` pass (they follow the buttons), `Enter` or `Space` for next chart. Show the key hints only on devices with a fine pointer.
 
 **After the decision** the same screen changes in place: the chart reveals (§6), the question block is replaced by the reveal block of the same height, and focus moves to the next-chart button. The reveal block's parts rise in one after another once the chart has drawn.

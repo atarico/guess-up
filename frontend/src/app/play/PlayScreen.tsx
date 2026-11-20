@@ -207,7 +207,7 @@ export function PlayScreen() {
       : '';
 
   return (
-    <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+    <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] tiny:pt-2">
       <header className="flex h-11 shrink-0 items-center justify-between gap-2">
         <Logo nameWhenWide />
         <div className="flex items-center gap-2">
@@ -226,17 +226,17 @@ export function PlayScreen() {
       </header>
 
       {/* The chart takes what the block below leaves; at 390 x 844 that is 270 px (the design). */}
-      <div className="mt-2 min-h-24 flex-1" aria-busy={screen.kind === 'loading'}>
+      <div className="mt-2 min-h-24 flex-1 tiny:mt-1" aria-busy={screen.kind === 'loading'}>
         <Chart points={screen.kind === 'sealed' || screen.kind === 'revealed' ? screen.points : []} reveal={reveal} />
       </div>
 
       {/* One fixed height for the question, the reveal, the loading and the error states, so the chart keeps its size at the reveal (03 §10). The reveal's content needs about 445 px; 464 px is the design's. On a short phone both blocks tighten to 360 px (RevealCard drops its streak card) and the chart keeps about 190 px. */}
-      <section className="h-[clamp(448px,55svh,464px)] shrink-0 short:h-[360px]">
+      <section className="h-[clamp(448px,55svh,464px)] shrink-0 short:h-[360px] tiny:h-[310px]">
         {(screen.kind === 'loading' || screen.kind === 'sealed') && (
           <div className="flex h-full flex-col pt-3.5">
             {/* The card takes the place of the chips and the hint, which it repeats, so the chart keeps its size (03 §5.3). */}
             {card ? (
-              <div className="card flex flex-col gap-1 px-3.5 py-2.5 text-[13px] leading-[18px] text-pretty text-muted">
+              <div className="card flex flex-col gap-1 px-3.5 py-2.5 text-[13px] leading-[18px] text-pretty text-muted tiny:gap-0.5 tiny:py-2 tiny:text-xs tiny:leading-4">
                 {copy.play.howItWorks.lines.map((line, i) => (
                   <p key={line} className={i === 0 ? 'font-medium text-fg' : undefined}>
                     {line}
@@ -244,20 +244,21 @@ export function PlayScreen() {
                 ))}
               </div>
             ) : (
-              <ul className="flex flex-wrap gap-2">
+              <ul className="flex flex-wrap gap-2 tiny:gap-1.5">
                 {/* The chart number leads the chips: the top bar of the design has no room for a second pill. Hidden while unknown (lib/chartNumber.ts). */}
                 {chartNumber !== null && (
-                  <li className="tabular flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg">{copy.play.roundCount(chartNumber)}</li>
+                  <li className="tabular flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg tiny:px-2 tiny:text-[11px]">{copy.play.roundCount(chartNumber)}</li>
                 )}
                 {copy.play.chips.map((chip) => (
-                  <li key={chip} className="flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs text-muted">
+                  <li key={chip} className="flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs text-muted tiny:px-2 tiny:text-[11px]">
                     {chip}
                   </li>
                 ))}
               </ul>
             )}
             <h1 className="mt-[22px] font-display text-[34px] leading-[38px] font-bold tracking-[-0.02em] short:mt-4 short:text-[30px] short:leading-[34px]">{copy.play.question}</h1>
-            {!card && <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted">{copy.play.questionHint}</p>}
+            {/* Left out on a very short phone, where it does not fit; the card says the same and "¿Cómo funciona?" brings it. */}
+            {!card && <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted tiny:hidden">{copy.play.questionHint}</p>}
             {progress && (
               <p className="mt-3 text-[13px] leading-5 text-pretty text-muted">
                 <Sentence parts={progress} figureClassName="tabular font-semibold text-fg" />
@@ -272,7 +273,8 @@ export function PlayScreen() {
                 {copy.play.howItWorks.open}
               </button>
             )}
-            <div className="mt-auto">
+            {/* pt-3: "¿Cómo funciona?" extends its tap area 12 px down (-mb-3), and must never reach the decision buttons. */}
+            <div className={card ? 'mt-auto' : 'mt-auto pt-3'}>
               {screen.kind === 'sealed' && screen.failed && (
                 <p role="alert" className="mb-3 text-sm">
                   {copy.play.decisionFailed}
