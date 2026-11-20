@@ -1,6 +1,7 @@
 import {
   type DailySeries,
   type MarketDataProvider,
+  type Quote,
   UpstreamAuthError,
   UpstreamLimitError,
   UpstreamNotFoundError,
@@ -32,8 +33,8 @@ function errorCode(httpStatus: number, body: unknown): number | null {
   return httpStatus >= 400 ? httpStatus : null;
 }
 
-function errorFor(code: number, symbol: string): Error {
-  const what = `Twelve Data time_series for ${symbol} failed with ${code}`;
+function errorFor(code: number, symbol: string, endpoint: string): Error {
+  const what = `Twelve Data ${endpoint} for ${symbol} failed with ${code}`;
   if (code === 429) return new UpstreamLimitError(what);
   if (code === 401 || code === 403) {
     // Logged loudly (02 §5.4): every later call will fail the same way. Never the key itself.
@@ -56,43 +57,70 @@ function parseSeries(body: unknown, symbol: string): DailySeries {
   return { exchange, bars };
 }
 
+type QuoteBody = { datetime?: unknown; close?: unknown };
+
+function parseQuote(body: unknown, symbol: string): Quote {
+  const parsed = body as QuoteBody | undefined;
+  // `close` is a string and `datetime` a date, possibly with a time after it (02 §5.1). Keep the day only.
+  const price = Number(parsed?.close);
+  const asOf = typeof parsed?.datetime === 'string' ? parsed.datetime.slice(0, 10) : '';
+  if (!Number.isFinite(price) || !/^\d{4}-\d{2}-\d{2}$/.test(asOf)) {
+    throw new UpstreamUnavailableError(`Twelve Data quote for ${symbol}: unexpected response shape`);
+  }
+  return { price, asOf };
+}
+
 export function createTwelveDataProvider(deps: TwelveDataDeps): MarketDataProvider {
   const doFetch = deps.fetch ?? fetch;
-  const timeoutMs = deps.timeoutMs ?? TIMEOUT_MS;
+  const defaultTimeoutMs = deps.timeoutMs ?? TIMEOUT_MS;
+
+  /** The one place a request leaves the process: URL, key header, timeout, and the mapping of failures to typed errors. */
+  async function get(endpoint: string, symbol: string, params: Record<string, string>, timeoutMs: number): Promise<unknown> {
+    const url = new URL(`/${endpoint}`, BASE_URL);
+    url.search = new URLSearchParams({ symbol, ...params }).toString();
+
+    let response: Response;
+    try {
+      // The key goes in a header, never in the URL, so it cannot end up in a log line or an error.
+      response = await doFetch(url, {
+        headers: { Authorization: `apikey ${deps.apiKey}` },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (err) {
+      const reason = (err as Error).name === 'TimeoutError' ? `no answer within ${timeoutMs} ms` : 'network error';
+      throw new UpstreamUnavailableError(`Twelve Data ${endpoint} for ${symbol}: ${reason}`);
+    }
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      body = undefined;
+    }
+
+    const code = errorCode(response.status, body);
+    if (code !== null) throw errorFor(code, symbol, endpoint);
+    return body;
+  }
 
   return {
     async fetchDailyCloses(symbol) {
-      const url = new URL('/time_series', BASE_URL);
-      url.search = new URLSearchParams({
+      const body = await get(
+        'time_series',
         symbol,
-        interval: '1day',
-        outputsize: '5000', // the maximum; with order=asc these are the most recent 5,000 bars (02 §5.1)
-        order: 'asc',
-        adjust: 'splits',
-      }).toString();
-
-      let response: Response;
-      try {
-        // The key goes in a header, never in the URL, so it cannot end up in a log line or an error.
-        response = await doFetch(url, {
-          headers: { Authorization: `apikey ${deps.apiKey}` },
-          signal: AbortSignal.timeout(timeoutMs),
-        });
-      } catch (err) {
-        const reason = (err as Error).name === 'TimeoutError' ? `no answer within ${timeoutMs} ms` : 'network error';
-        throw new UpstreamUnavailableError(`Twelve Data time_series for ${symbol}: ${reason}`);
-      }
-
-      let body: unknown;
-      try {
-        body = await response.json();
-      } catch {
-        body = undefined;
-      }
-
-      const code = errorCode(response.status, body);
-      if (code !== null) throw errorFor(code, symbol);
+        {
+          interval: '1day',
+          outputsize: '5000', // the maximum; with order=asc these are the most recent 5,000 bars (02 §5.1)
+          order: 'asc',
+          adjust: 'splits',
+        },
+        defaultTimeoutMs,
+      );
       return parseSeries(body, symbol);
+    },
+
+    async fetchQuote(symbol, timeoutMs = defaultTimeoutMs) {
+      return parseQuote(await get('quote', symbol, {}, timeoutMs), symbol);
     },
   };
 }

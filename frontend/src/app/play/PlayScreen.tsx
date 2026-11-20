@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Chart } from '@/components/Chart';
 import { DecisionButtons } from '@/components/DecisionButtons';
-import { RevealCard } from '@/components/RevealCard';
+import { type LiveState, RevealCard } from '@/components/RevealCard';
 import { api, ApiError } from '@/lib/api';
-import type { DecisionResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
+import type { DecisionResponse, LiveResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { chartNumberAfter } from '@/lib/chartNumber';
 import { copy } from '@/lib/copy';
@@ -16,7 +16,7 @@ import { callLine, headline } from '@/lib/reveal';
 type Screen =
   | { kind: 'loading' }
   | { kind: 'sealed'; id: string; points: number[]; pending: boolean; failed: boolean }
-  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal }
+  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal; live: LiveState }
   | { kind: 'noData' }
   | { kind: 'error' };
 
@@ -105,7 +105,7 @@ export function PlayScreen() {
       try {
         const result = await api<DecisionResponse>(`/rounds/${screen.id}/decision`, { method: 'POST', body: { decision }, token });
         setStreak(result.streak.current);
-        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal });
+        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' } });
       } catch {
         // The round is still open on the server, so trying again is safe (03 §8).
         setScreen({ ...screen, pending: false, failed: true });
@@ -120,6 +120,23 @@ export function PlayScreen() {
   useEffect(() => {
     if (screen.kind === 'revealed') nextButton.current?.focus();
   }, [screen.kind]);
+
+  // (P1) Today's price, asked once per reveal. It is optional: the call does not wait for a sleeping
+  // server and never shows the waking screen, and any failure becomes the muted note (03 §8).
+  const revealedId = screen.kind === 'revealed' ? screen.id : null;
+  useEffect(() => {
+    if (!token || !revealedId) return;
+    let current = true;
+    const show = (live: LiveState) =>
+      current && setScreen((now) => (now.kind === 'revealed' && now.id === revealedId ? { ...now, live } : now));
+    api<LiveResponse>(`/rounds/${revealedId}/live`, { token, optional: true }).then(
+      (response) => show({ kind: 'done', live: response.live }),
+      () => show({ kind: 'done', live: { available: false, reason: 'unavailable' } }),
+    );
+    return () => {
+      current = false;
+    };
+  }, [token, revealedId]);
 
   // Desktop keys: ← pass, → buy; Enter or Space for the next chart. A focused button handles its own
   // Enter and Space, so the page does not act twice.
@@ -161,8 +178,8 @@ export function PlayScreen() {
         <Chart points={screen.kind === 'sealed' || screen.kind === 'revealed' ? screen.points : []} reveal={reveal} />
       </div>
 
-      {/* Tall enough for the reveal card, so the chart keeps its size at the reveal (03 §10). */}
-      <section className="flex min-h-80 shrink-0 flex-col justify-end gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {/* Tall enough for the reveal card, with the live line wrapped to two lines (its longest note at 390 px), so the chart keeps its size at the reveal (03 §10). */}
+      <section className="flex min-h-84 shrink-0 flex-col justify-end gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
         {(screen.kind === 'loading' || screen.kind === 'sealed') && (
           <>
             {screen.kind === 'sealed' && screen.failed && (
@@ -176,7 +193,7 @@ export function PlayScreen() {
           </>
         )}
 
-        {screen.kind === 'revealed' && <RevealCard reveal={screen.reveal} onNext={next} nextRef={nextButton} />}
+        {screen.kind === 'revealed' && <RevealCard reveal={screen.reveal} live={screen.live} onNext={next} nextRef={nextButton} />}
 
         {(screen.kind === 'noData' || screen.kind === 'error') && (
           <>

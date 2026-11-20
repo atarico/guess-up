@@ -68,6 +68,14 @@ export const copy = {
     prices: (from: string, to: string) => `${from} → ${to}`,
     priceNote: 'Precios ajustados por splits.',
     next: 'Siguiente gráfica',
+    // (P1) The live line (03 §5.3). `sinceThen` follows the headline's arrow and percent.
+    live: {
+      today: (price: string) => `Hoy: ${price} ·`,
+      sinceThen: 'desde entonces',
+      limit: 'El precio de hoy no está disponible en este momento (límite de la API).',
+      // Not in 03 §5.3: the spec's text blames the API limit, which is untrue for a timeout or an error.
+      unavailable: 'El precio de hoy no está disponible en este momento.',
+    },
     // Accessible labels of the headline's arrow.
     up: 'Subió',
     down: 'Bajó',

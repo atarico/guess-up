@@ -6,11 +6,18 @@ export type DailySeries = { exchange: string | null; bars: DailyClose[] };
 
 /**
  * The only shape the rest of the app knows a market-data source by (02 §2, §5.4).
- * `fetchQuote` belongs here too, but it is (P1) and not built yet.
  */
 export interface MarketDataProvider {
   fetchDailyCloses(symbol: string): Promise<DailySeries>;
+  /**
+   * (P1) The latest price of a symbol (02 §5.1, §5.6). `timeoutMs` lets a user-facing caller
+   * give up sooner than the client's default; the live price must never hold the game back.
+   */
+  fetchQuote(symbol: string, timeoutMs?: number): Promise<Quote>;
 }
+
+/** A live price and the trading day it belongs to, as `YYYY-MM-DD`. */
+export type Quote = { price: number; asOf: string };
 
 // Typed failures (02 §5.4). Messages carry the symbol and the status, never the API key.
 

@@ -11,6 +11,7 @@ import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 import { roundsRouter } from './routes/rounds.js';
 import { statsRouter } from './routes/stats.js';
+import type { LiveQuoteService } from './services/liveQuoteService.js';
 
 /** Everything the app needs from outside. Tests pass fakes; index.ts passes the real ones. */
 export type AppDeps = {
@@ -23,6 +24,8 @@ export type AppDeps = {
   users: UsersRepository;
   closes: ClosesReads;
   rounds: RoundsRepository;
+  /** (P1) Today's price for decided rounds; the only user-facing path to the provider (02 §5.6). */
+  liveQuote: LiveQuoteService;
   /** A number in [0, 1) for picking rounds: Math.random in production (02 §6). */
   random: () => number;
 };

@@ -33,6 +33,13 @@ export type Reveal = {
 
 export type DecisionResponse = { reveal: Reveal; streak: { current: number; best: number } };
 
+/** (P1) `GET /rounds/:id/live` (02 §7): the price is a nice-to-have, so a missing one is a normal answer. */
+export type LiveQuote =
+  | { available: true; price: number; asOf: string; sinceCutoff: number }
+  | { available: false; reason: 'limit' | 'unavailable' };
+
+export type LiveResponse = { live: LiveQuote };
+
 /** Every `error.code` of 02 §7. */
 export type ErrorCode =
   | 'VALIDATION'

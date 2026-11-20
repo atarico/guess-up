@@ -22,3 +22,16 @@ describe('fake provider', () => {
     await expect(provider.fetchDailyCloses('AAPL')).resolves.toEqual(series);
   });
 });
+
+describe('fake provider: quotes', () => {
+  it('returns the configured quote and records the symbol and the timeout it was given', async () => {
+    const { provider, quoteCalls } = createFakeProvider({}, { AAPL: { price: 184.2, asOf: '2026-11-19' } });
+    await expect(provider.fetchQuote('AAPL', 2_500)).resolves.toEqual({ price: 184.2, asOf: '2026-11-19' });
+    expect(quoteCalls).toEqual([{ symbol: 'AAPL', timeoutMs: 2_500 }]);
+  });
+
+  it('throws the configured typed error', async () => {
+    const { provider } = createFakeProvider({}, { AAPL: new UpstreamLimitError('limit') });
+    await expect(provider.fetchQuote('AAPL')).rejects.toBeInstanceOf(UpstreamLimitError);
+  });
+});

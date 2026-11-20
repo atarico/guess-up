@@ -140,7 +140,34 @@ function answerOf(url: string, init: RequestInit): Promise<Response> {
   });
 }
 
-type Options = { method?: 'GET' | 'POST'; body?: unknown; token?: string };
+type Options = {
+  method?: 'GET' | 'POST';
+  body?: unknown;
+  token?: string;
+  /**
+   * For a call the screen can do without, like today's price on the reveal. It sends one plain
+   * request: no waking screen, no /status polling, no resend. A failure rejects with an ApiError and
+   * the caller shows its own fallback. Without this, a slow answer from a sleeping or busy server
+   * would put the full-screen notice over a reveal that is already complete (03 §8).
+   */
+  optional?: boolean;
+};
+
+/** An optional call that has not answered by now is dropped, so its placeholder does not wait forever. */
+const OPTIONAL_GIVE_UP_AFTER_MS = 8_000;
+
+/** One request with a deadline; a network error or the deadline rejects with `NETWORK` at once. */
+async function plainRequest(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), OPTIONAL_GIVE_UP_AFTER_MS);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch {
+    throw new ApiError('NETWORK');
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 /** The `error.code` of an error response; a body without one counts as a server failure. */
 async function errorCodeOf(res: Response): Promise<ErrorCode> {
@@ -156,14 +183,15 @@ async function errorCodeOf(res: Response): Promise<ErrorCode> {
 /**
  * The one way the frontend calls the backend (03 §2): JSON in and out, the bearer token when
  * the caller passes one, the wait for a sleeping server (`answerOf`), and every failure turned
- * into an ApiError with a code to map to copy.
+ * into an ApiError with a code to map to copy. `optional` skips the wait for a sleeping server.
  */
-export async function api<T>(path: string, { method = 'GET', body, token }: Options = {}): Promise<T> {
+export async function api<T>(path: string, { method = 'GET', body, token, optional = false }: Options = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await answerOf(`${API_URL}${path}`, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  const init = { method, headers, body: body === undefined ? undefined : JSON.stringify(body) };
+  const res = optional ? await plainRequest(`${API_URL}${path}`, init) : await answerOf(`${API_URL}${path}`, init);
   if (res.ok) return (await res.json()) as T;
 
   const code = await errorCodeOf(res);

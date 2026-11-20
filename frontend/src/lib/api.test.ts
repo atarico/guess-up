@@ -150,3 +150,55 @@ describe('api: the sleeping server (03 §8)', () => {
     expect(screen).toEqual([]);
   });
 });
+
+describe('api: optional calls (P1 live price)', () => {
+  it('a slow answer never shows the waking screen, and the result still arrives', async () => {
+    const result = api('/rounds/r1/live', { token: 't', optional: true });
+    await advance(7_000); // far past the 3 s that would show the screen
+    expect(isWaking()).toBe(false);
+    net.original()[0].resolve(json(200, { live: { available: false, reason: 'limit' } }));
+
+    await expect(result).resolves.toEqual({ live: { available: false, reason: 'limit' } });
+    expect(screen).toEqual([]);
+    expect(net.status()).toHaveLength(0);
+  });
+
+  it('a network error fails at once with NETWORK: no /status, no second request, no waking screen', async () => {
+    const result = api('/rounds/r1/live', { token: 't', optional: true });
+    const failed = expect(result).rejects.toEqual(new ApiError('NETWORK'));
+    net.original()[0].reject(networkError());
+    await failed;
+
+    await advance(100_000);
+    expect(net.original()).toHaveLength(1);
+    expect(net.status()).toHaveLength(0);
+    expect(screen).toEqual([]);
+  });
+
+  it('a 502 that is not ours is delivered as a failure, not sent again', async () => {
+    const result = api('/rounds/r1/live', { token: 't', optional: true });
+    const failed = expect(result).rejects.toMatchObject({ code: 'INTERNAL' });
+    net.original()[0].resolve(new Response('<html>Bad Gateway</html>', { status: 502 }));
+    await failed;
+
+    await advance(100_000);
+    expect(net.original()).toHaveLength(1);
+    expect(screen).toEqual([]);
+  });
+
+  it('an answer that never comes is dropped after 8 seconds with NETWORK', async () => {
+    const result = api('/rounds/r1/live', { token: 't', optional: true });
+    const failed = expect(result).rejects.toEqual(new ApiError('NETWORK'));
+    await advance(8_000);
+    await failed;
+    expect(net.original()[0].init.signal?.aborted).toBe(true);
+  });
+
+  it('keeps the bearer token and the API error codes', async () => {
+    const result = api('/rounds/r1/live', { token: 'abc', optional: true });
+    const failed = expect(result).rejects.toMatchObject({ code: 'ROUND_OPEN' });
+    net.original()[0].resolve(apiError(409, 'ROUND_OPEN'));
+    await failed;
+    expect((net.original()[0].init.headers as Record<string, string>).Authorization).toBe('Bearer abc');
+  });
+});

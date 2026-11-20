@@ -150,11 +150,12 @@ Reveal card content, in this order:
 | The call | one line from the table below |
 | Prices | `USD 61.20 → USD 53.61` |
 | Price note, below the prices (muted) | `Precios ajustados por splits.` |
-| (P1) Live line, when it arrives | `Hoy: USD 184.20 · ▲ +310% desde entonces` |
+| (P1) Live line, when it arrives | `Hoy: USD 184.20 · ▲ +310.0% desde entonces` |
 | (P1) Live line, unavailable (muted) | `El precio de hoy no está disponible en este momento (límite de la API).` |
+| (P1) Live line, unavailable for another reason (muted) | `El precio de hoy no está disponible en este momento.` |
 | Button | `Siguiente gráfica` |
 
-(P1) While the live line loads, show a one-line placeholder of the same height.
+(P1) While the live line loads, show a one-line placeholder of the same height. The live call is optional: it sends one request with no wait for a sleeping server and no `ServerWaking` (`api.ts`, `optional`), and gives up after 8 s. The limit note is used only when the API answers `reason: "limit"`; a timeout or any other failure gets the shorter note. The arrow and the percent come from `headline(sinceCutoff)`. The limit note takes two lines at 390 px, so the bottom panel reserves that room and the chart keeps its size.
 
 Call lines:
 

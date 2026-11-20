@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { AppDeps } from '../src/app.js';
+import { createFakeProvider } from '../src/marketdata/fakeProvider.js';
+import { createLiveQuoteService } from '../src/services/liveQuoteService.js';
 import type { DailyClose } from '../src/marketdata/provider.js';
 import type { ClosesReads } from '../src/repositories/closes.js';
 import type { NewRound, RoundsRepository, StoredRound } from '../src/repositories/rounds.js';
@@ -153,6 +155,8 @@ export function fakeDeps(overrides: Partial<AppDeps> = {}): AppDeps {
     users: inMemoryUsers(),
     closes: market.closes,
     rounds: inMemoryRounds(),
+    // No quotes configured and no credits: a test that wants a price passes its own service.
+    liveQuote: createLiveQuoteService({ provider: createFakeProvider({}).provider, budget: { tryAcquire: async () => false }, clock: () => 0 }),
     random: () => 0.5,
     ...overrides,
   };

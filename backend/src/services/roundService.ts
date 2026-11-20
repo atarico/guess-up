@@ -5,6 +5,7 @@ import { ApiError } from '../middleware/errors.js';
 import type { ClosesReads } from '../repositories/closes.js';
 import type { OpenRound, RoundsRepository } from '../repositories/rounds.js';
 import type { SymbolReads } from '../repositories/symbols.js';
+import type { LiveQuote, LiveQuoteService } from './liveQuoteService.js';
 
 /** What a round is allowed to say before the decision (01 §6, invariant 1). */
 export type RoundView = { id: string; points: number[]; resumed: boolean };
@@ -121,4 +122,30 @@ export function roundService(deps: Deps) {
       };
     },
   };
+}
+
+/** (P1) What GET /rounds/:id/live answers: the quote, plus the move since the cutoff when there is a price. */
+export type LiveView = LiveQuote | (LiveQuote & { available: true; sinceCutoff: number });
+
+/**
+ * Today's price for a round the user has already decided (02 §7). An unknown id and someone
+ * else's round get the same 404 as the decision route; an own round that is still open gets 409,
+ * with a fixed message and before any quote is asked, so the provider never hears of its stock
+ * (invariant 1).
+ */
+export async function liveForRound(
+  deps: Pick<Deps, 'rounds' | 'closes'> & { liveQuote: LiveQuoteService },
+  userId: string,
+  roundId: string,
+): Promise<LiveView> {
+  const round = await deps.rounds.findOwn(roundId, userId);
+  if (!round) throw new ApiError(404, 'NOT_FOUND', 'Round not found');
+  if (round.decision === null) throw new ApiError(409, 'ROUND_OPEN', 'The round has not been decided yet');
+
+  const quote = await deps.liveQuote.get(round.symbol);
+  if (!quote.available) return quote;
+  // The cutoff close is the last of the closes up to the cutoff date. The stored data, not a re-fetch (invariant 5's spirit).
+  const [cutoffBar] = await deps.closes.upTo(round.symbol, round.cutoffDate, 1);
+  if (!cutoffBar) throw new Error('A decided round could not be rebuilt from the stored data');
+  return { ...quote, sinceCutoff: quote.price / cutoffBar.close - 1 };
 }

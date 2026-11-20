@@ -123,3 +123,45 @@ describe('Twelve Data client: typed errors (02 §5.4)', () => {
     expect((error as Error).message).toContain('no answer within 50 ms');
   });
 });
+
+// Shaped like the real /quote response (02 §5.1): `close` is a string, `datetime` a date only.
+const quoteBody = { symbol: 'AAPL', name: 'Apple Inc', datetime: '2026-11-19', close: '184.20000', currency: 'USD' };
+
+describe('Twelve Data client: fetchQuote (P1)', () => {
+  it('asks /quote for the symbol with the key in a header only, and reads close as a number', async () => {
+    const { doFetch, calls } = fakeFetch(200, quoteBody);
+    const quote = await createTwelveDataProvider({ apiKey: API_KEY, fetch: doFetch }).fetchQuote('AAPL');
+    expect(quote).toEqual({ price: 184.2, asOf: '2026-11-19' });
+    expect(calls[0].url.pathname).toBe('/quote');
+    expect(calls[0].url.searchParams.get('symbol')).toBe('AAPL');
+    expect(calls[0].url.toString()).not.toContain(API_KEY);
+    expect((calls[0].init?.headers as Record<string, string>).Authorization).toBe(`apikey ${API_KEY}`);
+  });
+
+  it('keeps only the date when datetime carries a time', async () => {
+    const { doFetch } = fakeFetch(200, { ...quoteBody, datetime: '2026-11-19 15:59:00' });
+    const quote = await createTwelveDataProvider({ apiKey: API_KEY, fetch: doFetch }).fetchQuote('AAPL');
+    expect(quote.asOf).toBe('2026-11-19');
+  });
+
+  it('maps a 429 to UpstreamLimitError and a 404 to UpstreamNotFoundError', async () => {
+    const limited = fakeFetch(429, { code: 429, message: 'limit', status: 'error' });
+    await expect(createTwelveDataProvider({ apiKey: API_KEY, fetch: limited.doFetch }).fetchQuote('AAPL')).rejects.toBeInstanceOf(UpstreamLimitError);
+    const unknown = fakeFetch(404, { code: 404, message: 'unknown', status: 'error' });
+    await expect(createTwelveDataProvider({ apiKey: API_KEY, fetch: unknown.doFetch }).fetchQuote('AAPL')).rejects.toBeInstanceOf(UpstreamNotFoundError);
+  });
+
+  it('rejects a response that has no usable close', async () => {
+    const { doFetch } = fakeFetch(200, { ...quoteBody, close: 'n/a' });
+    await expect(createTwelveDataProvider({ apiKey: API_KEY, fetch: doFetch }).fetchQuote('AAPL')).rejects.toBeInstanceOf(UpstreamUnavailableError);
+  });
+
+  it('gives up after the timeout it is given, as UpstreamUnavailableError', async () => {
+    const neverAnswers = ((_url: URL, init?: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(init.signal?.reason));
+      })) as unknown as typeof fetch;
+    const provider = createTwelveDataProvider({ apiKey: API_KEY, fetch: neverAnswers });
+    await expect(provider.fetchQuote('AAPL', 20)).rejects.toBeInstanceOf(UpstreamUnavailableError);
+  });
+});

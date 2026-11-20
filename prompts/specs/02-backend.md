@@ -205,7 +205,7 @@ Known limit, documented rather than solved: the minute window is per process. Th
 3. Fetch with a 2.5-second timeout. On any typed error → `{ available: false, reason: "limit" | "unavailable" }`.
 4. On success cache and return `{ available: true, price, asOf }`.
 
-It never throws to the route.
+It never throws to the route. Failures are not cached, and a failure is logged by the error's name only. The route checks that the round is the caller's and decided before asking for a quote, so the provider never hears of an open round's stock; `sinceCutoff` uses the stored close at the cutoff. The logic is `liveForRound` in `services/roundService.ts` and `services/liveQuoteService.ts`.
 
 ## 6. Game logic (domain, test-first)
 

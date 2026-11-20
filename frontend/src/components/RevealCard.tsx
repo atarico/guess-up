@@ -2,16 +2,21 @@ import type { Ref } from 'react';
 import type { Reveal } from '@/lib/api-types';
 import { copy } from '@/lib/copy';
 import { dateFull, money } from '@/lib/format';
-import { callLine, headline } from '@/lib/reveal';
+import { callLine, headline, liveLine } from '@/lib/reveal';
+import type { LiveQuote } from '@/lib/api-types';
+
+/** (P1) Today's price arrives after the reveal and may never arrive; the card is complete without it. */
+export type LiveState = { kind: 'loading' } | { kind: 'done'; live: LiveQuote };
 
 type Props = {
   reveal: Reveal;
+  live: LiveState;
   onNext: () => void;
   nextRef: Ref<HTMLButtonElement>;
 };
 
 /** The reveal card, in the order of 03 §5.3. */
-export function RevealCard({ reveal, onNext, nextRef }: Props) {
+export function RevealCard({ reveal, live, onNext, nextRef }: Props) {
   const r = reveal.forwardReturn;
   const head = headline(r);
   const cutoffClose = reveal.history[reveal.history.length - 1].c;
@@ -38,11 +43,41 @@ export function RevealCard({ reveal, onNext, nextRef }: Props) {
       <p>{callLine(reveal.decision, r)}</p>
       <p className="font-mono text-sm">{copy.play.prices(money(cutoffClose), money(endClose))}</p>
       <p className="text-xs text-muted">{copy.play.priceNote}</p>
-      {/* Reserved for the (P1) line with today's price, so the card does not grow when it arrives. */}
-      <div aria-hidden="true" className="h-5" />
+      <LiveLineView live={live} />
       <button ref={nextRef} type="button" onClick={onNext} className="button button-primary mt-2 min-h-14">
         {copy.play.next}
       </button>
     </div>
+  );
+}
+
+/**
+ * (P1) Today's price (03 §5.3). One line's height is always reserved: a placeholder while it loads,
+ * then the price, or the muted note. The arrow and sign come from `liveLine`, never decided here.
+ */
+function LiveLineView({ live }: { live: LiveState }) {
+  if (live.kind === 'loading') {
+    return (
+      <div aria-hidden="true" className="min-h-5">
+        <div className="mt-1 h-3 w-48 rounded bg-muted/20" />
+      </div>
+    );
+  }
+  const line = liveLine(live.live);
+  if (line.kind === 'note') return <p className="min-h-5 text-xs text-muted">{line.text}</p>;
+  return (
+    <p className="min-h-5 text-sm">
+      {line.today}{' '}
+      <span className={`font-mono ${line.head.colour}`}>
+        {line.head.arrow && (
+          <span role="img" aria-label={line.head.label ?? undefined}>
+            {line.head.arrow}
+          </span>
+        )}
+        {line.head.arrow && ' '}
+        {line.head.value}
+      </span>{' '}
+      {line.since}
+    </p>
   );
 }
