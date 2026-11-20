@@ -54,21 +54,28 @@ frontend/src/
 
 ## 4. Visual direction
 
-Quiet and exact, like a printed exam sheet. Paper background, ink line, generous space. Before the decision the screen is monochrome on purpose.
+A dark phone app, quiet until the reveal (the author's design canvas "Guess-Up · app móvil", work unit 10). The accent marks what is yours: your line, your picks, your edge. Up and down appear only after a decision; gold is the coin and the question.
 
 | Token | Value | Use |
 | --- | --- | --- |
-| `paper` | `#F6F4EF` | page background |
-| `ink` | `#14171A` | text, chart line, buttons |
-| `muted` | `#6B7075` | secondary text, grid, cutoff line |
-| `rule` | `#DAD6CC` | hairlines, card borders |
-| `up` | `#0E7C55` | revealed gain; never before the decision |
-| `down` | `#B93A26` | revealed loss; never before the decision |
+| `page` | `#0B0F17` | page background |
+| `surface` | `#131926` | cards, secondary buttons |
+| `raised` | `#161D2B` | the decision buttons, the logo tile |
+| `well` | `#1C2436` | bar tracks, the ticker box, the progress track |
+| `line` / `line-strong` / `edge` | `#1F2838` / `#2A3550` / `#34415F` | card borders; chips and axes; the decision buttons' border |
+| `grid` | `#151C2A` | the chart's hairlines |
+| `fg` / `muted` / `faint` | `#EEF1F6` / `#A3AEC2` / `#8E9AAF` | text; secondary text; tertiary labels |
+| `past` / `cut` | `#6E7B94` / `#5A6985` | the history line after the reveal; the cutoff line |
+| `off` / `passed` | `#3A465C` / `#66738C` | coin bins outside the 90% range; the "passed" bar |
+| `accent` / `accent-hover` | `#8FA8FF` / `#B4C4FF` | your line before the reveal, your figures, the primary button, focus |
+| `gold` | `#F2C14E` | the coin, the `?`, the demo banner |
+| `up` / `down` | `#3DDC97` / `#FF6B6B` | revealed gain and loss; never before the decision |
 
-- Type: one sans for text and one monospace with tabular figures for every number, both via `next/font`. Numbers must not jitter as they change.
+- Type: Inter for text and figures, Space Grotesk for titles, buttons and the big numbers, both via `next/font`. Every number uses tabular figures, so it does not jitter as it changes.
+- Cards and buttons have 16 px corners; buttons are 56 px tall, the decision buttons 64 px.
 - Gains and losses are never signalled by colour alone: always a sign and an arrow (`▲ +18.4%`, `▼ −12.4%`).
-- One theme. No dark mode in this version.
-- Motion is limited to the reveal. Honour `prefers-reduced-motion` by showing the final state at once.
+- One theme, dark. No light mode in this version.
+- Motion: the chart drawing in, the reveal, the stats' bars and the waking screen. Honour `prefers-reduced-motion` by showing the final state at once.
 
 ## 5. Screens
 
@@ -76,9 +83,11 @@ Quiet and exact, like a printed exam sheet. Paper background, ink line, generous
 
 | Element | Text |
 | --- | --- |
+| Picture | A year of an invented line, the hidden three months with a gold `?` and two dotted possible futures (`components/WelcomeChart.tsx`); `aria-label` `Gráfica anónima de un año de precios; los tres meses siguientes están ocultos` |
+| Under the picture | `Un año, sin nombre ni fechas` · `3 meses después` |
 | Headline | `¿De verdad sabes leer una gráfica?` |
-| One line | `Una gráfica real de una acción, sin nombre ni fechas. Comprar o pasar. Después, la verdad.` |
-| Primary action (to sign up) | `Empezar` |
+| One line | `Una gráfica real y anónima, cortada en una fecha pasada al azar. Compras o pasas. Después, la verdad.` |
+| Primary action (to sign up) | `Crear cuenta` |
 | Secondary action | `Iniciar sesión` |
 | Text link | `Probar la cuenta demo` |
 | Footer, small | `Precios históricos reales de Twelve Data. Esto no es asesoría de inversión.` |
@@ -113,89 +122,94 @@ One form: email, password, submit. A switch toggles between the two modes.
 
 ### 5.3 Play `/play`
 
-Layout at 390 × 844, top to bottom:
+Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "Revelación"):
 
-1. **Top bar** (48 px): streak on the left, round count in the middle, link to stats on the right.
-2. **Chart** (about 55% of the height). Sealed state.
-3. **Question.**
-4. **Two buttons**, side by side, in the bottom thumb zone: pass on the left, buy on the right.
+1. **Top bar** (44 px): the logo on the left; on the right a `Racha N` pill, a `Gráfica N` pill (hidden below 380 px wide, where the row does not fit) and a 44 × 44 icon link to Stats.
+2. **Chart**, flexible, then a reserved 18 px row for the dates of the reveal. Sealed state.
+3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): three chips, the question, a hint, the two buttons, a note.
+4. **Two buttons**, side by side, in the bottom thumb zone: buy on the left, pass on the right.
 
 | Element | Text |
 | --- | --- |
-| Streak | `Racha: 3` |
+| Streak pill | `Racha` and the number |
 | Round count | `Gráfica 17` |
-| Stats link | `Estadísticas` |
-| Question | `¿Comprarías esta acción?` |
-| Left button | `Pasar` |
-| Right button | `Comprar` |
-| Key hints | `← Pasar · → Comprar` |
+| Stats link (icon), `aria-label` | `Ver estadísticas` |
+| Chips | `Acción real` · `Un año` · `Sin nombre ni fechas` |
+| Question | `¿Compras o pasas?` |
+| Hint | `Después verás la empresa, las fechas y lo que pasó en los tres meses siguientes.` |
+| Left button | `Comprar` |
+| Right button | `Pasar` |
+| Note under the buttons | `Tu decisión se registra una sola vez.` |
+| Key hints | `← Comprar · → Pasar` |
 
 The top bar's numbers come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
 
-Button rules: identical size, weight, border and fill. At least 56 px tall with 12 px between them. No "primary" styling on either. Disabled the instant one is pressed.
+Button rules: identical size, weight, border and fill (`raised`, `edge`), 64 px tall with 12 px between them. No "primary" styling on either. Disabled the instant one is pressed.
 
-Desktop: the same column, centred, maximum width 480 px. Keyboard: `←` pass, `→` buy, `Enter` or `Space` for next chart. Show the key hints only on devices with a fine pointer.
+Desktop: the same column, centred, maximum width 480 px. Keyboard: `←` buy and `→` pass (they follow the buttons), `Enter` or `Space` for next chart. Show the key hints only on devices with a fine pointer.
 
-**After the decision** the same screen changes in place: the chart reveals (§6), the question and buttons are replaced by the reveal card, and focus moves to the next-chart button.
+**After the decision** the same screen changes in place: the chart reveals (§6), the question block is replaced by the reveal block of the same height, and focus moves to the next-chart button. The reveal block's parts rise in one after another once the chart has drawn.
 
-Reveal card content, in this order:
+Reveal block, in this order:
 
 | Element | Text (example) |
 | --- | --- |
-| Identity | `NVDA · NVIDIA Corporation` |
-| Sector and exchange, smaller | `Tecnología · NASDAQ` |
-| Window shown | `12 mar 2018 → 12 mar 2019` |
-| Horizon | `los 3 meses siguientes, hasta el 11 jun 2019` |
-| Headline number, large | `▼ −12.4%` |
-| The call | one line from the table below |
-| Prices | `USD 61.20 → USD 53.61` |
-| Price note, below the prices (muted) | `Precios ajustados por splits.` |
-| (P1) Live line, when it arrives | `Hoy: USD 184.20 · ▲ +310.0% desde entonces` |
-| (P1) Live line, unavailable (muted) | `El precio de hoy no está disponible en este momento (límite de la API).` |
-| (P1) Live line, unavailable for another reason (muted) | `El precio de hoy no está disponible en este momento.` |
+| Headline number, large, and its span | `▼ −12.4%` · `en 3 meses` |
+| The call, and whether it was right | one line from the table below · `Acertaste` or `Fallaste`, with a check or a cross |
+| Company card | the ticker in a box, `NVIDIA Corporation`, `Tecnología · NASDAQ` |
+| Prices card, first row | `Corte → 3 meses` · `USD 61.20 → USD 53.61` |
+| Prices card, second row (P1) | `Hoy` · `USD 184.20` and `▲ +310.0% desde entonces` |
+| (P1) Live, unavailable (muted) | `El precio de hoy no está disponible en este momento (límite de la API).` |
+| (P1) Live, unavailable for another reason (muted) | `El precio de hoy no está disponible en este momento.` |
+| Price note, below the card (muted) | `Precios ajustados por splits.` |
+| Streak card | `Racha actual` N · `Mejor racha` N |
 | Button | `Siguiente gráfica` |
 
-(P1) While the live line loads, show a one-line placeholder of the same height. The live call is optional: it sends one request with no wait for a sleeping server and no `ServerWaking` (`api.ts`, `optional`), and gives up after 8 s. The limit note is used only when the API answers `reason: "limit"`; a timeout or any other failure gets the shorter note. The arrow and the percent come from `headline(sinceCutoff)`. The limit note takes two lines at 390 px, so the bottom panel reserves that room and the chart keeps its size.
+The window and the horizon are no longer written out: the dates under the chart (start, cutoff, end) show them.
+
+(P1) While the live row loads, it shows a skeleton of the same height. The live call is optional: it sends one request with no wait for a sleeping server and no `ServerWaking` (`api.ts`, `optional`), and gives up after 8 s. The limit note is used only when the API answers `reason: "limit"`; a timeout or any other failure gets the shorter note. The arrow and the percent come from `headline(sinceCutoff)`.
 
 Call lines:
 
 | Decision | Outcome | Text |
 | --- | --- | --- |
-| Buy | up | `Compraste. Buena decisión.` |
+| Buy | up | `Compraste. Subió.` |
 | Buy | down | `Compraste. Bajó.` |
 | Buy | flat | `Compraste. No cambió.` |
-| Pass | down or flat | `Pasaste. Buena decisión.` |
-| Pass | up | `Pasaste. Subió sin ti.` |
+| Pass | up | `Pasaste. Subió.` |
+| Pass | down | `Pasaste. Bajó.` |
+| Pass | flat | `Pasaste. No cambió.` |
 
-The outcome comes from the raw return, with the boundary of `isCorrect` (02): flat is a return of exactly zero. A rise too small to show, printed as `0.0%`, is still up: `Compraste. Buena decisión.` The headline's number, arrow, colour and accessible label come from one function, `headline` in `lib/reveal.ts`, which reads the sign of the number as shown: a return shown as `0.0%` has no arrow and is in `ink`, neither `up` nor `down`. The call line keeps the raw return.
+The call says what happened; the pill beside it says whether the call was right (`correct`, `isCorrect`). The outcome comes from the raw return, with the boundary of `isCorrect` (02): flat is a return of exactly zero, and a rise too small to show, printed as `0.0%`, is still up. The headline's number, arrow, colour and accessible label come from one function, `headline` in `lib/reveal.ts`, which reads the sign of the number as shown: a return shown as `0.0%` has no arrow and is in `fg`, neither `up` nor `down`.
 
-Announce the headline and the call through an `aria-live="polite"` region.
+Announce the headline, the call and the result through an `aria-live="polite"` region.
 
 ### 5.4 Stats `/stats`
 
-Top to bottom:
+Top to bottom (the design canvas, artboard "Estadísticas"):
 
-1. For the demo account (`user.isDemo`), a one-line banner. The client keeps only the token (§7), so this screen asks `GET /auth/me` together with `GET /stats` and shows the scoreboard when both have answered. If `/auth/me` fails, there is no banner and the scoreboard still shows.
-2. **The verdict** (the `Verdict` component), in the largest type on the screen.
-3. **Three figures** in a row.
-4. **The coin**: a horizontal band from the coin's 5th to 95th percentile, a centre tick at 0, and a marker for the user's edge. Below it, the coin sentence.
-5. **Secondary figures.**
-6. (P1) **Last 20 rounds**: ticker, cutoff month, the call, the return, a right/wrong mark.
-7. Small print, then the log-out link.
+1. The logo and `Estadísticas`.
+2. For the demo account (`user.isDemo`), a gold dashed banner. The client keeps only the token (§7), so this screen asks `GET /auth/me` together with `GET /stats` and shows the scoreboard when both have answered. If `/auth/me` fails, there is no banner and the scoreboard still shows.
+3. **The verdict**: an overline with the number of decided charts, then the verdict sentence, your picks in `accent`, the cost in `down` or the gain in `up`.
+4. **The verdict card**, only when there is a verdict against the coin: a coin icon, the short verdict and the counts.
+5. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`).
+6. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
+7. **Hits card**: a ring with the hit rate, the count, and the current and best streak.
+8. (P1) **Recent card**, from `GET /rounds?limit=20`: a strip of bars (filled when bought, outlined when passed, height by the size of the return, newest on the right) and a row per chart: ticker, cutoff month, the call, the return, a check or a cross. Left out when the call fails or there is no decided chart.
+9. Small print, `Jugar otra gráfica`, `Cerrar sesión`.
 
 | Element | Text |
 | --- | --- |
-| Demo banner | `Cuenta demo. Sus primeras 40 gráficas las jugó una moneda.` |
-| Three figures | `Tus selecciones` · `Comprar todo` · `Lo que dejaste pasar` |
-| Coin heading | `Contra una moneda` |
-| Hit rate | `Aciertos` |
-| Streaks | `Racha actual` · `Mejor racha` |
-| Charts played | `Gráficas jugadas`, with `19 compras · 23 pases` |
-| (P1) List heading | `Últimas 20 rondas` |
-| (P1) List, the call | `Compraste` / `Pasaste` |
-| Small print | `Rendimientos por precio a 63 jornadas bursátiles (unos 3 meses). No incluyen dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todo".` |
+| Demo banner | `Cuenta demo: estas decisiones las tomó una moneda.` |
+| Overline | `Tu resultado · 48 gráficas decididas` (`1 gráfica decidida`) |
+| Verdict card | `Por ahora, tu criterio no se distingue de lanzar una moneda.` / `Por ahora, mejor que una moneda.` / `Por ahora, peor que una moneda.` · `29 compras · 19 pases` |
+| Averages card | `Rendimiento promedio a 3 meses` · `Tus selecciones` · `Comprar todas` · `Las que pasaste` · `Ventaja de tu criterio` · `Tus selecciones menos comprar todas` · `▼ −1.3 pp` |
+| Coin card | `Tú contra la moneda` · `2,000 monedas compraron 29 gráficas al azar de las mismas 48 que tú viste. Esta es la ventaja que obtuvo cada una.` · marker `Tú −1.3` · legend `90% de las monedas`, `Tu ventaja, en puntos porcentuales` |
+| Hits card | `Aciertos y rachas` · `23 de 48 aciertos` · `Comprar y que suba, o pasar y que no suba` · `Racha actual` · `Mejor` |
+| (P1) Recent card | `Últimas 20 gráficas` (`Tu última gráfica` for one) · `Barra llena: compraste. Barra vacía: pasaste. La más reciente, a la derecha.` · `Compraste` / `Pasaste` · marks `Acierto` / `Fallo` |
+| Small print | `Rendimiento de precio a tres meses, sin dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todas". Con pocas gráficas, el rango de la moneda es amplio: todavía no hay forma de saber si es habilidad.` |
+| Back to the game | `Jugar otra gráfica` |
 | Log out | `Cerrar sesión` |
-| Back to the game (work unit 6, author's text) | `Seguir jugando` |
 
 **Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures set in the monospace face.
 
@@ -211,17 +225,17 @@ Top to bottom:
 
 The figures in these sentences (approved by the author in work unit 6): each percentage is rounded once, to one decimal, and the points are the difference of the two rounded percentages shown in the same sentence, so the sum checks on screen. When that difference is 0.0, the "no cambió el resultado" sentence applies. The verdict against the coin (`worse`, `better`, `coin`) uses the raw edge.
 
-**Coin sentences.** Approved wording. All three start with the same sentence, then continue by verdict:
+**Coin sentences**, under the histogram. The band, then where you stand:
 
-> Una moneda que compra al azar 19 de estas 42 gráficas queda entre −2.1 y +2.0 puntos nueve de cada diez veces.
+> El 90% de las monedas terminó entre −2.1 y +2.0 puntos.
 
 | Verdict | Continuation |
 | --- | --- |
-| `coin` | Tu resultado está dentro de ese rango. Por ahora, tu criterio no se distingue de lanzar una moneda. |
-| `better` | Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al 96% de los lanzamientos. |
-| `worse` | Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el 97% de las veces. |
+| `coin` | Tú quedaste dentro de ese rango y le ganaste al 17% de las monedas. |
+| `better` | Tú quedaste por encima de ese rango y le ganaste al 96% de las monedas. |
+| `worse` | Tú quedaste por debajo de ese rango: la moneda te ganó el 97% de las veces. |
 
-Always include the counts ("19 de estas 42 gráficas"). In `better`, the percentage is the share of coin trials the user beat (`percentile`); in `worse`, it is the share that beat the user (`beatenBy`). A tie counts on neither side. The percentage shown never goes above 99%: with 2,000 simulated trials, 100% would claim more than the simulation can prove. If a number the coin section shows is missing from `/stats` or is not a number (for example, from a backend older than the frontend during a deploy), the section is left out: `NaN` never reaches the screen.
+The intro above the histogram carries the counts ("29 gráficas al azar de las mismas 48"). In `coin` and `better`, the percentage is the share of coin trials the user beat (`percentile`); in `worse`, it is the share that beat the user (`beatenBy`). A tie counts on neither side. The percentage shown never goes above 99%: with 2,000 simulated trials, 100% would claim more than the simulation can prove. If a number the coin section shows is missing from `/stats` or is not a number (for example, from a backend older than the frontend during a deploy), the section is left out: `NaN` never reaches the screen.
 
 ## 6. The chart
 
@@ -231,19 +245,18 @@ One component, hand-written SVG. About 315 points do not need a library, and no 
 
 **Sealed state**
 
-- A single `ink` polyline, 2 px, `vector-effect: non-scaling-stroke`, round joins.
-- The line occupies the left 80% of the width. The right 20% is an empty zone with a faint dashed boundary and a `?`. That empty space is the question, and it means nothing moves sideways at the reveal.
-- No axes, no grid values, no dates, no tooltip, no hover or touch read-out. Three faint horizontal hairlines are allowed for shape reference; they carry no labels.
-- `role="img"`, `aria-label="Gráfica de precios anónima, un año de precios diarios"`.
+- The accent line, 2 px, `vector-effect: non-scaling-stroke`, round joins, across the full width, with a gradient area under it and a dot with a halo at its end.
+- No axes, no grid values, no dates, no tooltip, no hover or touch read-out. Four `grid` hairlines are allowed for shape reference; they carry no labels.
+- `role="img"`, `aria-label="Gráfica anónima de un año de precios, sin nombre, fechas ni escala"`.
 
-**Revealed state**, in sequence:
+**Revealed state**, in sequence (all CSS, every element's normal style is its final state):
 
-1. Recompute the vertical scale over history and future together and redraw the history line (a 200 ms cross-fade is enough; do not animate the path data).
-2. Draw the future line into the right 20% over about 900 ms using `stroke-dashoffset`. Colour: `up` when the final close is above the cutoff close, else `down`.
-3. Fade in labels: the three dates along the bottom (start, cutoff, end) and the two prices (at the cutoff, at the end). A dot marks the cutoff and the end point.
-4. The label becomes `aria-label="Gráfica de NVDA, del 12 mar 2018 al 11 jun 2019"`.
+1. The history is drawn once in its final coordinates (the x scale over history and future, the y scale over both). It starts from the sealed placement, given as a CSS `transform` (`--chart-from`, a scale and a translation: both maps are affine), and settles in 450 ms while it turns `past` and its area fades to 35%. Path data is never animated.
+2. The future line draws into the room the history made, over 900 ms with `stroke-dashoffset`, with a gradient area of its colour: `up` when the final close is above the cutoff close, else `down`.
+3. The dashed `cut` line with `Corte`, the end dot, and the three dates under the chart (start left, cutoff right-aligned at the cut, end right) fade in.
+4. The label becomes `aria-label="Gráfica de NVIDIA Corporation: un año hasta el corte y los tres meses siguientes"`.
 
-Keep 4% padding top and bottom so the line never touches the edge. The chart must stay sharp from 320 px to 480 px wide.
+The chart is drawn in the pixels of its own box and stays sharp from 320 px to 480 px wide.
 
 ## 7. Auth on the client
 
@@ -257,7 +270,7 @@ Keep 4% padding top and bottom so the line never touches the edge. The chart mus
 
 | Situation | Behaviour | Text |
 | --- | --- | --- |
-| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/status` (the health check, `02-backend.md` §7) every 3 s, then continue automatically. If it answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). The rules of the wait are below the table. | `Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.` |
+| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/status` (the health check, `02-backend.md` §7) every 3 s, then continue automatically. If it answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). The rules of the wait are below the table. | Full screen: the logo, a line that keeps drawing itself, the title `Despertando el servidor`, `El servidor se duerme tras 15 minutos sin uso. La primera carga puede tardar cerca de un minuto. Entrarás en cuanto responda.`, a sliding bar (`Esperando al servidor`) and `Reintentando · N s`, the seconds since the screen appeared. |
 | Loading a round | Chart-shaped skeleton; buttons visible and disabled. | — |
 | Submitting a decision | Both buttons disabled at once; no double submit. On failure, re-enable. The round is still open server-side, so retrying is safe. | `No se pudo guardar tu respuesta. Intenta de nuevo.` |
 | Open round resumed | Nothing special. The same chart appears. | — |
@@ -272,7 +285,7 @@ The wait for a sleeping server lives in `api.ts` alone, so it covers every call 
 - **Not only `/status`.** The original request stays in flight while `/status` is asked; when it answers, the wait ends, even if `/status` never did. The result is delivered once.
 - **A retry only when the server never got the request:** a network error, or a `502`, `503` or `504` whose body is not one of our API's errors. Any other answer is delivered as it is, `401`, `409`, `400` and our own `503 NO_DATA` included. The request is sent again once `/status` answers `db: true`. `/status` is asked one request at a time: Render holds a request while it wakes, so it answers late rather than never.
 - **At most 90 s.** Then the call fails, and each screen shows its failure state: the generic error with `Reintentar` on `/play` and `/stats`, the generic error under the form on `/login`, and the decision's own message after a decision. The waiting screen never stays up without an end.
-- **`ServerWaking`** is a full-screen notice over the page, in the root layout, with a live region that is on the page from the start, so screen readers announce the text when it appears.
+- **`ServerWaking`** is a full-screen screen over the page, in the root layout. A live region on the page from the start is filled with the title and the text when the wait begins, so screen readers announce them once; the visible copy and the counter are outside it, so the counter is not read every second. The counter counts from `wakingSince()` in `api.ts`, the moment the screen appeared.
 
 ## 9. Formatting
 

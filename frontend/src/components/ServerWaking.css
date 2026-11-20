@@ -1,0 +1,62 @@
+/*
+ * The waking screen's motion (03 §8): a line that keeps drawing itself, a pulsing dot and a sliding
+ * bar. All three loop, and all three stop under prefers-reduced-motion (globals.css).
+ */
+.waking-track,
+.waking-line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.waking-track {
+  stroke: var(--color-line);
+}
+
+/* With pathLength="1", a dash of 1 is the whole line: it draws in, then leaves to the right. */
+.waking-line {
+  stroke: var(--color-accent);
+  stroke-dasharray: 1;
+  animation: waking-draw 2.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.waking-dot {
+  fill: var(--color-gold);
+  animation: waking-pulse 2.6s ease-in-out infinite;
+}
+
+.waking-bar {
+  animation: waking-slide 1.6s ease-in-out infinite;
+}
+
+@keyframes waking-draw {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  55% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes waking-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes waking-slide {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(330%);
+  }
+}

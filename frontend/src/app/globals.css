@@ -1,74 +1,102 @@
 @import "tailwindcss";
 
-/* Visual direction, 03 §4: a printed exam sheet. One theme; up and down only after a decision. */
+/*
+ * Visual direction, 03 §4: a dark phone app, quiet until the reveal. The accent marks what is yours
+ * (your line, your picks, your edge); up and down appear only after a decision; gold is the coin.
+ */
 @theme {
-  --color-paper: #f6f4ef;
-  --color-ink: #14171a;
-  --color-muted: #6b7075;
-  --color-rule: #dad6cc;
-  --color-up: #0e7c55;
-  --color-down: #b93a26;
+  --color-page: #0b0f17;
+  --color-surface: #131926;
+  --color-raised: #161d2b;
+  --color-well: #1c2436;
+  --color-line: #1f2838;
+  --color-line-strong: #2a3550;
+  --color-edge: #34415f;
+  --color-grid: #151c2a;
+  --color-fg: #eef1f6;
+  --color-muted: #a3aec2;
+  --color-faint: #8e9aaf;
+  --color-past: #6e7b94;
+  --color-cut: #5a6985;
+  --color-off: #3a465c;
+  --color-passed: #66738c;
+  --color-accent: #8fa8ff;
+  --color-accent-hover: #b4c4ff;
+  --color-gold: #f2c14e;
+  --color-up: #3ddc97;
+  --color-down: #ff6b6b;
 }
 
-/* next/font defines these variables on <html> (layout.tsx). */
+/* next/font defines these variables on <html> (layout.tsx). Numbers use tabular figures, not a monospace face. */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-inter);
+}
+
+/* Phones with little height (390 x 664 and below): the play screen tightens so the chart keeps room (03 §10). */
+@custom-variant short (@media (max-height: 760px));
+
+:root {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--color-paper);
-  color: var(--color-ink);
+  background: var(--color-page);
+  color: var(--color-fg);
   font-family: var(--font-sans);
 }
 
-/* Visible focus in ink on everything a keyboard can reach (03 §10). */
+/* Visible focus on everything a keyboard can reach (03 §10). */
 :focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
 
 /* Every number in tabular figures, so values do not jitter as they change (03 §4). */
-.font-mono {
+.font-mono,
+.tabular {
   font-variant-numeric: tabular-nums;
 }
 
-/* The two button styles shared by the welcome and log-in screens; at least 48 px tall (03 §10). */
+/* The two button styles of the app; 56 px tall, so thumbs reach them (03 §10). */
 @layer components {
   .button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 3rem;
+    min-height: 3.5rem;
     padding: 0 1.25rem;
-    border: 1px solid var(--color-ink);
-    border-radius: 2px;
-    font-weight: 500;
+    border: 1px solid transparent;
+    border-radius: 1rem;
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 600;
     touch-action: manipulation;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
   }
 
   .button-primary {
-    background: var(--color-ink);
-    color: var(--color-paper);
+    background: var(--color-accent);
+    color: var(--color-page);
   }
 
   .button-secondary {
-    background: transparent;
-    color: var(--color-ink);
+    background: var(--color-surface);
+    border-color: var(--color-line-strong);
+    color: var(--color-fg);
   }
 
-  /*
-   * Hover stays monochrome: no colour before a decision (03 §4). Only on devices that can hover:
-   * on a phone, :hover sticks to the last button tapped.
-   */
+  /* Only on devices that can hover: on a phone, :hover sticks to the last button tapped. */
   @media (hover: hover) {
-    .button:not(:disabled):hover {
-      text-decoration: underline;
-      text-underline-offset: 4px;
+    .button-primary:not(:disabled):hover {
+      background: var(--color-accent-hover);
     }
 
     .button-secondary:not(:disabled):hover {
-      background: var(--color-rule);
+      border-color: var(--color-edge);
     }
   }
 
@@ -76,69 +104,20 @@ body {
     cursor: not-allowed;
     opacity: 0.6;
   }
-}
 
-/*
- * The chart (03 §6). Each element's normal style is its final state; the keyframes only describe
- * where it comes from. So with reduced motion, where the animations are off, the reveal shows at once.
- */
-.chart-ink {
-  fill: none;
-  stroke: var(--color-ink);
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-}
-
-/* With pathLength="1", a dash of 1 is the whole line: offset 1 hides it, offset 0 draws it. */
-.chart-future {
-  fill: none;
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  stroke-dasharray: 1;
-  animation: chart-draw 900ms ease-in-out 200ms backwards;
-}
-
-/* 1. The history redraws on the new scale with a 200 ms cross-fade; the path data is not animated. */
-.chart-fade-out {
-  opacity: 0;
-  animation: chart-from-visible 200ms ease-out backwards;
-}
-
-.chart-fade-in {
-  animation: chart-from-hidden 200ms ease-out backwards;
-}
-
-/* 3. The labels fade in once the future line is drawn. */
-.chart-labels {
-  animation: chart-from-hidden 300ms ease-out 1100ms backwards;
-}
-
-@keyframes chart-from-visible {
-  from {
-    opacity: 1;
-  }
-}
-
-@keyframes chart-from-hidden {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes chart-draw {
-  from {
-    stroke-dashoffset: 1;
+  /* A rounded panel: the cards of the reveal and of the stats screen. */
+  .card {
+    border: 1px solid var(--color-line);
+    border-radius: 1rem;
+    background: var(--color-surface);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chart-future,
-  .chart-fade-out,
-  .chart-fade-in,
-  .chart-labels {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

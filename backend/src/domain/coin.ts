@@ -62,3 +62,30 @@ export function coinBenchmark(returns: number[], buys: number, seed: number, tri
   const tail = Math.floor(0.05 * trials);
   return { p5: sorted[tail], p95: sorted[trials - 1 - tail], edges };
 }
+
+/** The coin's edges counted in equal bins, for the histogram on the stats screen (C1). */
+export type CoinHistogram = { start: number; width: number; counts: number[] };
+
+/**
+ * `bins` equal bins from the smallest edge to the largest; every edge is counted once. A value on an
+ * inner boundary opens the upper bin, and the largest edge sits in the last one. When every edge is
+ * equal there is no range to split: one bin of width 0 holds them all. Pure: the edges are not modified.
+ */
+export function coinHistogram(edges: number[], bins = 40): CoinHistogram {
+  // A loop, not Math.min(...edges): spreading 2,000 values is fine today but needlessly fragile.
+  let start = edges[0];
+  let max = edges[0];
+  for (const edge of edges) {
+    if (edge < start) start = edge;
+    if (edge > max) max = edge;
+  }
+  if (max === start) return { start, width: 0, counts: [edges.length] };
+
+  const width = (max - start) / bins;
+  const counts: number[] = new Array(bins).fill(0);
+  for (const edge of edges) {
+    // The clamp covers the largest edge, and floating point that rounds an index up to `bins`.
+    counts[Math.min(bins - 1, Math.floor((edge - start) / width))]++;
+  }
+  return { start, width, counts };
+}

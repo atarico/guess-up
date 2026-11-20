@@ -166,13 +166,17 @@ describe('POST /rounds', () => {
 });
 
 describe('no other route describes a round', () => {
-  it('has no GET /rounds/:id and no GET /rounds in this unit', async () => {
+  it('has no GET /rounds/:id, and GET /rounds lists decided rounds only: an open one is not there', async () => {
     const app = createApp(fakeDeps());
     const { body } = await request(app).post('/rounds').set('Authorization', tokenFor(ANA));
-    for (const path of [`/rounds/${body.round.id}`, '/rounds']) {
-      const res = await request(app).get(path).set('Authorization', tokenFor(ANA));
-      expect(res.status).toBe(404);
-      expect(res.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
-    }
+    const single = await request(app).get(`/rounds/${body.round.id}`).set('Authorization', tokenFor(ANA));
+    expect(single.status).toBe(404);
+    expect(single.body).toEqual({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
+
+    // The list (02 §7, P1) answers 200, without the open round and without anything about it.
+    const list = await request(app).get('/rounds').set('Authorization', tokenFor(ANA));
+    expect(list.status).toBe(200);
+    expect(list.body).toEqual({ rounds: [] });
+    expectNoLeak(list.text);
   });
 });

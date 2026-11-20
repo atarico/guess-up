@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coinBenchmark, coinSeed, mulberry32, TRIALS } from '../src/domain/coin.js';
+import { coinBenchmark, coinHistogram, coinSeed, mulberry32, TRIALS } from '../src/domain/coin.js';
 
 const mixed = [0.12, -0.08, 0.03, -0.15, 0.2, 0.01, -0.02, 0.07, -0.11, 0.05, 0.09, -0.04, 0.16, -0.06, 0.0, 0.02];
 
@@ -71,5 +71,48 @@ describe('coinBenchmark (02 §6, §9)', () => {
     const returns = [...mixed];
     coinBenchmark(returns, 6, 7);
     expect(returns).toEqual(mixed);
+  });
+});
+
+describe('coinHistogram (C1: 40 equal bins from the smallest to the largest edge)', () => {
+  const edges = [-0.05, -0.02, 0, 0.01, 0.01, 0.03, 0.04, 0.05];
+
+  it('has 40 bins and counts every edge exactly once', () => {
+    const { counts } = coinHistogram(edges);
+    expect(counts).toHaveLength(40);
+    expect(counts.reduce((sum, c) => sum + c, 0)).toBe(edges.length);
+  });
+
+  it('starts at the minimum, spans to the maximum, and puts them in the first and last bins', () => {
+    const { start, width, counts } = coinHistogram(edges);
+    expect(start).toBe(-0.05);
+    expect(start + width * 40).toBeCloseTo(0.05, 12);
+    expect(counts[0]).toBe(1);
+    expect(counts[39]).toBe(1);
+  });
+
+  it('puts a value exactly on an inner boundary in the upper bin', () => {
+    // Bins of width 1 from 0 to 40: the edge 10 opens bin 10, it does not close bin 9.
+    const { counts } = coinHistogram([0, 10, 40]);
+    expect(counts[9]).toBe(0);
+    expect(counts[10]).toBe(1);
+    expect(counts[39]).toBe(1);
+  });
+
+  it('keeps the largest edge in the last bin even when floating point rounds the index up', () => {
+    const odd = [0.1, 0.3, 0.7];
+    const { counts } = coinHistogram(odd);
+    expect(counts[39]).toBe(1);
+    expect(counts.reduce((sum, c) => sum + c, 0)).toBe(3);
+  });
+
+  it('uses one bin of width 0 when every edge is equal', () => {
+    expect(coinHistogram([0.02, 0.02, 0.02])).toEqual({ start: 0.02, width: 0, counts: [3] });
+  });
+
+  it('does not modify the edges', () => {
+    const input = [0.03, -0.01, 0.02];
+    coinHistogram(input);
+    expect(input).toEqual([0.03, -0.01, 0.02]);
   });
 });

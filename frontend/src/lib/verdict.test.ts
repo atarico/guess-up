@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { StatsResponse } from './api-types';
-import { coinParts, plain, verdictParts } from './verdict';
+import { coinCardParts, plain, verdictParts } from './verdict';
 
 const MINUS = '−';
+// The coin's bins are not read by these sentences; any valid histogram will do.
+const HISTOGRAM = { start: -0.05, width: 0.0025, counts: Array<number>(40).fill(50) };
 
 function stats(overrides: Partial<StatsResponse>): StatsResponse {
   return {
@@ -13,7 +15,7 @@ function stats(overrides: Partial<StatsResponse>): StatsResponse {
     avgAll: 0.034,
     avgPassed: 0.045,
     edge: -0.013,
-    coin: { p5: -0.021, p95: 0.02, percentile: 0.17, beatenBy: 0.81, trials: 2000 },
+    coin: { p5: -0.021, p95: 0.02, percentile: 0.17, beatenBy: 0.81, trials: 2000, histogram: HISTOGRAM },
     verdict: 'coin',
     roundsUntilVerdict: 0,
     hitRate: 0.52,
@@ -99,53 +101,83 @@ describe('verdictParts (03 §5.4)', () => {
   });
 });
 
-describe('coinParts (03 §5.4)', () => {
-  const opening = `Una moneda que compra al azar 19 de estas 42 gráficas queda entre ${MINUS}2.1 y +2.0 puntos nueve de cada diez veces.`;
-
-  it('coin', () => {
-    const parts = coinParts(stats({ verdict: 'coin' }))!;
-    expect(plain(parts)).toBe(`${opening} Tu resultado está dentro de ese rango. Por ahora, tu criterio no se distingue de lanzar una moneda.`);
-    expect(figures(parts)).toEqual(['19', '42', `${MINUS}2.1`, '+2.0']);
-  });
-
-  it('better: the share of coin trials the user beat', () => {
-    const parts = coinParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 0.96, beatenBy: 0.03, trials: 2000 } }))!;
-    expect(plain(parts)).toBe(`${opening} Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al 96% de los lanzamientos.`);
-  });
-
-  it('worse: the share of coin trials that beat the user, without the ties', () => {
-    // 2% below the user, 1% tied, 97% above: the ties do not count as coin wins.
-    const parts = coinParts(stats({ verdict: 'worse', coin: { p5: -0.021, p95: 0.02, percentile: 0.02, beatenBy: 0.97, trials: 2000 } }))!;
-    expect(plain(parts)).toBe(`${opening} Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el 97% de las veces.`);
-  });
-
-  it('never shows a coin share above 99%', () => {
-    const better = coinParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 1, beatenBy: 0, trials: 2000 } }))!;
-    expect(plain(better)).toContain('superas al 99% de los lanzamientos.');
-    const worse = coinParts(stats({ verdict: 'worse', coin: { p5: -0.021, p95: 0.02, percentile: 0, beatenBy: 0.9995, trials: 2000 } }))!;
-    expect(plain(worse)).toContain('la moneda te gana el 99% de las veces.');
-  });
-
-  it('is null when the verdict is not measured against the coin', () => {
-    expect(coinParts(stats({ verdict: 'insufficient', coin: null }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'bought_all', coin: null }))).toBeNull();
-  });
-
+describe('the coin guard (no NaN on screen)', () => {
   // What a response that breaks the contract would carry, such as an older backend without beatenBy.
-  const coinWith = (fields: Record<string, unknown>) => ({ p5: -0.021, p95: 0.02, percentile: 0.02, beatenBy: 0.97, trials: 2000, ...fields }) as StatsResponse['coin'];
+  // Every other field is valid, histogram included, so each case fails on the field it names.
+  const coinWith = (fields: Record<string, unknown>) =>
+    ({ p5: -0.021, p95: 0.02, percentile: 0.02, beatenBy: 0.97, trials: 2000, histogram: HISTOGRAM, ...fields }) as StatsResponse['coin'];
+
+  it('passes a complete coin', () => {
+    expect(coinCardParts(stats({ verdict: 'worse', coin: coinWith({}) }))).not.toBeNull();
+  });
 
   it('is null, never NaN, when /stats lacks a field the coin section uses', () => {
-    expect(coinParts(stats({ verdict: 'worse', coin: coinWith({ beatenBy: undefined }) }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'better', coin: coinWith({ percentile: undefined }) }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'coin', coin: coinWith({ p5: undefined }) }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'coin', buys: undefined as unknown as number }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'coin', edge: undefined as unknown as number }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'worse', coin: coinWith({ beatenBy: undefined }) }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'better', coin: coinWith({ percentile: undefined }) }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'coin', coin: coinWith({ p5: undefined }) }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'coin', coin: coinWith({}), buys: undefined as unknown as number }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'coin', coin: coinWith({}), edge: undefined as unknown as number }))).toBeNull();
   });
 
   it('is null, never NaN, when a field the coin section uses is not a number', () => {
-    expect(coinParts(stats({ verdict: 'better', coin: coinWith({ percentile: '0.96' }) }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'worse', coin: coinWith({ beatenBy: Number.NaN }) }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'coin', coin: coinWith({ p95: null }) }))).toBeNull();
-    expect(coinParts(stats({ verdict: 'coin', rounds: '42' as unknown as number }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'better', coin: coinWith({ percentile: '0.96' }) }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'worse', coin: coinWith({ beatenBy: Number.NaN }) }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'coin', coin: coinWith({ p95: null }) }))).toBeNull();
+    expect(coinCardParts(stats({ verdict: 'coin', coin: coinWith({}), rounds: '42' as unknown as number }))).toBeNull();
+  });
+});
+
+describe('the coin guard covers the histogram', () => {
+  const withHistogram = (histogram: unknown) =>
+    stats({ verdict: 'coin', coin: { p5: -0.021, p95: 0.02, percentile: 0.17, beatenBy: 0.8, trials: 2000, histogram } as never });
+
+  it('is null, never NaN, when the histogram is missing or has a non-number', () => {
+    for (const parts of [coinCardParts]) {
+      expect(parts(withHistogram(undefined))).toBeNull();
+      expect(parts(withHistogram({ start: -0.05, width: Number.NaN, counts: [1, 2] }))).toBeNull();
+      expect(parts(withHistogram({ start: '0', width: 0.1, counts: [1, 2] }))).toBeNull();
+      expect(parts(withHistogram({ start: -0.05, width: 0.1, counts: [1, null, 3] }))).toBeNull();
+      expect(parts(withHistogram({ start: -0.05, width: 0.1, counts: 'x' }))).toBeNull();
+      expect(parts(withHistogram({ start: -0.05, width: 0.1, counts: [] }))).toBeNull();
+    }
+  });
+  it('a valid histogram passes', () => {
+    expect(coinCardParts(withHistogram(HISTOGRAM))).not.toBeNull();
+  });
+});
+
+describe('coinCardParts (the coin card sentence, 03 §5.4)', () => {
+  const range = `El 90% de las monedas terminó entre ${MINUS}2.1 y +2.0 puntos. `;
+
+  it('within the range: the share of coins the user beat', () => {
+    const parts = coinCardParts(stats({ verdict: 'coin' }))!;
+    expect(plain(parts)).toBe(`${range}Tú quedaste dentro de ese rango y le ganaste al 17% de las monedas.`);
+  });
+  it('above: the share beaten; below: the share that beat the user', () => {
+    const above = coinCardParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 0.96, beatenBy: 0.03, trials: 2000, histogram: HISTOGRAM } }))!;
+    expect(plain(above)).toBe(`${range}Tú quedaste por encima de ese rango y le ganaste al 96% de las monedas.`);
+    const below = coinCardParts(stats({ verdict: 'worse', coin: { p5: -0.021, p95: 0.02, percentile: 0.02, beatenBy: 0.97, trials: 2000, histogram: HISTOGRAM } }))!;
+    expect(plain(below)).toBe(`${range}Tú quedaste por debajo de ese rango: la moneda te ganó el 97% de las veces.`);
+  });
+  it('never above 99%', () => {
+    const parts = coinCardParts(stats({ verdict: 'better', coin: { p5: -0.021, p95: 0.02, percentile: 1, beatenBy: 0, trials: 2000, histogram: HISTOGRAM } }))!;
+    expect(plain(parts)).toContain('al 99% de las monedas');
+  });
+  it('colours the band figures gold; the share has no tone', () => {
+    const parts = coinCardParts(stats({ verdict: 'coin' }))!;
+    expect(parts.filter((p) => p.tone === 'gold').map((p) => p.text)).toEqual([`${MINUS}2.1`, '+2.0']);
+    expect(parts.find((p) => p.text === '17%')?.tone).toBeUndefined();
+  });
+  it('is null when there is no coin', () => {
+    expect(coinCardParts(stats({ verdict: 'insufficient', coin: null }))).toBeNull();
+  });
+});
+
+describe('verdict figure tones', () => {
+  it('your picks are accent, the cost is down, the gain is up', () => {
+    const cost = verdictParts(stats({}));
+    expect(cost.filter((p) => p.tone).map((p) => [p.text, p.tone])).toEqual([['+2.1%', 'accent'], ['1.3 puntos porcentuales', 'down']]);
+    const gain = verdictParts(stats({ avgPicks: 0.046 }));
+    expect(gain.filter((p) => p.tone).map((p) => p.tone)).toEqual(['accent', 'up']);
   });
 });

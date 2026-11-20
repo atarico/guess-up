@@ -237,6 +237,7 @@ coinBenchmark(returns: number[], buys: number, seed: number, trials = 2000):
 
 - `rng` is injected everywhere; production uses `Math.random` for picking rounds and a small seeded generator (mulberry32) for the coin.
 - Coin seed: a hash of `userId` and the number of decided rounds, so the range is stable across reloads and changes only when a new round is decided.
+- `histogram` (`coinHistogram` in `domain/coin.ts`): the 2,000 edges in 40 equal bins from the smallest to the largest, every edge counted once, the largest in the last bin; when every edge is equal, one bin of width 0 holds them all. It draws the coin card of the stats screen.
 - `percentile` = share of coin edges strictly less than the user's edge; `beatenBy` = share strictly greater. A tie counts on neither side, so the two can add up to less than 1.
 - Verdict: `insufficient` (fewer than 10 rounds) → `bought_none` / `bought_all` → `worse` (edge < p5) / `better` (edge > p95) / `coin`.
 
@@ -295,7 +296,7 @@ Only for the caller's own, already decided round; an open round → `409 ROUND_O
 Always `200`. `sinceCutoff = price / close[cutoff] − 1`.
 
 ### `GET /rounds?limit=20` (P1)
-Decided rounds, newest first: `[{ id, symbol, name, cutoffDate, decision, forwardReturn, correct, decidedAt }]`.
+`200 { rounds: [{ id, symbol, name, cutoffDate, decision, forwardReturn, correct, decidedAt }] }`: the caller's decided rounds, newest first by `decided_at`. `limit` is an integer from 1 to 20, 20 when absent; anything else is `400 VALIDATION`. `correct` is `isCorrect`; `decidedAt` is an ISO timestamp. An open round never appears. The names come from `symbols`, one lookup per distinct symbol.
 
 ### `GET /stats`
 
@@ -304,7 +305,8 @@ Decided rounds, newest first: `[{ id, symbol, name, cutoffDate, decision, forwar
   "rounds": 42, "buys": 19, "passes": 23,
   "avgPicks": 0.021, "avgAll": 0.034, "avgPassed": 0.045,
   "edge": -0.013,
-  "coin": { "p5": -0.021, "p95": 0.020, "percentile": 0.17, "beatenBy": 0.81, "trials": 2000 },
+  "coin": { "p5": -0.021, "p95": 0.020, "percentile": 0.17, "beatenBy": 0.81, "trials": 2000,
+            "histogram": { "start": -0.052, "width": 0.0026, "counts": ["… 40 numbers that sum to 2000 …"] } },
   "verdict": "coin",
   "roundsUntilVerdict": 0,
   "hitRate": 0.52,

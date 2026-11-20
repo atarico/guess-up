@@ -33,6 +33,8 @@ const GIVE_UP_AFTER_MS = 90_000;
 
 // How many calls have waited longer than WAKING_AFTER_MS; ServerWaking shows while it is above zero.
 let waitingCalls = 0;
+// When the screen appeared (Date.now()), for its counter; null while no call waits.
+let wakingStartedAt: number | null = null;
 const wakingListeners = new Set<() => void>();
 
 /** For ServerWaking: called whenever the waking screen should show or hide. */
@@ -47,8 +49,15 @@ export function isWaking(): boolean {
   return waitingCalls > 0;
 }
 
+/** When the waking screen appeared, or null; a second call waiting later does not move it. */
+export function wakingSince(): number | null {
+  return wakingStartedAt;
+}
+
 function changeWaiting(by: 1 | -1) {
   waitingCalls += by;
+  if (waitingCalls === 0) wakingStartedAt = null;
+  else if (wakingStartedAt === null) wakingStartedAt = Date.now();
   wakingListeners.forEach((listener) => listener());
 }
 
