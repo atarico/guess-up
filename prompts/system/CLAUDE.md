@@ -84,7 +84,9 @@ backend/   pnpm dev         tsx watch, loads backend/.env, http://localhost:4000
            pnpm build       tsc to dist/
            pnpm start       node dist/index.js (what Render runs)
            pnpm migrate     applies sql/001_init.sql to DATABASE_URL in one transaction
-           pnpm seed        work unit 2
+           pnpm seed        fetches every universe symbol that is not ready yet; resumable (02 §5.5)
+           pnpm seed --only AAPL   one symbol, one credit: end-to-end check of the real client
+           pnpm seed:check  read-only report: status, bars and dates per symbol, moves above 40%
            pnpm seed:demo   work unit 7
 frontend/  pnpm dev         next dev, loads frontend/.env.local, http://localhost:3000
            pnpm test        Vitest; the format.ts tests arrive in work unit 5
