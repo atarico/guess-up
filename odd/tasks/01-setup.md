@@ -20,6 +20,15 @@ Quoted from the author's request (L1), verbatim.
 - **S12 Node version** (L4). "A4: usa Node 24 desde ahora, no esperemos a que falle el deploy. Actualiza la spec y DECISIONS.md."
 - **S13 Health check path** (L14). "Sí, renombrá GET /health a GET /status. Es parte de la unidad 1: sumalo como tarea en odd/tasks/01-setup.md, no abras otro documento." / "La ruta queda definida en un solo lugar de cada lado (una constante en el backend y otra en el frontend), así un segundo cambio de nombre es de una línea." / "La línea de DECISIONS.md tiene que decir qué regla bloquea, cómo lo comprobaste, por qué /status y por qué no el proxy por Vercel." / "Spec, código, test y DECISIONS.md van en el mismo commit." / "Decime el orden exacto para que el deploy no falle: cuándo cambio el Health Check Path en Render respecto del push." / "Actualizá la lista de pruebas con /status y sumá una prueba con Brave Shields encendido."
 - **S14 Supabase region** (L18). "Sí, movemos Supabase a us-east-1 ahora. Es parte de la unidad 1: sumalo como tarea en odd/tasks/01-setup.md." / "Medí el tiempo de respuesta de /status contra el backend desplegado, ya despierto: tres pedidos seguidos con curl y el tiempo total de cada uno. Quiero el número de antes para compararlo con el de después." / "No me pidas la URL ni la contraseña, y no las muestres." / "Corré la migración contra la base nueva." / "Repetí en el proyecto nuevo las mismas comprobaciones de solo lectura: las cinco tablas, RLS activado en todas, el índice de una ronda abierta por usuario, los advisors de seguridad y la respuesta de la Data API." / "Volvé a medir /status tres veces y pasame el antes y el después." / "Buscá si la referencia del proyecto viejo quedó en algún archivo del repo o en la configuración del MCP, sin abrir los .env." / "Recién con todo eso en verde te confirmo y borro el proyecto viejo. No lo des por borrado antes." / "Una línea en DECISIONS.md: por qué las dos regiones tienen que coincidir, qué se movió y los tiempos medidos antes y después." / "Si la conexión falla por el certificado, frená y mostrame el error. No cambies la configuración de SSL para que pase."
+- **S15 Verifier fixes, process** (L26). "Arreglá los hallazgos del verificador. De a uno, en este orden, cada uno con su commit. Sumalos como tareas a odd/tasks/01-setup.md, no abras otro documento." / "Para los puntos 1 a 4: primero el test que reproduce el problema, en rojo; después el arreglo. Si el arreglo cambia algo que una spec describe, la spec y la línea de DECISIONS.md van en el mismo commit. Evaluación de RDD en cada commit."
+- **S16 Error handler (T14)** (L26). "JSON mal formado responde 400 VALIDATION con un mensaje nuestro, nunca el del parser." / "Un error con status menor a 500 conserva su status. Si para alguno hace falta un código que la spec no tiene, proponémelo: no lo agregues solo." / "Logs: para errores 4xx, solo status y tipo. Ni el body, ni el objeto de error entero, ni el mensaje, ni el stack: el mensaje de un JSON inválido trae un pedazo de lo que mandó el cliente, que puede ser parte de una contraseña. Para 5xx, el stack." / "El test manda un body inválido con un texto reconocible y comprueba que ese texto no aparece en lo que se loguea."
+- **S17 Database timeouts (T15)** (L26). "Timeout de conexión en el pool y timeout de consulta, para que /status responda 200 con db: false si la base no contesta." / "El timeout corto es solo del chequeo de /status. El general tiene que dejar pasar la transacción del seed, que inserta unas 5.000 filas." / "Proponé los valores y justificalos contra el timeout del health check de Render, verificado en su documentación."
+- **S18 Database SSL (T16)** (L26). "Si DATABASE_URL trae parámetros de SSL, el backend no arranca. El mensaje nombra el parámetro, nunca la URL ni sus valores. rejectUnauthorized: true explícito." / "Vale igual para migrate y seed: que usen la misma fábrica de conexión." / "Antes de commitear, comprobá sin mostrarla si la DATABASE_URL local trae alguno de esos parámetros. Si lo trae, avisame: la tengo que corregir también en Render antes del deploy."
+- **S19 CORS_ORIGIN (T17)** (L26). "Cada origen, ya sin espacios alrededor, se valida con new URL(o).origin === o. La lista no puede quedar vacía. Si falla, no arranca y el mensaje dice cuál entrada está mal." / "Casos del test: barra final, ruta, comodín, entrada vacía y lista vacía."
+- **S20 Minor fixes (T18)** (L26). "5. Menores (un solo commit, sin test)" / "El npm del .env.example, las dos dependencias en DECISIONS.md y los /health viejos del documento ODD, con una nota de que ahora es /status. El documento ODD es un registro: agregá la nota, no reescribas lo que ya estaba."
+- **S21 anon/authenticated grants (T19)** (L26). "6. Permisos de anon y authenticated (al final y aparte)" / "Frená antes de escribir y mostrame dos cosas:" / "Qué dice hoy information_schema.role_table_grants para las cinco tablas." / "Cómo vas a hacer que migrate.ts aplique todos los archivos en orden. La condición es que correrlo dos veces seguidas sea seguro, teniendo en cuenta que el 001 ya está aplicado en producción." / "Con mi ok:" / "El 002 quita los permisos sobre las tablas actuales y también los permisos por defecto para tablas futuras. Verificá la forma correcta contra la documentación de Supabase." / "Después de correrlo, mostrame role_table_grants de nuevo, los advisors y que /status sigue respondiendo db: true."
+- **S22 Out of scope** (L26). "Queda afuera: las referencias de Supabase en el log se quedan como están, y TRUST_PROXY_HOPS va en la unidad 3."
+- **S23 Closing (T20)** (L26). "typecheck, lint, test y build en verde." / "Una tabla: punto, commit, test agregado y evidencia." / "Los puntos 3 y 4 hacen más estricto el arranque. Decime qué variables de Render tengo que revisar a mano antes del push para que el deploy no falle." / "Después de mi push, repetimos la lista de pruebas contra producción."
 
 Assumptions, accepted by the author in L4 ("Ok al plan"), with A2, A3 and A4 settled as noted:
 
@@ -50,6 +59,13 @@ Assumptions, accepted by the author in L4 ("Ok al plan"), with A2, A3 and A4 set
 | T11 | Session log `prompts/sessions/01-setup.md` | S9 | inline | done | `docs(prompts): log session 01, work unit 1`; 24 prompts copied from the transcript and checked verbatim by script; no secret values in it |
 | T12 | Rename `GET /health` to `GET /status` (S13): one `HEALTH_PATH` constant per side, specs 01 §15, 02 §7 (intro and route), 02 §10 (twice), 03 §8, `DECISIONS.md`, tests, this document | S13 | inline | done | `fix: rename the health check to /status to avoid ad blockers`; backend 7 tests (including `/health` → 404), typecheck, lint and build green; frontend typecheck, lint, test and build green; built server: `/status` 200, `/health` 404 |
 | T13 | Move Supabase to `us-east-1` (S14): measure `/status` before (3 warm requests); the author creates the project and loads `DATABASE_URL`; migrate; repeat the read-only checks (5 tables, RLS, `one_open_round_per_user`, security advisors, Data API); measure after; search the repo and the MCP configuration for the old project ref without opening `.env` files; `DECISIONS.md` line; the author deletes the old project only after all of that is green | S14 | inline + author | done (L21) | new project `guess-up-east` in `us-east-1`; migrate applied; 5 tables, RLS on, 0 policies; `one_open_round_per_user` present; TLS 1.3 verified against the committed CA; advisors INFO only; Data API probe `503 PGRST002`, author turned it off in the dashboard; `/status` medians 0.369 s → 0.285 s; old ref absent from the repo and its history |
+| T14 | Verifier fix 1, error handler: malformed JSON → `400 VALIDATION` with our message; 4xx keep their status; 4xx logs only status and type, 5xx the stack; RED test first | S15, S16 | inline | done | `fix(backend): keep client error statuses and stop logging request bodies`; RED 3 failed / GREEN 5 passed in `test/errors.test.ts`, including the 415 case; 02 §7 gains `PAYLOAD_TOO_LARGE` and `UNSUPPORTED_MEDIA_TYPE` (L28) |
+| T15 | Verifier fix 2, database timeouts: short deadline only for the health check, general pool timeouts that let the seed transaction through; values justified against Render's health-check timeout; RED test first | S15, S17 | inline | pending | |
+| T16 | Verifier fix 3, database SSL: SSL parameters in `DATABASE_URL` stop the boot naming the parameter; `rejectUnauthorized: true`; one connection factory for server, migrate and seed; local URL checked without showing it; RED test first | S15, S18 | inline | pending | |
+| T17 | Verifier fix 4, `CORS_ORIGIN`: each trimmed entry must satisfy `new URL(o).origin === o`, list not empty, boot fails naming the bad entry; tests for trailing slash, path, wildcard, empty entry, empty list; RED test first | S15, S19 | inline | pending | |
+| T18 | Verifier fix 5, minor: npm in `.env.example`, the two dev dependencies in `DECISIONS.md`, notes on the old `/health` mentions in this document (append, do not rewrite) | S20 | inline | pending | |
+| T19 | Verifier fix 6, revoke `anon`/`authenticated` grants: stop first with current `role_table_grants` and the plan for an ordered, re-runnable `migrate`; with the author's ok, `002` revokes current and default privileges; then grants, advisors and `/status` again | S21 | inline | pending | |
+| T20 | Closing: typecheck, lint, test, build green; summary table; Render variables to check before the push; after the author's push, the checklist again against production | S23 | inline | pending | |
 
 Route evidence: no writer is delegated. The backend and frontend skeletons are independent, but the frontend is mostly generated by `create-next-app` and its authored part is well under 100 lines, so parallel writers would cost more than they save.
 
@@ -318,4 +334,53 @@ https://guess-up-api.onrender.com/status
 The renamed health check gets through Brave Shields. T10 done: every step of the checklist passed.
 - **L24** (2026-11-20). T11 written: `prompts/sessions/01-setup.md`, 24 prompts in order (two partial sends and one repeat that got no answer included as sent; the mid-turn message from the transcript's queue). `origin/main` is at `3630fe3`; `f7e7e06`, `b210162` and the log commit are for the author to push. All tasks T0–T13 are done. Open for later units, not unit 1 scope: revoking the default `anon`/`authenticated` grants (L20, proposal) and the per-request log line of 02 §8.
 - **L25** (2026-11-20). Receipt-driven review: `gentle-ai review mode status` reports it on (global). The AI had not assessed each work-unit commit as the protocol asks; it assessed the whole unit afterwards: `gentle-ai review assess --base-ref 83757d7 --committed-only` → `risk: medium` (reason `executable_change` on `CLAUDE.md`), 43 paths, 9124 changed lines (mostly the two lockfiles), `review_due: false`, `review_due_reason: under_budget`. No native review is due; the range stays pending until a later commit reaches the budget. Medium tier: the writer's own checks stand.
-- **Next:** none for unit 1. The author pushes; work unit 2 is next in `01-product.md` §15. The author pushes `main`, creates Render (T8) and Vercel (T9), runs the checklist and sends the results → T10, then T11.
+- **L26** (2026-11-20, author, verbatim):
+
+````text
+Arreglá los hallazgos del verificador. De a uno, en este orden, cada uno con su commit. Sumalos como tareas a odd/tasks/01-setup.md, no abras otro documento.
+
+Para los puntos 1 a 4: primero el test que reproduce el problema, en rojo; después el arreglo. Si el arreglo cambia algo que una spec describe, la spec y la línea de DECISIONS.md van en el mismo commit. Evaluación de RDD en cada commit.
+
+1. Manejador de errores
+- JSON mal formado responde 400 VALIDATION con un mensaje nuestro, nunca el del parser.
+- Un error con status menor a 500 conserva su status. Si para alguno hace falta un código que la spec no tiene, proponémelo: no lo agregues solo.
+- Logs: para errores 4xx, solo status y tipo. Ni el body, ni el objeto de error entero, ni el mensaje, ni el stack: el mensaje de un JSON inválido trae un pedazo de lo que mandó el cliente, que puede ser parte de una contraseña. Para 5xx, el stack.
+- El test manda un body inválido con un texto reconocible y comprueba que ese texto no aparece en lo que se loguea.
+
+2. Timeouts de la base
+- Timeout de conexión en el pool y timeout de consulta, para que /status responda 200 con db: false si la base no contesta.
+- El timeout corto es solo del chequeo de /status. El general tiene que dejar pasar la transacción del seed, que inserta unas 5.000 filas.
+- Proponé los valores y justificalos contra el timeout del health check de Render, verificado en su documentación.
+
+3. SSL de la base
+- Si DATABASE_URL trae parámetros de SSL, el backend no arranca. El mensaje nombra el parámetro, nunca la URL ni sus valores. rejectUnauthorized: true explícito.
+- Vale igual para migrate y seed: que usen la misma fábrica de conexión.
+- Antes de commitear, comprobá sin mostrarla si la DATABASE_URL local trae alguno de esos parámetros. Si lo trae, avisame: la tengo que corregir también en Render antes del deploy.
+
+4. CORS_ORIGIN
+- Cada origen, ya sin espacios alrededor, se valida con new URL(o).origin === o. La lista no puede quedar vacía. Si falla, no arranca y el mensaje dice cuál entrada está mal.
+- Casos del test: barra final, ruta, comodín, entrada vacía y lista vacía.
+
+5. Menores (un solo commit, sin test)
+- El npm del .env.example, las dos dependencias en DECISIONS.md y los /health viejos del documento ODD, con una nota de que ahora es /status. El documento ODD es un registro: agregá la nota, no reescribas lo que ya estaba.
+
+6. Permisos de anon y authenticated (al final y aparte)
+Frená antes de escribir y mostrame dos cosas:
+- Qué dice hoy information_schema.role_table_grants para las cinco tablas.
+- Cómo vas a hacer que migrate.ts aplique todos los archivos en orden. La condición es que correrlo dos veces seguidas sea seguro, teniendo en cuenta que el 001 ya está aplicado en producción.
+Con mi ok:
+- El 002 quita los permisos sobre las tablas actuales y también los permisos por defecto para tablas futuras. Verificá la forma correcta contra la documentación de Supabase.
+- Después de correrlo, mostrame role_table_grants de nuevo, los advisors y que /status sigue respondiendo db: true.
+
+Queda afuera: las referencias de Supabase en el log se quedan como están, y TRUST_PROXY_HOPS va en la unidad 3.
+
+Al terminar
+- typecheck, lint, test y build en verde.
+- Una tabla: punto, commit, test agregado y evidencia.
+- Los puntos 3 y 4 hacen más estricto el arranque. Decime qué variables de Render tengo que revisar a mano antes del push para que el deploy no falle.
+- Después de mi push, repetimos la lista de pruebas contra producción.
+````
+
+- **L27** (2026-11-20). T14 RED: `backend/test/errors.test.ts` before the fix → 3 failed, 1 passed: both malformed-JSON cases got `500` instead of `400` ("expected 500 to be 400"), the oversized body got `500` instead of `413`; the 5xx case already logged its stack. GREEN after the new handler: 4 passed; full backend suite, typecheck and lint green. Open decision before committing: 02 §7 has no error code for `413` (body over the 100 kB limit) or `415` (unsupported `Content-Encoding`), both reachable through `express.json()`. The uncommitted handler answers them with their own status and, provisionally, `VALIDATION`; S16 says to propose a code instead of adding one.
+- **L28** (2026-11-20). The author: "Sí, opción A: agregá los dos códigos a 02 §7". The handler maps `413` → `PAYLOAD_TOO_LARGE` and `415` → `UNSUPPORTED_MEDIA_TYPE`; a 415 test was added; 02 §7 and §8 and `DECISIONS.md` updated in the same commit.
+- **Next:** T14 RDD assessment, then T15. The author pushes `main`, creates Render (T8) and Vercel (T9), runs the checklist and sends the results → T10, then T11.

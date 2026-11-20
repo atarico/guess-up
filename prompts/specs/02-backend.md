@@ -230,7 +230,7 @@ coinBenchmark(returns: number[], buys: number, seed: number, trials = 2000):
 
 JSON in, JSON out. All routes except `/status` and `/auth/register|login` require the bearer token. Returns are decimals (`0.021` = +2.1%). Dates are `YYYY-MM-DD`.
 
-Errors always look like `{ "error": { "code": "…", "message": "…" } }`. Codes: `VALIDATION` 400, `UNAUTHORIZED` 401, `INVALID_CREDENTIALS` 401, `NOT_FOUND` 404, `EMAIL_TAKEN` 409, `ROUND_OPEN` 409 (P1, used only by the live endpoint), `NO_DATA` 503, `INTERNAL` 500. Error messages never include a symbol or a date. The `message` is English and written for developers; the interface is Spanish and maps `error.code` to its own text, so `message` is never shown to a user.
+Errors always look like `{ "error": { "code": "…", "message": "…" } }`. Codes: `VALIDATION` 400, `UNAUTHORIZED` 401, `INVALID_CREDENTIALS` 401, `NOT_FOUND` 404, `EMAIL_TAKEN` 409, `ROUND_OPEN` 409 (P1, used only by the live endpoint), `PAYLOAD_TOO_LARGE` 413, `UNSUPPORTED_MEDIA_TYPE` 415, `NO_DATA` 503, `INTERNAL` 500. Malformed JSON is `400 VALIDATION`; `413` and `415` come from the JSON body parser (a body over its 100 kB limit, an unsupported `Content-Encoding`). Error messages never include a symbol or a date. The `message` is English and written for developers; the interface is Spanish and maps `error.code` to its own text, so `message` is never shown to a user.
 
 ### `GET /status`
 The health check. Not `/health`: EasyPrivacy, a filter list that Brave Shields and uBlock Origin apply by default, blocks cross-site requests to `onrender.com/health` (`DECISIONS.md`). The path is one constant on each side, `HEALTH_PATH` in `routes/health.ts` and in `frontend/src/lib/api.ts`.
@@ -303,7 +303,7 @@ Decided rounds, newest first: `[{ id, symbol, name, cutoffDate, decision, forwar
 ## 8. Cross-cutting
 
 - **Validation:** zod schema per route; failure → `400 VALIDATION` with the first issue.
-- **Errors:** one error-handling middleware. Unknown errors log the stack and return `500 INTERNAL` with a generic message.
+- **Errors:** one error-handling middleware. Client errors (4xx) keep their status, answer with our own message and log only the status and the error type: never the body, the error object or the parser's message, which can quote what the client sent (part of a password, for instance). Unknown errors log the stack and return `500 INTERNAL` with a generic message.
 - **CORS:** only the origins in `CORS_ORIGIN`, a comma-separated list. It starts as `http://localhost:3000`; the Vercel production URL is added after the first deploy (`03-frontend.md` §12). No credentials; we use a header token.
 - **Headers:** `helmet` defaults.
 - **Logging:** one line per request (method, path, status, ms). Never log tokens, passwords, the API key, or the symbol of an open round.
