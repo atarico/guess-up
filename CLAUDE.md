@@ -74,11 +74,23 @@ Before using a framework API you are not certain about (Next.js, Express 5, Tail
 
 ## Commands
 
-Fill this in when the scaffold exists, and keep it current. Expected shape:
+pnpm 10 and Node 24 in both packages. Run each command inside its package folder, and keep this list current.
 
 ```
-backend:   pnpm dev | test | typecheck | lint | build | migrate | seed | seed:demo
-frontend:  pnpm dev | test | typecheck | lint | build
+backend/   pnpm dev         tsx watch, loads backend/.env, http://localhost:4000
+           pnpm test        Vitest + supertest; no network, no database
+           pnpm typecheck   tsc --noEmit over src/ and test/
+           pnpm lint        ESLint with typescript-eslint
+           pnpm build       tsc to dist/
+           pnpm start       node dist/index.js (what Render runs)
+           pnpm migrate     applies sql/001_init.sql to DATABASE_URL in one transaction
+           pnpm seed        work unit 2
+           pnpm seed:demo   work unit 7
+frontend/  pnpm dev         next dev, loads frontend/.env.local, http://localhost:3000
+           pnpm test        Vitest; the format.ts tests arrive in work unit 5
+           pnpm typecheck   next typegen, then tsc --noEmit
+           pnpm lint        ESLint with eslint-config-next
+           pnpm build       next build
 ```
 
 ## How we work here
