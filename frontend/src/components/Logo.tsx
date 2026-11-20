@@ -12,7 +12,7 @@ export function Logo() {
         <path d="M6 18 L11 13 L15 16 L21 9" fill="none" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="stroke-accent" />
         <circle cx="21" cy="9" r="2.4" className="fill-gold" />
       </svg>
-      <span translate="no" className="font-display text-lg font-bold tracking-[-0.01em]">
+      <span translate="no" className="font-display text-lg font-bold tracking-[-0.01em] whitespace-nowrap">
         {copy.appTitle}
       </span>
     </span>

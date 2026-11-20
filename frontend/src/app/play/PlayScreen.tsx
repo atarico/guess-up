@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Chart } from '@/components/Chart';
 import { DecisionButtons } from '@/components/DecisionButtons';
+import { Logo } from '@/components/Logo';
 import { type LiveState, RevealCard } from '@/components/RevealCard';
 import { api, ApiError } from '@/lib/api';
 import type { DecisionResponse, LiveResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
@@ -16,7 +17,7 @@ import { callLine, headline } from '@/lib/reveal';
 type Screen =
   | { kind: 'loading' }
   | { kind: 'sealed'; id: string; points: number[]; pending: boolean; failed: boolean }
-  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal; live: LiveState }
+  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal; live: LiveState; streak: DecisionResponse['streak'] }
   | { kind: 'noData' }
   | { kind: 'error' };
 
@@ -105,7 +106,7 @@ export function PlayScreen() {
       try {
         const result = await api<DecisionResponse>(`/rounds/${screen.id}/decision`, { method: 'POST', body: { decision }, token });
         setStreak(result.streak.current);
-        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' } });
+        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' }, streak: result.streak });
       } catch {
         // The round is still open on the server, so trying again is safe (03 §8).
         setScreen({ ...screen, pending: false, failed: true });
@@ -138,7 +139,7 @@ export function PlayScreen() {
     };
   }, [token, revealedId]);
 
-  // Desktop keys: ← pass, → buy; Enter or Space for the next chart. A focused button handles its own
+  // Desktop keys: ← buy, → pass, as the buttons are laid out; Enter or Space for the next chart. A focused button handles its own
   // Enter and Space, so the page does not act twice.
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -146,7 +147,7 @@ export function PlayScreen() {
       if (screen.kind === 'sealed' && !screen.pending) {
         if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
           event.preventDefault();
-          void decide(event.key === 'ArrowLeft' ? 'pass' : 'buy');
+          void decide(event.key === 'ArrowLeft' ? 'buy' : 'pass');
         }
       } else if (screen.kind === 'revealed' && (event.key === 'Enter' || event.key === ' ')) {
         if ((event.target as HTMLElement).closest('button, a')) return;
@@ -162,46 +163,74 @@ export function PlayScreen() {
   const head = reveal ? headline(reveal.forwardReturn) : null;
   // The headline and the call, read out once when the reveal arrives (03 §5.3).
   const announcement =
-    reveal && head ? `${head.label ? `${head.label} ` : ''}${head.value}. ${callLine(reveal.decision, reveal.forwardReturn)}` : '';
+    reveal && head
+      ? `${head.label ? `${head.label} ` : ''}${head.value}. ${callLine(reveal.decision, reveal.forwardReturn)} ${reveal.correct ? copy.play.result.right : copy.play.result.wrong}.`
+      : '';
 
   return (
-    <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4">
-      <header className="grid h-12 shrink-0 grid-cols-3 items-center text-sm">
-        <span className="font-mono">{streak !== null && copy.play.streak(streak)}</span>
-        <span className="text-center font-mono">{chartNumber !== null && copy.play.roundCount(chartNumber)}</span>
-        <Link href="/stats" className="flex min-h-12 items-center justify-self-end underline underline-offset-4">
-          {copy.play.statsLink}
-        </Link>
+    <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <header className="flex h-11 shrink-0 items-center justify-between gap-2">
+        <Logo />
+        <div className="flex items-center gap-2">
+          {streak !== null && <Pill label={copy.play.streakLabel} value={streak} />}
+          <Link
+            href="/stats"
+            aria-label={copy.play.statsLabel}
+            className="flex size-11 items-center justify-center rounded-xl border border-line bg-surface text-fg"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M4 16V9M10 16V4M16 16v-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </Link>
+        </div>
       </header>
 
-      <div className="min-h-0 flex-1 py-2" aria-busy={screen.kind === 'loading'}>
+      {/* The chart takes what the block below leaves; at 390 x 844 that is 270 px (the design). */}
+      <div className="mt-2 min-h-24 flex-1" aria-busy={screen.kind === 'loading'}>
         <Chart points={screen.kind === 'sealed' || screen.kind === 'revealed' ? screen.points : []} reveal={reveal} />
       </div>
 
-      {/* Tall enough for the reveal card, with the live line wrapped to two lines (its longest note at 390 px), so the chart keeps its size at the reveal (03 §10). */}
-      <section className="flex min-h-84 shrink-0 flex-col justify-end gap-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      {/* One fixed height for the question, the reveal, the loading and the error states, so the chart keeps its size at the reveal (03 §10). The reveal's content needs about 445 px; 464 px is the design's. On a short phone both blocks tighten to 360 px (RevealCard drops its streak card) and the chart keeps about 190 px. */}
+      <section className="h-[clamp(448px,55svh,464px)] shrink-0 short:h-[360px]">
         {(screen.kind === 'loading' || screen.kind === 'sealed') && (
-          <>
-            {screen.kind === 'sealed' && screen.failed && (
-              <p role="alert" className="text-sm">
-                {copy.play.decisionFailed}
-              </p>
-            )}
-            <p className="text-xl font-semibold">{copy.play.question}</p>
-            <p className="hidden font-mono text-xs text-muted pointer-fine:block">{copy.play.keyHints}</p>
-            <DecisionButtons disabled={screen.kind !== 'sealed' || screen.pending} onDecide={(d) => void decide(d)} />
-          </>
+          <div className="flex h-full flex-col pt-3.5">
+            <ul className="flex flex-wrap gap-2">
+              {/* The chart number leads the chips: the top bar of the design has no room for a second pill. Hidden while unknown (lib/chartNumber.ts). */}
+              {chartNumber !== null && (
+                <li className="tabular flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg">{copy.play.roundCount(chartNumber)}</li>
+              )}
+              {copy.play.chips.map((chip) => (
+                <li key={chip} className="flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs text-muted">
+                  {chip}
+                </li>
+              ))}
+            </ul>
+            <h1 className="mt-[22px] font-display text-[34px] leading-[38px] font-bold tracking-[-0.02em] short:mt-4 short:text-[30px] short:leading-[34px]">{copy.play.question}</h1>
+            <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted">{copy.play.questionHint}</p>
+            <div className="mt-auto">
+              {screen.kind === 'sealed' && screen.failed && (
+                <p role="alert" className="mb-3 text-sm">
+                  {copy.play.decisionFailed}
+                </p>
+              )}
+              <DecisionButtons disabled={screen.kind !== 'sealed' || screen.pending} onDecide={(d) => void decide(d)} />
+              <p className="mt-3 text-center text-xs leading-[18px] text-faint">{copy.play.onceNote}</p>
+              <p className="hidden text-center text-xs leading-[18px] text-faint pointer-fine:block">{copy.play.keys}</p>
+            </div>
+          </div>
         )}
 
-        {screen.kind === 'revealed' && <RevealCard reveal={screen.reveal} live={screen.live} onNext={next} nextRef={nextButton} />}
+        {screen.kind === 'revealed' && (
+          <RevealCard reveal={screen.reveal} live={screen.live} streak={screen.streak} onNext={next} nextRef={nextButton} />
+        )}
 
         {(screen.kind === 'noData' || screen.kind === 'error') && (
-          <>
+          <div className="flex h-full flex-col justify-end gap-3">
             <p role="alert">{screen.kind === 'noData' ? copy.play.noData : copy.genericError}</p>
-            <button type="button" onClick={reload} className="button button-secondary min-h-14">
+            <button type="button" onClick={reload} className="button button-secondary">
               {copy.retry}
             </button>
-          </>
+          </div>
         )}
       </section>
 
@@ -209,5 +238,15 @@ export function PlayScreen() {
         {announcement}
       </p>
     </main>
+  );
+}
+
+/** A small label of the top bar, such as `Racha 3`. */
+function Pill({ label, value }: { label: string; value?: number }) {
+  return (
+    <p className="flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-[13px] text-muted">
+      {label}
+      {value !== undefined && <span className="tabular font-semibold text-fg">{value}</span>}
+    </p>
   );
 }

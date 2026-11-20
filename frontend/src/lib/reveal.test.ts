@@ -1,30 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { callLine, headline, liveLine } from './reveal';
 
-describe('callLine (03 §5.3)', () => {
-  it('a buy that went up is a good call', () => {
-    expect(callLine('buy', 0.12)).toBe('Compraste. Buena decisión.');
-  });
-
-  it('a buy that rose too little to show (0.0%) is still a good call', () => {
-    expect(callLine('buy', 0.0004)).toBe('Compraste. Buena decisión.');
-  });
-
-  it('a buy at a return of exactly zero did not change', () => {
+describe('callLine (03 §5.3): what happened, on the raw return', () => {
+  it('a buy that went up, down or stayed flat', () => {
+    expect(callLine('buy', 0.12)).toBe('Compraste. Subió.');
+    expect(callLine('buy', -0.08)).toBe('Compraste. Bajó.');
     expect(callLine('buy', 0)).toBe('Compraste. No cambió.');
   });
 
-  it('a buy that went down', () => {
-    expect(callLine('buy', -0.08)).toBe('Compraste. Bajó.');
+  it('a pass that went up, down or stayed flat', () => {
+    expect(callLine('pass', 0.12)).toBe('Pasaste. Subió.');
+    expect(callLine('pass', -0.08)).toBe('Pasaste. Bajó.');
+    expect(callLine('pass', 0)).toBe('Pasaste. No cambió.');
   });
 
-  it('a pass that went down or stayed flat is a good call', () => {
-    expect(callLine('pass', -0.08)).toBe('Pasaste. Buena decisión.');
-    expect(callLine('pass', 0)).toBe('Pasaste. Buena decisión.');
-  });
-
-  it('a pass that went up', () => {
-    expect(callLine('pass', 0.12)).toBe('Pasaste. Subió sin ti.');
+  it('a rise too small to show (0.0%) is still up: flat is exactly zero', () => {
+    expect(callLine('buy', 0.0004)).toBe('Compraste. Subió.');
+    expect(callLine('pass', 0.0004)).toBe('Pasaste. Subió.');
+    expect(callLine('buy', -0.0004)).toBe('Compraste. Bajó.');
   });
 });
 
@@ -35,7 +28,7 @@ describe('headline (03 §5.3, §4, §10): the number, its arrow, colour and labe
   });
 
   it('a number shown as 0.0% has no arrow and is in ink, whatever its sign before rounding', () => {
-    const flat = { value: '0.0%', arrow: null, label: null, colour: 'text-ink' };
+    const flat = { value: '0.0%', arrow: null, label: null, colour: 'text-fg' };
     expect(headline(0)).toEqual(flat);
     expect(headline(0.0004)).toEqual(flat);
     expect(headline(-0.0004)).toEqual(flat);
@@ -69,7 +62,7 @@ describe('liveLine (P1, 03 §5.3, §9)', () => {
   it('a move that shows as 0.0% has no arrow and is in ink (the same rule as the headline)', () => {
     expect(liveLine({ available: true, price: 100, asOf: '2026-11-19', sinceCutoff: 0.0004 })).toMatchObject({
       kind: 'price',
-      head: { value: '0.0%', arrow: null, colour: 'text-ink' },
+      head: { value: '0.0%', arrow: null, colour: 'text-fg' },
     });
   });
 

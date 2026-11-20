@@ -1,22 +1,23 @@
 'use client';
 
-import { type RefObject, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react';
 import type { Reveal } from '@/lib/api-types';
 import { copy } from '@/lib/copy';
-import { dateFull, money } from '@/lib/format';
+import { dateFull } from '@/lib/format';
 import './Chart.css';
 
 // 03 §6. Hand-written SVG: no axes, no values, no dates and no read-out on hover or touch before the
 // decision; there are no pointer handlers and no <title>, which a browser would show as a tooltip.
 
-/** The shown year takes the left 80%; the empty right 20% is the question, so nothing moves sideways at the reveal. */
-const LINE_ZONE = 0.8;
-/** 4% top and bottom, so the line never touches the edge. */
-const PAD = 0.04;
-/** Pixels at the bottom for the three dates, reserved in both states so the chart does not move at the reveal. */
-const LABEL_BAND = 20;
-/** Three faint hairlines for shape reference; they carry no labels. */
-const HAIRLINES = [0.25, 0.5, 0.75];
+/** Pixels above and below the line, so it never touches the edge and the tip dot's halo fits. */
+const TOP = 20;
+const BOTTOM = 24;
+/** Pixels kept on the right for the tip dot and its halo. */
+const RIGHT = 12;
+/** Four hairlines for shape reference, as fractions of the height; they carry no labels. */
+const HAIRLINES = [0.23, 0.46, 0.69, 0.92];
+/** Height of the row of dates under the plot, reserved in both states so the chart does not move at the reveal. */
+const DATE_ROW = 18;
 
 type Props = {
   /** The sealed points, 252 numbers in [0, 1]. Empty while a round loads: only the frame is drawn. */
@@ -43,122 +44,170 @@ function useBoxSize(ref: RefObject<HTMLDivElement | null>) {
   return size;
 }
 
-const toPolyline = (xy: [number, number][]) => xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+const toPoints = (xy: [number, number][]) => xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+/** A closed shape under a line, down to `floor`, for the gradient fill. */
+const toArea = (xy: [number, number][], floor: number) => {
+  const lines = xy.map(([x, y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  return `M${xy[0][0].toFixed(1)},${floor} ${lines} L${xy[xy.length - 1][0].toFixed(1)},${floor} Z`;
+};
 
 export function Chart({ points, reveal }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const { width, height } = useBoxSize(box);
+  const ready = width > 0 && height > 0;
 
-  const plotBottom = Math.max(0, height - LABEL_BAND);
-  const top = plotBottom * PAD;
-  const bottom = plotBottom * (1 - PAD);
-  /** A value in [0, 1] to a y coordinate; 1 is the top. */
-  const yOf = (v: number) => bottom - v * (bottom - top);
-  const zoneX = width * LINE_ZONE;
-  /** Bar i of n spread over the left 80%. */
-  const xOf = (i: number, n: number) => (n <= 1 ? 0 : (i / (n - 1)) * zoneX);
+  const plotWidth = Math.max(0, width - RIGHT);
+  const bottom = Math.max(TOP, height - BOTTOM);
 
-  const sealedLine = toPolyline(points.map((p, i) => [xOf(i, points.length), yOf(p)]));
-
-  const label = reveal
-    ? copy.chart.revealedLabel(reveal.symbol, dateFull(reveal.startDate), dateFull(reveal.endDate))
-    : copy.chart.sealedLabel;
+  // Where the cutoff falls once the future is added: the shown year is bar 0 to bar nh - 1 of nh + nf - 1.
+  const cutX = reveal ? (plotWidth * (reveal.history.length - 1)) / (reveal.history.length + reveal.future.length - 1) : 0;
+  const cutRight = width - cutX + 6;
 
   return (
-    <div ref={box} className="h-full w-full">
-      {width > 0 && height > 0 && (
-        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label} className="block">
-          {HAIRLINES.map((f) => (
-            <line key={f} x1={0} x2={width} y1={yOf(f)} y2={yOf(f)} className="stroke-rule" strokeWidth={1} />
-          ))}
+    <div className="flex h-full flex-col">
+      <div ref={box} className="relative min-h-0 flex-1">
+        {ready && (
+          <svg
+            width={width}
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
+            role="img"
+            aria-label={reveal ? copy.chart.revealed(reveal.name) : copy.chart.sealed}
+            className="block"
+          >
+            {HAIRLINES.map((f) => (
+              <line key={f} x1={0} x2={width} y1={height * f} y2={height * f} className="stroke-grid" strokeWidth={1} />
+            ))}
+            {reveal ? (
+              <Revealed reveal={reveal} height={height} plotWidth={plotWidth} bottom={bottom} cutX={cutX} />
+            ) : (
+              <Sealed points={points} height={height} plotWidth={plotWidth} bottom={bottom} />
+            )}
+          </svg>
+        )}
+        {ready && reveal && (
+          <span className="chart-labels absolute top-0 text-[11px] leading-[14px] text-muted" style={{ right: cutRight }}>
+            {copy.play.cutLabel}
+          </span>
+        )}
+      </div>
 
-          {!reveal && (
-            <>
-              <line x1={zoneX} x2={zoneX} y1={top} y2={bottom} className="stroke-muted" strokeWidth={1} strokeDasharray="4 4" />
-              <text
-                x={zoneX + (width - zoneX) / 2}
-                y={(top + bottom) / 2}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="fill-muted text-2xl"
-              >
-                {copy.chart.unknown}
-              </text>
-              {points.length > 0 && <polyline points={sealedLine} className="chart-ink" />}
-            </>
-          )}
-
-          {reveal && <Revealed reveal={reveal} sealedLine={sealedLine} width={width} height={height} zoneX={zoneX} yOf={yOf} xOf={xOf} />}
-        </svg>
-      )}
+      <div className="relative mt-1 shrink-0 text-[11px] leading-[18px] text-faint tabular" style={{ height: DATE_ROW }}>
+        {ready && reveal && (
+          <div className="chart-labels">
+            <span className="absolute top-0 left-0">{dateFull(reveal.startDate)}</span>
+            <span className="absolute top-0" style={{ right: cutRight }}>
+              {dateFull(reveal.cutoffDate)}
+            </span>
+            <span className="absolute top-0 right-0">{dateFull(reveal.endDate)}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-type RevealedProps = {
-  reveal: Reveal;
-  sealedLine: string;
-  width: number;
-  height: number;
-  zoneX: number;
-  yOf: (v: number) => number;
-  xOf: (i: number, n: number) => number;
-};
+type SealedProps = { points: number[]; height: number; plotWidth: number; bottom: number };
 
-/** The revealed state, drawn in the sequence of 03 §6; the CSS in globals.css times it. */
-function Revealed({ reveal, sealedLine, width, height, zoneX, yOf, xOf }: RevealedProps) {
+/** The year as the user sees it before deciding: the accent line over the whole width, nothing else. */
+function Sealed({ points, height, plotWidth, bottom }: SealedProps) {
+  if (points.length === 0) return null;
+  const xy = points.map((p, i): [number, number] => [(i / (points.length - 1)) * plotWidth, bottom - p * (bottom - TOP)]);
+  const tip = xy[xy.length - 1];
+  return (
+    <>
+      <defs>
+        <linearGradient id="chart-fill-sealed" gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={TOP} y2={height}>
+          <stop offset="0" stopColor="var(--color-accent)" stopOpacity={0.3} />
+          <stop offset="0.94" stopColor="var(--color-accent)" stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={toArea(xy, height)} fill="url(#chart-fill-sealed)" />
+      <polyline points={toPoints(xy)} className="chart-line stroke-accent" />
+      <circle cx={tip[0]} cy={tip[1]} r={10} className="fill-accent" opacity={0.18} />
+      <circle cx={tip[0]} cy={tip[1]} r={4.5} className="fill-accent" />
+    </>
+  );
+}
+
+type RevealedProps = { reveal: Reveal; height: number; plotWidth: number; bottom: number; cutX: number };
+
+/**
+ * The revealed state (03 §6). Everything is drawn once, in its final place: one x scale over history
+ * and future, one y scale over both. The sealed year was drawn with a wider x scale and a tighter y
+ * scale. Both are affine, so the history only has to go from the sealed placement to its final one:
+ * a CSS transform (scale and translate) animates that move, and the path data is never animated.
+ */
+function Revealed({ reveal, height, plotWidth, bottom, cutX }: RevealedProps) {
   const { history, future } = reveal;
-  // 1. One vertical scale over history and future together.
-  const closes = [...history, ...future].map((bar) => bar.c);
-  const min = Math.min(...closes);
-  const max = Math.max(...closes);
-  const scaled = (c: number) => (max === min ? 0.5 : (c - min) / (max - min));
+  const nh = history.length;
+  /** The last bar's index, over history and future together: the x scale is index / last. */
+  const last = nh + future.length - 1;
 
-  const cutoff = history[history.length - 1];
+  const historyCloses = history.map((bar) => bar.c);
+  const allCloses = [...historyCloses, ...future.map((bar) => bar.c)];
+  const lo = Math.min(...allCloses);
+  const hi = Math.max(...allCloses);
+  /** A close as a fraction of the revealed price range, 0 at the bottom. */
+  const unit = (c: number) => (hi === lo ? 0.5 : (c - lo) / (hi - lo));
+  const yOf = (c: number) => bottom - unit(c) * (bottom - TOP);
+
+  const historyXY = history.map((bar, i): [number, number] => [(i / last) * plotWidth, yOf(bar.c)]);
+  const cutoff = history[nh - 1];
   const end = future[future.length - 1];
+  const futureXY: [number, number][] = [
+    [cutX, yOf(cutoff.c)],
+    ...future.map((bar, j): [number, number] => [((nh + j) / last) * plotWidth, yOf(bar.c)]),
+  ];
+  const tip = futureXY[futureXY.length - 1];
+  // The future line, area and tip take one colour, by the final close against the cutoff close.
   const up = end.c > cutoff.c;
-  const cutoffY = yOf(scaled(cutoff.c));
-  const endY = yOf(scaled(end.c));
+  const colour = up ? 'var(--color-up)' : 'var(--color-down)';
 
-  const historyLine = toPolyline(history.map((bar, i) => [xOf(i, history.length), yOf(scaled(bar.c))]));
-  // 2. The future fills the right 20%, starting from the cutoff point and ending just inside the
-  // right edge, so the end dot is not cut.
-  const right = width - 4;
-  const futureLine = toPolyline([
-    [zoneX, cutoffY],
-    ...future.map((bar, j): [number, number] => [zoneX + ((j + 1) / future.length) * (right - zoneX), yOf(scaled(bar.c))]),
-  ]);
-
-  // A price label sits just above its dot, or just below when the dot is at the top.
-  const labelY = (y: number) => (y - 8 < 10 ? y + 16 : y - 8);
-  const dateY = height - 5;
+  // From the sealed placement to the final one: y' = s * y + t on the y axis, and x stretched by sx.
+  // The sealed year spanned [lo1, hi1] over the whole plot height and the whole width.
+  const lo1 = Math.min(...historyCloses);
+  const hi1 = Math.max(...historyCloses);
+  const sx = last / (nh - 1);
+  let sy = 1;
+  let ty = 0;
+  if (hi1 === lo1) {
+    // A flat year is drawn in the middle when sealed; only a shift is needed.
+    ty = bottom - 0.5 * (bottom - TOP) - yOf(hi1);
+  } else {
+    const span = unit(hi1) - unit(lo1);
+    sy = 1 / span;
+    ty = bottom * (1 - sy) + unit(lo1) * (bottom - TOP) * sy;
+  }
+  const from = `translate(0px, ${ty.toFixed(2)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+  // The history area goes down far enough that, scaled back to the sealed placement, it still reaches the bottom.
+  const historyFloor = Math.max(height, (height - ty) / sy);
 
   return (
     <>
-      {/* The sealed line fades out while the history redraws on the new scale. */}
-      <polyline points={sealedLine} className="chart-ink chart-fade-out" />
-      <polyline points={historyLine} className="chart-ink chart-fade-in" />
-      <polyline points={futureLine} pathLength={1} className={`chart-future ${up ? 'stroke-up' : 'stroke-down'}`} />
+      <defs>
+        <linearGradient id="chart-fill-history" gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={TOP} y2={height}>
+          <stop offset="0" stopColor="var(--color-accent)" stopOpacity={0.3} />
+          <stop offset="0.94" stopColor="var(--color-accent)" stopOpacity={0} />
+        </linearGradient>
+        <linearGradient id="chart-fill-future" gradientUnits="userSpaceOnUse" x1={0} x2={0} y1={TOP} y2={height}>
+          <stop offset="0" stopColor={colour} stopOpacity={0.32} />
+          <stop offset="0.94" stopColor={colour} stopOpacity={0} />
+        </linearGradient>
+      </defs>
 
-      {/* 3. Labels: three dates and two prices, and a dot at the cutoff and at the end. */}
-      <g className="chart-labels font-mono text-[10px]">
-        <circle cx={zoneX} cy={cutoffY} r={3.5} className="fill-ink" />
-        <circle cx={right} cy={endY} r={3.5} className={up ? 'fill-up' : 'fill-down'} />
-        <text x={zoneX - 6} y={labelY(cutoffY)} textAnchor="end" className="fill-ink">
-          {money(cutoff.c)}
-        </text>
-        <text x={width} y={labelY(endY)} textAnchor="end" className={up ? 'fill-up' : 'fill-down'}>
-          {money(end.c)}
-        </text>
-        <text x={0} y={dateY} textAnchor="start" className="fill-muted">
-          {dateFull(reveal.startDate)}
-        </text>
-        <text x={zoneX - 2} y={dateY} textAnchor="end" className="fill-muted">
-          {dateFull(reveal.cutoffDate)}
-        </text>
-        <text x={width} y={dateY} textAnchor="end" className="fill-muted">
-          {dateFull(reveal.endDate)}
-        </text>
+      <g className="chart-history" style={{ '--chart-from': from } as CSSProperties}>
+        <path d={toArea(historyXY, historyFloor)} fill="url(#chart-fill-history)" className="chart-history-area" />
+        <polyline points={toPoints(historyXY)} className="chart-line chart-history-line" />
+      </g>
+
+      <path d={toArea(futureXY, height)} fill="url(#chart-fill-future)" className="chart-future-area" />
+      <polyline points={toPoints(futureXY)} pathLength={1} className={`chart-line chart-future ${up ? 'stroke-up' : 'stroke-down'}`} />
+
+      <g className="chart-labels">
+        <line x1={cutX} x2={cutX} y1={16} y2={height - 6} className="stroke-cut" strokeWidth={1} strokeDasharray="3 4" />
+        <circle cx={tip[0]} cy={tip[1]} r={10} className={up ? 'fill-up' : 'fill-down'} opacity={0.18} />
+        <circle cx={tip[0]} cy={tip[1]} r={4.5} className={up ? 'fill-up' : 'fill-down'} />
       </g>
     </>
   );

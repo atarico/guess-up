@@ -122,63 +122,67 @@ One form: email, password, submit. A switch toggles between the two modes.
 
 ### 5.3 Play `/play`
 
-Layout at 390 × 844, top to bottom:
+Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "Revelación"):
 
-1. **Top bar** (48 px): streak on the left, round count in the middle, link to stats on the right.
-2. **Chart** (about 55% of the height). Sealed state.
-3. **Question.**
-4. **Two buttons**, side by side, in the bottom thumb zone: pass on the left, buy on the right.
+1. **Top bar** (44 px): the logo on the left; on the right a `Racha N` pill, a `Gráfica N` pill (hidden below 380 px wide, where the row does not fit) and a 44 × 44 icon link to Stats.
+2. **Chart**, flexible, then a reserved 18 px row for the dates of the reveal. Sealed state.
+3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): three chips, the question, a hint, the two buttons, a note.
+4. **Two buttons**, side by side, in the bottom thumb zone: buy on the left, pass on the right.
 
 | Element | Text |
 | --- | --- |
-| Streak | `Racha: 3` |
+| Streak pill | `Racha` and the number |
 | Round count | `Gráfica 17` |
-| Stats link | `Estadísticas` |
-| Question | `¿Comprarías esta acción?` |
-| Left button | `Pasar` |
-| Right button | `Comprar` |
-| Key hints | `← Pasar · → Comprar` |
+| Stats link (icon), `aria-label` | `Ver estadísticas` |
+| Chips | `Acción real` · `Un año` · `Sin nombre ni fechas` |
+| Question | `¿Compras o pasas?` |
+| Hint | `Después verás la empresa, las fechas y lo que pasó en los tres meses siguientes.` |
+| Left button | `Comprar` |
+| Right button | `Pasar` |
+| Note under the buttons | `Tu decisión se registra una sola vez.` |
+| Key hints | `← Comprar · → Pasar` |
 
 The top bar's numbers come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
 
-Button rules: identical size, weight, border and fill. At least 56 px tall with 12 px between them. No "primary" styling on either. Disabled the instant one is pressed.
+Button rules: identical size, weight, border and fill (`raised`, `edge`), 64 px tall with 12 px between them. No "primary" styling on either. Disabled the instant one is pressed.
 
-Desktop: the same column, centred, maximum width 480 px. Keyboard: `←` pass, `→` buy, `Enter` or `Space` for next chart. Show the key hints only on devices with a fine pointer.
+Desktop: the same column, centred, maximum width 480 px. Keyboard: `←` buy and `→` pass (they follow the buttons), `Enter` or `Space` for next chart. Show the key hints only on devices with a fine pointer.
 
-**After the decision** the same screen changes in place: the chart reveals (§6), the question and buttons are replaced by the reveal card, and focus moves to the next-chart button.
+**After the decision** the same screen changes in place: the chart reveals (§6), the question block is replaced by the reveal block of the same height, and focus moves to the next-chart button. The reveal block's parts rise in one after another once the chart has drawn.
 
-Reveal card content, in this order:
+Reveal block, in this order:
 
 | Element | Text (example) |
 | --- | --- |
-| Identity | `NVDA · NVIDIA Corporation` |
-| Sector and exchange, smaller | `Tecnología · NASDAQ` |
-| Window shown | `12 mar 2018 → 12 mar 2019` |
-| Horizon | `los 3 meses siguientes, hasta el 11 jun 2019` |
-| Headline number, large | `▼ −12.4%` |
-| The call | one line from the table below |
-| Prices | `USD 61.20 → USD 53.61` |
-| Price note, below the prices (muted) | `Precios ajustados por splits.` |
-| (P1) Live line, when it arrives | `Hoy: USD 184.20 · ▲ +310.0% desde entonces` |
-| (P1) Live line, unavailable (muted) | `El precio de hoy no está disponible en este momento (límite de la API).` |
-| (P1) Live line, unavailable for another reason (muted) | `El precio de hoy no está disponible en este momento.` |
+| Headline number, large, and its span | `▼ −12.4%` · `en 3 meses` |
+| The call, and whether it was right | one line from the table below · `Acertaste` or `Fallaste`, with a check or a cross |
+| Company card | the ticker in a box, `NVIDIA Corporation`, `Tecnología · NASDAQ` |
+| Prices card, first row | `Corte → 3 meses` · `USD 61.20 → USD 53.61` |
+| Prices card, second row (P1) | `Hoy` · `USD 184.20` and `▲ +310.0% desde entonces` |
+| (P1) Live, unavailable (muted) | `El precio de hoy no está disponible en este momento (límite de la API).` |
+| (P1) Live, unavailable for another reason (muted) | `El precio de hoy no está disponible en este momento.` |
+| Price note, below the card (muted) | `Precios ajustados por splits.` |
+| Streak card | `Racha actual` N · `Mejor racha` N |
 | Button | `Siguiente gráfica` |
 
-(P1) While the live line loads, show a one-line placeholder of the same height. The live call is optional: it sends one request with no wait for a sleeping server and no `ServerWaking` (`api.ts`, `optional`), and gives up after 8 s. The limit note is used only when the API answers `reason: "limit"`; a timeout or any other failure gets the shorter note. The arrow and the percent come from `headline(sinceCutoff)`. The limit note takes two lines at 390 px, so the bottom panel reserves that room and the chart keeps its size.
+The window and the horizon are no longer written out: the dates under the chart (start, cutoff, end) show them.
+
+(P1) While the live row loads, it shows a skeleton of the same height. The live call is optional: it sends one request with no wait for a sleeping server and no `ServerWaking` (`api.ts`, `optional`), and gives up after 8 s. The limit note is used only when the API answers `reason: "limit"`; a timeout or any other failure gets the shorter note. The arrow and the percent come from `headline(sinceCutoff)`.
 
 Call lines:
 
 | Decision | Outcome | Text |
 | --- | --- | --- |
-| Buy | up | `Compraste. Buena decisión.` |
+| Buy | up | `Compraste. Subió.` |
 | Buy | down | `Compraste. Bajó.` |
 | Buy | flat | `Compraste. No cambió.` |
-| Pass | down or flat | `Pasaste. Buena decisión.` |
-| Pass | up | `Pasaste. Subió sin ti.` |
+| Pass | up | `Pasaste. Subió.` |
+| Pass | down | `Pasaste. Bajó.` |
+| Pass | flat | `Pasaste. No cambió.` |
 
-The outcome comes from the raw return, with the boundary of `isCorrect` (02): flat is a return of exactly zero. A rise too small to show, printed as `0.0%`, is still up: `Compraste. Buena decisión.` The headline's number, arrow, colour and accessible label come from one function, `headline` in `lib/reveal.ts`, which reads the sign of the number as shown: a return shown as `0.0%` has no arrow and is in `ink`, neither `up` nor `down`. The call line keeps the raw return.
+The call says what happened; the pill beside it says whether the call was right (`correct`, `isCorrect`). The outcome comes from the raw return, with the boundary of `isCorrect` (02): flat is a return of exactly zero, and a rise too small to show, printed as `0.0%`, is still up. The headline's number, arrow, colour and accessible label come from one function, `headline` in `lib/reveal.ts`, which reads the sign of the number as shown: a return shown as `0.0%` has no arrow and is in `fg`, neither `up` nor `down`.
 
-Announce the headline and the call through an `aria-live="polite"` region.
+Announce the headline, the call and the result through an `aria-live="polite"` region.
 
 ### 5.4 Stats `/stats`
 
@@ -240,19 +244,18 @@ One component, hand-written SVG. About 315 points do not need a library, and no 
 
 **Sealed state**
 
-- A single `ink` polyline, 2 px, `vector-effect: non-scaling-stroke`, round joins.
-- The line occupies the left 80% of the width. The right 20% is an empty zone with a faint dashed boundary and a `?`. That empty space is the question, and it means nothing moves sideways at the reveal.
-- No axes, no grid values, no dates, no tooltip, no hover or touch read-out. Three faint horizontal hairlines are allowed for shape reference; they carry no labels.
-- `role="img"`, `aria-label="Gráfica de precios anónima, un año de precios diarios"`.
+- The accent line, 2 px, `vector-effect: non-scaling-stroke`, round joins, across the full width, with a gradient area under it and a dot with a halo at its end.
+- No axes, no grid values, no dates, no tooltip, no hover or touch read-out. Four `grid` hairlines are allowed for shape reference; they carry no labels.
+- `role="img"`, `aria-label="Gráfica anónima de un año de precios, sin nombre, fechas ni escala"`.
 
-**Revealed state**, in sequence:
+**Revealed state**, in sequence (all CSS, every element's normal style is its final state):
 
-1. Recompute the vertical scale over history and future together and redraw the history line (a 200 ms cross-fade is enough; do not animate the path data).
-2. Draw the future line into the right 20% over about 900 ms using `stroke-dashoffset`. Colour: `up` when the final close is above the cutoff close, else `down`.
-3. Fade in labels: the three dates along the bottom (start, cutoff, end) and the two prices (at the cutoff, at the end). A dot marks the cutoff and the end point.
-4. The label becomes `aria-label="Gráfica de NVDA, del 12 mar 2018 al 11 jun 2019"`.
+1. The history is drawn once in its final coordinates (the x scale over history and future, the y scale over both). It starts from the sealed placement, given as a CSS `transform` (`--chart-from`, a scale and a translation: both maps are affine), and settles in 450 ms while it turns `past` and its area fades to 35%. Path data is never animated.
+2. The future line draws into the room the history made, over 900 ms with `stroke-dashoffset`, with a gradient area of its colour: `up` when the final close is above the cutoff close, else `down`.
+3. The dashed `cut` line with `Corte`, the end dot, and the three dates under the chart (start left, cutoff right-aligned at the cut, end right) fade in.
+4. The label becomes `aria-label="Gráfica de NVIDIA Corporation: un año hasta el corte y los tres meses siguientes"`.
 
-Keep 4% padding top and bottom so the line never touches the edge. The chart must stay sharp from 320 px to 480 px wide.
+The chart is drawn in the pixels of its own box and stays sharp from 320 px to 480 px wide.
 
 ## 7. Auth on the client
 

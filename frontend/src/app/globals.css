@@ -34,6 +34,9 @@
   --font-mono: var(--font-inter);
 }
 
+/* Phones with little height (390 x 664 and below): the play screen tightens so the chart keeps room (03 §10). */
+@custom-variant short (@media (max-height: 760px));
+
 :root {
   color-scheme: dark;
 }
