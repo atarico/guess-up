@@ -46,4 +46,18 @@ export const copy = {
     signedInAs: 'Sesión iniciada como',
     logOut: 'Cerrar sesión',
   },
+  // 03 §3: sector names arrive in English from the API; anything not listed is shown as it comes.
+  sectors: {
+    Technology: 'Tecnología',
+    'Health Care': 'Salud',
+    Financials: 'Finanzas',
+    Energy: 'Energía',
+    Industrials: 'Industria',
+    'Consumer Discretionary': 'Consumo discrecional',
+    'Consumer Staples': 'Consumo básico',
+    'Communication Services': 'Comunicaciones',
+    Utilities: 'Servicios públicos',
+    Materials: 'Materiales',
+    'Real Estate': 'Bienes raíces',
+  } as Record<string, string>,
 };
