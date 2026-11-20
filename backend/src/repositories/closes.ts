@@ -28,7 +28,7 @@ export function closesRepository(pool: pg.Pool) {
       const { rows } = await pool.query<DailyClose>(
         `select d, close from (
            select ${BAR} from daily_closes where symbol = $1 and d <= $2 order by d desc limit $3
-         ) as window order by d`,
+         ) as shown order by d`,
         [symbol, cutoffDate, count],
       );
       return rows;
