@@ -43,7 +43,7 @@ In the **reveal**, right after the decision (01 §7, 03 §5.3). Before it, the s
 You need Node 24, pnpm 10 (pinned with `packageManager`), a **Supabase** Postgres project, and a Twelve Data API key (free Basic plan). The backend verifies the database's TLS certificate against Supabase's root certificate (`backend/certs/supabase-ca.crt`, `src/db.ts`), so a plain local Postgres is refused.
 
 ```sh
-git clone https://github.com/atarico/guss-up.git && cd guss-up
+git clone https://github.com/atarico/guess-up.git && cd guess-up
 
 # Backend: http://localhost:4000
 cd backend
