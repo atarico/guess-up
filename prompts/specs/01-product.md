@@ -191,7 +191,7 @@ Details, states and copy are in `03-frontend.md`.
 
 | # | Work unit | Budget | Session log |
 | --- | --- | --- | --- |
-| 1 | Scaffold both packages, schema, `/health`, **deploy both skeletons** | 30 min | `01-setup.md` |
+| 1 | Scaffold both packages, schema, `/status` (health check), **deploy both skeletons** | 30 min | `01-setup.md` |
 | 2 | Twelve Data client, credit budget, seed script, universe | 30 min | `02-market-data.md` |
 | 3 | Auth: register, login, JWT middleware | 25 min | `03-auth.md` |
 | 4 | Domain (test-first) and rounds API, no-leak test | 40 min | `04-rounds.md` |

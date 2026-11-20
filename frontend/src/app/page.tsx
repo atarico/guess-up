@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { API_URL, HEALTH_PATH } from '@/lib/api';
 import { copy } from '@/lib/copy';
 
-// Provisional page for work unit 1: it calls the deployed backend's /health from the browser,
+// Provisional page for work unit 1: it calls the deployed backend's health check from the browser,
 // which proves NEXT_PUBLIC_API_URL and CORS end to end. Work unit 5 replaces it.
-const healthUrl = `${process.env.NEXT_PUBLIC_API_URL}/health`;
+const healthUrl = `${API_URL}${HEALTH_PATH}`;
 
 type Result =
   | { kind: 'loading' }

@@ -228,11 +228,13 @@ coinBenchmark(returns: number[], buys: number, seed: number, trials = 2000):
 
 ## 7. HTTP API
 
-JSON in, JSON out. All routes except `/health` and `/auth/register|login` require the bearer token. Returns are decimals (`0.021` = +2.1%). Dates are `YYYY-MM-DD`.
+JSON in, JSON out. All routes except `/status` and `/auth/register|login` require the bearer token. Returns are decimals (`0.021` = +2.1%). Dates are `YYYY-MM-DD`.
 
 Errors always look like `{ "error": { "code": "…", "message": "…" } }`. Codes: `VALIDATION` 400, `UNAUTHORIZED` 401, `INVALID_CREDENTIALS` 401, `NOT_FOUND` 404, `EMAIL_TAKEN` 409, `ROUND_OPEN` 409 (P1, used only by the live endpoint), `NO_DATA` 503, `INTERNAL` 500. Error messages never include a symbol or a date. The `message` is English and written for developers; the interface is Spanish and maps `error.code` to its own text, so `message` is never shown to a user.
 
-### `GET /health`
+### `GET /status`
+The health check. Not `/health`: EasyPrivacy, a filter list that Brave Shields and uBlock Origin apply by default, blocks cross-site requests to `onrender.com/health` (`DECISIONS.md`). The path is one constant on each side, `HEALTH_PATH` in `routes/health.ts` and in `frontend/src/lib/api.ts`.
+
 `200 { ok: true, db: true, symbolsReady: 58, credits: { usedToday: 61, dailyCap: 750 } }`. Runs `select 1`; used by the cold-start screen and by the daily keep-alive ping (P1). It answers `200` whenever the process is up: if `select 1` fails, the body is `{ ok: true, db: false }` with no other fields, so Render keeps the deploy live and the cold-start screen stops waiting (`03-frontend.md` §8).
 
 ### `POST /rounds` — create or resume
@@ -325,9 +327,9 @@ Vitest. Route tests use supertest with in-memory repositories and `fakeProvider`
 
 ## 10. Deployment
 
-- **Render** free web service, root directory `backend`, build `corepack enable && pnpm install --frozen-lockfile && pnpm build`, start `node dist/index.js`, health check path `/health`. Render's docs do not mention pnpm, so corepack installs the version pinned in `packageManager`.
+- **Render** free web service, root directory `backend`, build `corepack enable && pnpm install --frozen-lockfile && pnpm build`, start `node dist/index.js`, health check path `/status`. Render's docs do not mention pnpm, so corepack installs the version pinned in `packageManager`.
 - The free instance sleeps after 15 minutes without traffic and takes up to about a minute to wake. The frontend handles this (`03-frontend.md` §8). In-memory state (minute window, quote cache) is lost on sleep, which is safe by design.
-- **Supabase** pauses free projects after a week of low activity. A scheduled GitHub Action calls `/health` once a day so the database is awake when the reviewers open the app (P1).
+- **Supabase** pauses free projects after a week of low activity. A scheduled GitHub Action calls `/status` once a day so the database is awake when the reviewers open the app (P1).
 - Run the migration and `pnpm seed` once against the production database from a laptop; then `pnpm seed:demo`.
 
 ## 11. Explicitly not built

@@ -247,7 +247,7 @@ Keep 4% padding top and bottom so the line never touches the edge. The chart mus
 
 | Situation | Behaviour | Text |
 | --- | --- | --- |
-| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/health` every 3 s, then continue automatically. If `/health` answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). | `Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.` |
+| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/status` (the health check, `02-backend.md` §7) every 3 s, then continue automatically. If it answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). | `Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.` |
 | Loading a round | Chart-shaped skeleton; buttons visible and disabled. | — |
 | Submitting a decision | Both buttons disabled at once; no double submit. On failure, re-enable. The round is still open server-side, so retrying is safe. | `No se pudo guardar tu respuesta. Intenta de nuevo.` |
 | Open round resumed | Nothing special. The same chart appears. | — |
