@@ -689,3 +689,11 @@ On `main`. The first version of this list said `origin/main` was at `3630fe3`; t
 - `c56158f` docs: defer revoking the anon and authenticated grants
 
 This continuation is one more commit, made afterwards.
+
+### Prompt 30 — 08:58 UTC
+
+````text
+Ya pushee y el deploy de Render terminó, corré las pruebas
+````
+
+**Outcome:** `origin/main` matched the local `HEAD` (`814e961`). The AI ran the curl checks against production at 08:58 UTC (output in the feature document, L38). `/status` answered `db: true`; CORS allowed the Vercel origin and not `https://example.com`; an unknown route gave `404 NOT_FOUND`; malformed JSON gave `400 VALIDATION` with the app's own message and none of the request text. This record is one more commit, for the author to push.
