@@ -13,7 +13,7 @@ import type { MeResponse, RecentRound, RecentRoundsResponse, StatsResponse } fro
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
 import { count, percent, share } from '@/lib/format';
-import { averageBars, edgeView, ringOffset, type Direction } from '@/lib/statsView';
+import { arrowLabel, averageBars, edgeView, ringOffset, type Direction } from '@/lib/statsView';
 import { coinCardParts, verdictParts } from '@/lib/verdict';
 import './stats.css';
 
@@ -134,6 +134,11 @@ function Scoreboard({ stats, isDemo, recent, onLogOut }: { stats: StatsResponse;
         </div>
       )}
 
+      {/* The way back to the game, also here, so it is one tap away after the verdict without scrolling (03 §5.4). */}
+      <Link href="/play" className="button button-primary">
+        {text.keepPlaying}
+      </Link>
+
       <AveragesCard stats={stats} />
       <CoinCard stats={stats} />
       <HitsCard stats={stats} />
@@ -179,13 +184,18 @@ function AveragesCard({ stats }: { stats: StatsResponse }) {
           </div>
         </div>
       ))}
-      <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
-        <div className="flex flex-col gap-0.5">
+      {/* With "puntos" the value is wider than the design's "pp": it drops below the label when the row is too narrow. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-line pt-4">
+        <div className="flex min-w-40 flex-1 flex-col gap-0.5">
           <span className="text-[15px] leading-5 font-semibold">{text.edge}</span>
           <span className="text-xs leading-4 text-muted">{text.edgeHint}</span>
         </div>
-        <span className={`font-display text-2xl leading-7 font-bold whitespace-nowrap tabular ${TEXT[edge.direction]}`}>
-          {edge.arrow && <span aria-hidden="true">{edge.arrow} </span>}
+        <span className={`ml-auto font-display text-xl leading-7 font-bold whitespace-nowrap tabular ${TEXT[edge.direction]}`}>
+          {edge.arrow && (
+            <span role="img" aria-label={arrowLabel(edge.direction) ?? undefined}>
+              {edge.arrow}{' '}
+            </span>
+          )}
           {edge.text}
         </span>
       </div>
@@ -217,6 +227,7 @@ function CoinCard({ stats }: { stats: StatsResponse }) {
           {text.legendYou}
         </span>
       </div>
+      <p className="text-xs leading-[18px] text-pretty text-muted">{text.twoHumps}</p>
       <p className="border-t border-line pt-3.5 text-sm leading-[21px] text-pretty">
         <Sentence parts={sentence} figureClassName="font-semibold tabular" />
       </p>

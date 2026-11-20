@@ -42,7 +42,7 @@ The brief asks for "an app to see stock financial data". Guess-Up shows financia
 ## 5. Principles
 
 - **The future is sealed.** Nothing about the stock or the date reaches the device before the decision. This is a server rule, not a UI rule.
-- **Ten seconds.** One chart, one question, two buttons. No tutorial, no settings.
+- **Ten seconds.** One chart, one question, two buttons. No tutorial that holds up the game; a short card the first time. No settings.
 - **No nudging.** Buy and Pass have equal visual weight. Colour appears only after the decision.
 - **Honest over flattering.** Always compare against a benchmark, always show the sample size, say "too early to tell" when it is.
 - **Phone first.** Designed at 390 px, thumbs at the bottom. Desktop works and is not the target.

@@ -14,6 +14,11 @@ const TOP = 20;
 const BOTTOM = 24;
 /** Pixels kept on the right for the tip dot and its halo. */
 const RIGHT = 12;
+/**
+ * The year takes the left 80% of the plot in both states; the right 20% is the question when sealed
+ * and the three months when revealed. So nothing moves sideways at the reveal (03 §6).
+ */
+const HISTORY_SHARE = 0.8;
 /** Four hairlines for shape reference, as fractions of the height; they carry no labels. */
 const HAIRLINES = [0.23, 0.46, 0.69, 0.92];
 /** Height of the row of dates under the plot, reserved in both states so the chart does not move at the reveal. */
@@ -59,8 +64,8 @@ export function Chart({ points, reveal }: Props) {
   const plotWidth = Math.max(0, width - RIGHT);
   const bottom = Math.max(TOP, height - BOTTOM);
 
-  // Where the cutoff falls once the future is added: the shown year is bar 0 to bar nh - 1 of nh + nf - 1.
-  const cutX = reveal ? (plotWidth * (reveal.history.length - 1)) / (reveal.history.length + reveal.future.length - 1) : 0;
+  // The cutoff: the end of the year and the edge of the question zone, at the same x in both states.
+  const cutX = plotWidth * HISTORY_SHARE;
   const cutRight = width - cutX + 6;
 
   return (
@@ -81,7 +86,7 @@ export function Chart({ points, reveal }: Props) {
             {reveal ? (
               <Revealed reveal={reveal} height={height} plotWidth={plotWidth} bottom={bottom} cutX={cutX} />
             ) : (
-              <Sealed points={points} height={height} plotWidth={plotWidth} bottom={bottom} />
+              <Sealed points={points} width={width} height={height} cutX={cutX} bottom={bottom} />
             )}
           </svg>
         )}
@@ -107,13 +112,18 @@ export function Chart({ points, reveal }: Props) {
   );
 }
 
-type SealedProps = { points: number[]; height: number; plotWidth: number; bottom: number };
+type SealedProps = { points: number[]; width: number; height: number; cutX: number; bottom: number };
 
-/** The year as the user sees it before deciding: the accent line over the whole width, nothing else. */
-function Sealed({ points, height, plotWidth, bottom }: SealedProps) {
+/**
+ * The year as the user sees it before deciding: the accent line over the left 80%, then an empty
+ * zone with a dashed edge and a gold `?`. The empty space is the question. The edge is drawn where the
+ * cutoff line will be, so at the reveal it simply stays.
+ */
+function Sealed({ points, width, height, cutX, bottom }: SealedProps) {
   if (points.length === 0) return null;
-  const xy = points.map((p, i): [number, number] => [(i / (points.length - 1)) * plotWidth, bottom - p * (bottom - TOP)]);
+  const xy = points.map((p, i): [number, number] => [(i / (points.length - 1)) * cutX, bottom - p * (bottom - TOP)]);
   const tip = xy[xy.length - 1];
+  const zoneMiddle = (cutX + width) / 2;
   return (
     <>
       <defs>
@@ -126,23 +136,33 @@ function Sealed({ points, height, plotWidth, bottom }: SealedProps) {
       <polyline points={toPoints(xy)} className="chart-line stroke-accent" />
       <circle cx={tip[0]} cy={tip[1]} r={10} className="fill-accent" opacity={0.18} />
       <circle cx={tip[0]} cy={tip[1]} r={4.5} className="fill-accent" />
+      <CutLine cutX={cutX} height={height} />
+      <circle cx={zoneMiddle} cy={height / 2} r={17} className="chart-question-ring" />
+      <text x={zoneMiddle} y={height / 2} textAnchor="middle" dominantBaseline="central" className="chart-question-mark">
+        {copy.chart.unknown}
+      </text>
     </>
   );
+}
+
+/** The dashed edge of the question zone, which is the cutoff line once revealed. */
+function CutLine({ cutX, height }: { cutX: number; height: number }) {
+  return <line x1={cutX} x2={cutX} y1={16} y2={height - 6} className="stroke-cut" strokeWidth={1} strokeDasharray="3 4" />;
 }
 
 type RevealedProps = { reveal: Reveal; height: number; plotWidth: number; bottom: number; cutX: number };
 
 /**
- * The revealed state (03 §6). Everything is drawn once, in its final place: one x scale over history
- * and future, one y scale over both. The sealed year was drawn with a wider x scale and a tighter y
- * scale. Both are affine, so the history only has to go from the sealed placement to its final one:
- * a CSS transform (scale and translate) animates that move, and the path data is never animated.
+ * The revealed state (03 §6). Everything is drawn once, in its final place: the year where it was,
+ * the three months in the zone that was the question, one y scale over both. The sealed year had the
+ * same x and a tighter y scale. That map is affine, so the history only has to go from the sealed
+ * placement to its final one: a CSS transform (scale and translate on y) animates that move, and the
+ * path data is never animated.
  */
 function Revealed({ reveal, height, plotWidth, bottom, cutX }: RevealedProps) {
   const { history, future } = reveal;
   const nh = history.length;
-  /** The last bar's index, over history and future together: the x scale is index / last. */
-  const last = nh + future.length - 1;
+  const nf = future.length;
 
   const historyCloses = history.map((bar) => bar.c);
   const allCloses = [...historyCloses, ...future.map((bar) => bar.c)];
@@ -152,23 +172,22 @@ function Revealed({ reveal, height, plotWidth, bottom, cutX }: RevealedProps) {
   const unit = (c: number) => (hi === lo ? 0.5 : (c - lo) / (hi - lo));
   const yOf = (c: number) => bottom - unit(c) * (bottom - TOP);
 
-  const historyXY = history.map((bar, i): [number, number] => [(i / last) * plotWidth, yOf(bar.c)]);
+  const historyXY = history.map((bar, i): [number, number] => [(i / (nh - 1)) * cutX, yOf(bar.c)]);
   const cutoff = history[nh - 1];
-  const end = future[future.length - 1];
+  const end = future[nf - 1];
   const futureXY: [number, number][] = [
     [cutX, yOf(cutoff.c)],
-    ...future.map((bar, j): [number, number] => [((nh + j) / last) * plotWidth, yOf(bar.c)]),
+    ...future.map((bar, j): [number, number] => [cutX + ((j + 1) / nf) * (plotWidth - cutX), yOf(bar.c)]),
   ];
   const tip = futureXY[futureXY.length - 1];
   // The future line, area and tip take one colour, by the final close against the cutoff close.
   const up = end.c > cutoff.c;
   const colour = up ? 'var(--color-up)' : 'var(--color-down)';
 
-  // From the sealed placement to the final one: y' = s * y + t on the y axis, and x stretched by sx.
-  // The sealed year spanned [lo1, hi1] over the whole plot height and the whole width.
+  // From the sealed placement to the final one: y' = s * y + t. The sealed year spanned [lo1, hi1] over
+  // the whole plot height; x does not change.
   const lo1 = Math.min(...historyCloses);
   const hi1 = Math.max(...historyCloses);
-  const sx = last / (nh - 1);
   let sy = 1;
   let ty = 0;
   if (hi1 === lo1) {
@@ -179,7 +198,7 @@ function Revealed({ reveal, height, plotWidth, bottom, cutX }: RevealedProps) {
     sy = 1 / span;
     ty = bottom * (1 - sy) + unit(lo1) * (bottom - TOP) * sy;
   }
-  const from = `translate(0px, ${ty.toFixed(2)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+  const from = `translate(0px, ${ty.toFixed(2)}px) scale(1, ${sy.toFixed(4)})`;
   // The history area goes down far enough that, scaled back to the sealed placement, it still reaches the bottom.
   const historyFloor = Math.max(height, (height - ty) / sy);
 
@@ -204,8 +223,9 @@ function Revealed({ reveal, height, plotWidth, bottom, cutX }: RevealedProps) {
       <path d={toArea(futureXY, height)} fill="url(#chart-fill-future)" className="chart-future-area" />
       <polyline points={toPoints(futureXY)} pathLength={1} className={`chart-line chart-future ${up ? 'stroke-up' : 'stroke-down'}`} />
 
+      {/* The question zone's edge, already there before the decision, stays as the cutoff line. */}
+      <CutLine cutX={cutX} height={height} />
       <g className="chart-labels">
-        <line x1={cutX} x2={cutX} y1={16} y2={height - 6} className="stroke-cut" strokeWidth={1} strokeDasharray="3 4" />
         <circle cx={tip[0]} cy={tip[1]} r={10} className={up ? 'fill-up' : 'fill-down'} opacity={0.18} />
         <circle cx={tip[0]} cy={tip[1]} r={4.5} className={up ? 'fill-up' : 'fill-down'} />
       </g>

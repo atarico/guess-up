@@ -7,24 +7,27 @@ import { Chart } from '@/components/Chart';
 import { DecisionButtons } from '@/components/DecisionButtons';
 import { Logo } from '@/components/Logo';
 import { type LiveState, RevealCard } from '@/components/RevealCard';
+import { Sentence } from '@/components/Sentence';
 import { api, ApiError } from '@/lib/api';
 import type { DecisionResponse, LiveResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { chartNumberAfter } from '@/lib/chartNumber';
 import { copy } from '@/lib/copy';
+import { cardAfter, cardOnLoad, SEEN_KEY } from '@/lib/howItWorks';
+import { progressParts, remainingAfter, verdictReady } from '@/lib/progress';
 import { callLine, headline } from '@/lib/reveal';
 
 type Screen =
   | { kind: 'loading' }
   | { kind: 'sealed'; id: string; points: number[]; pending: boolean; failed: boolean }
-  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal; live: LiveState; streak: DecisionResponse['streak'] }
+  | { kind: 'revealed'; id: string; points: number[]; reveal: Reveal; live: LiveState; streak: DecisionResponse['streak']; verdictReady: boolean }
   | { kind: 'noData' }
   | { kind: 'error' };
 
 /**
  * The game (03 §5.3): one chart, one question, then the truth. Before the decision this screen asks
- * for the round and for GET /stats, which covers decided rounds only, keeps nothing in storage and
- * writes nothing to the console.
+ * for the round and for GET /stats, which covers decided rounds only, keeps nothing about a round in
+ * storage (only whether a decision was made in this browser, for the card) and writes nothing to the console.
  */
 export function PlayScreen() {
   const auth = useAuth();
@@ -35,6 +38,10 @@ export function PlayScreen() {
   // streak comes from its response, and the number goes up with the next chart (lib/chartNumber.ts).
   const [streak, setStreak] = useState<number | null>(null);
   const [chartNumber, setChartNumber] = useState<number | null>(null);
+  // Charts left before the first verdict, the same way: from /stats, then down with each decision (lib/progress.ts).
+  const [remaining, setRemaining] = useState<number | null>(null);
+  // The "how it works" card; hidden until storage is read after mount, so the server's HTML matches.
+  const [card, setCard] = useState(false);
   // Decisions sent from this page, so a /stats answer can tell whether one was sent after it was asked.
   const decisionsSent = useRef(0);
   // State reaches the buttons on the next render; the ref stops a second decision in between.
@@ -62,8 +69,12 @@ export function PlayScreen() {
         const decidedSinceAsked = decisionsSent.current !== asked;
         if (!decidedSinceAsked) setStreak(stats.streak.current);
         setChartNumber((n) => chartNumberAfter(n, { kind: 'stats', rounds: stats.rounds, decidedSinceAsked }));
+        setRemaining((n) => remainingAfter(n, { kind: 'stats', roundsUntilVerdict: stats.roundsUntilVerdict, decidedSinceAsked }));
       },
-      () => setChartNumber((n) => chartNumberAfter(n, { kind: 'statsFailed' })),
+      () => {
+        setChartNumber((n) => chartNumberAfter(n, { kind: 'statsFailed' }));
+        setRemaining((n) => remainingAfter(n, { kind: 'statsFailed' }));
+      },
     );
   }, []);
 
@@ -71,6 +82,16 @@ export function PlayScreen() {
   useEffect(() => {
     if (auth.status === 'signedOut') router.replace('/login');
   }, [auth.status, router]);
+
+  // The first time this browser plays, the card shows (lib/howItWorks.ts). Storage may be blocked: then it shows.
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(SEEN_KEY);
+    } catch {}
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount, after hydration, like the token (lib/auth.tsx)
+    setCard(cardOnLoad(stored));
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -82,13 +103,13 @@ export function PlayScreen() {
     };
   }, [token, fetchRound, askStats]);
 
-  /** Loads the chart again; without a chart number yet, asks /stats again too (03 §5.3). */
+  /** Loads the chart again; without a chart number or a count of charts left yet, asks /stats again too (03 §5.3). */
   const reload = useCallback(() => {
     if (!token) return;
     setScreen({ kind: 'loading' });
     void fetchRound(token).then(setScreen);
-    if (chartNumber === null) askStats(token);
-  }, [token, fetchRound, chartNumber, askStats]);
+    if (chartNumber === null || remaining === null) askStats(token);
+  }, [token, fetchRound, chartNumber, remaining, askStats]);
 
   /** The next chart: one more in the count. A retry after an error is `reload` alone. */
   const next = useCallback(() => {
@@ -106,7 +127,24 @@ export function PlayScreen() {
       try {
         const result = await api<DecisionResponse>(`/rounds/${screen.id}/decision`, { method: 'POST', body: { decision }, token });
         setStreak(result.streak.current);
-        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' }, streak: result.streak });
+        setRemaining(remainingAfter(remaining, { kind: 'decided' }));
+        setCard(cardAfter('decided'));
+        try {
+          window.localStorage.setItem(SEEN_KEY, '1');
+        } catch {}
+        setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' }, streak: result.streak, verdictReady: false });
+        // The decision that leaves no chart to go: ask /stats, now counting it, whether there is a verdict
+        // against the coin. It is optional: without an answer there is no notice.
+        if (remaining === 1) {
+          const id = screen.id;
+          api<StatsResponse>('/stats', { token }).then(
+            (stats) => {
+              if (!verdictReady(remaining, stats.verdict)) return;
+              setScreen((now) => (now.kind === 'revealed' && now.id === id ? { ...now, verdictReady: true } : now));
+            },
+            () => {},
+          );
+        }
       } catch {
         // The round is still open on the server, so trying again is safe (03 §8).
         setScreen({ ...screen, pending: false, failed: true });
@@ -114,7 +152,7 @@ export function PlayScreen() {
         deciding.current = false;
       }
     },
-    [screen, token],
+    [screen, token, remaining],
   );
 
   // After the decision, focus moves to the next-chart button (03 §5.3).
@@ -159,6 +197,7 @@ export function PlayScreen() {
     return () => window.removeEventListener('keydown', onKey);
   }, [screen, decide, next]);
 
+  const progress = progressParts(remaining);
   const reveal = screen.kind === 'revealed' ? screen.reveal : null;
   const head = reveal ? headline(reveal.forwardReturn) : null;
   // The headline and the call, read out once when the reveal arrives (03 §5.3).
@@ -168,46 +207,74 @@ export function PlayScreen() {
       : '';
 
   return (
-    <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+    <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] tiny:pt-2">
       <header className="flex h-11 shrink-0 items-center justify-between gap-2">
-        <Logo />
+        <Logo nameWhenWide />
         <div className="flex items-center gap-2">
-          {streak !== null && <Pill label={copy.play.streakLabel} value={streak} />}
-          <Link
-            href="/stats"
-            aria-label={copy.play.statsLabel}
-            className="flex size-11 items-center justify-center rounded-xl border border-line bg-surface text-fg"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M4 16V9M10 16V4M16 16v-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          {streak !== null && (
+            <p className="flex h-8 items-center rounded-full border border-line bg-surface px-3 text-[13px] whitespace-nowrap text-muted">
+              {/* One span: in a flex row each loose piece of text is its own item, and loses its edge spaces. */}
+              <span>
+                <Sentence parts={copy.play.streak(streak)} figureClassName="tabular font-semibold text-fg" />
+              </span>
+            </p>
+          )}
+          <Link href="/stats" className="flex h-11 items-center rounded-xl border border-line bg-surface px-3 text-[13px] font-medium whitespace-nowrap text-fg">
+            {copy.play.statsLink}
           </Link>
         </div>
       </header>
 
       {/* The chart takes what the block below leaves; at 390 x 844 that is 270 px (the design). */}
-      <div className="mt-2 min-h-24 flex-1" aria-busy={screen.kind === 'loading'}>
+      <div className="mt-2 min-h-24 flex-1 tiny:mt-1" aria-busy={screen.kind === 'loading'}>
         <Chart points={screen.kind === 'sealed' || screen.kind === 'revealed' ? screen.points : []} reveal={reveal} />
       </div>
 
       {/* One fixed height for the question, the reveal, the loading and the error states, so the chart keeps its size at the reveal (03 §10). The reveal's content needs about 445 px; 464 px is the design's. On a short phone both blocks tighten to 360 px (RevealCard drops its streak card) and the chart keeps about 190 px. */}
-      <section className="h-[clamp(448px,55svh,464px)] shrink-0 short:h-[360px]">
+      <section className="h-[clamp(448px,55svh,464px)] shrink-0 short:h-[360px] tiny:h-[310px]">
         {(screen.kind === 'loading' || screen.kind === 'sealed') && (
           <div className="flex h-full flex-col pt-3.5">
-            <ul className="flex flex-wrap gap-2">
-              {/* The chart number leads the chips: the top bar of the design has no room for a second pill. Hidden while unknown (lib/chartNumber.ts). */}
-              {chartNumber !== null && (
-                <li className="tabular flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg">{copy.play.roundCount(chartNumber)}</li>
-              )}
-              {copy.play.chips.map((chip) => (
-                <li key={chip} className="flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs text-muted">
-                  {chip}
-                </li>
-              ))}
-            </ul>
+            {/* The card takes the place of the chips and the hint, which it repeats, so the chart keeps its size (03 §5.3). */}
+            {card ? (
+              <div className="card flex flex-col gap-1 px-3.5 py-2.5 text-[13px] leading-[18px] text-pretty text-muted tiny:gap-0.5 tiny:py-2 tiny:text-xs tiny:leading-4">
+                {copy.play.howItWorks.lines.map((line, i) => (
+                  <p key={line} className={i === 0 ? 'font-medium text-fg' : undefined}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <ul className="flex flex-wrap gap-2 tiny:gap-1.5">
+                {/* The chart number leads the chips: the top bar of the design has no room for a second pill. Hidden while unknown (lib/chartNumber.ts). */}
+                {chartNumber !== null && (
+                  <li className="tabular flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg tiny:px-2 tiny:text-[11px]">{copy.play.roundCount(chartNumber)}</li>
+                )}
+                {copy.play.chips.map((chip) => (
+                  <li key={chip} className="flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs text-muted tiny:px-2 tiny:text-[11px]">
+                    {chip}
+                  </li>
+                ))}
+              </ul>
+            )}
             <h1 className="mt-[22px] font-display text-[34px] leading-[38px] font-bold tracking-[-0.02em] short:mt-4 short:text-[30px] short:leading-[34px]">{copy.play.question}</h1>
-            <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted">{copy.play.questionHint}</p>
-            <div className="mt-auto">
+            {/* Left out on a very short phone, where it does not fit; the card says the same and "¿Cómo funciona?" brings it. */}
+            {!card && <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted tiny:hidden">{copy.play.questionHint}</p>}
+            {progress && (
+              <p className="mt-3 text-[13px] leading-5 text-pretty text-muted">
+                <Sentence parts={progress} figureClassName="tabular font-semibold text-fg" />
+              </p>
+            )}
+            {!card && (
+              <button
+                type="button"
+                onClick={() => setCard(cardAfter('asked'))}
+                className="mt-1 -mb-3 min-h-11 self-start text-[13px] text-muted underline underline-offset-4"
+              >
+                {copy.play.howItWorks.open}
+              </button>
+            )}
+            {/* pt-3: "¿Cómo funciona?" extends its tap area 12 px down (-mb-3), and must never reach the decision buttons. */}
+            <div className={card ? 'mt-auto' : 'mt-auto pt-3'}>
               {screen.kind === 'sealed' && screen.failed && (
                 <p role="alert" className="mb-3 text-sm">
                   {copy.play.decisionFailed}
@@ -221,7 +288,14 @@ export function PlayScreen() {
         )}
 
         {screen.kind === 'revealed' && (
-          <RevealCard reveal={screen.reveal} live={screen.live} streak={screen.streak} onNext={next} nextRef={nextButton} />
+          <RevealCard
+            reveal={screen.reveal}
+            live={screen.live}
+            streak={screen.streak}
+            verdictReady={screen.verdictReady}
+            onNext={next}
+            nextRef={nextButton}
+          />
         )}
 
         {(screen.kind === 'noData' || screen.kind === 'error') && (
@@ -238,15 +312,5 @@ export function PlayScreen() {
         {announcement}
       </p>
     </main>
-  );
-}
-
-/** A small label of the top bar, such as `Racha 3`. */
-function Pill({ label, value }: { label: string; value?: number }) {
-  return (
-    <p className="flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-[13px] text-muted">
-      {label}
-      {value !== undefined && <span className="tabular font-semibold text-fg">{value}</span>}
-    </p>
   );
 }
