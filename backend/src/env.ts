@@ -10,6 +10,35 @@ const schema = z.object({
 
 export type Env = z.infer<typeof schema> & { corsOrigins: string[] };
 
+function isOrigin(entry: string): boolean {
+  try {
+    return new URL(entry).origin === entry;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * CORS_ORIGIN is a comma-separated list of exact origins: localhost first, the Vercel URL added
+ * after the first deploy. The cors package compares entries with strict equality, so a trailing
+ * slash, a path or `*` would silently match nothing; they stop the boot instead.
+ */
+function parseCorsOrigins(raw: string): string[] {
+  const entries = raw.split(',').map((entry) => entry.trim());
+  if (entries.every((entry) => entry === '')) {
+    throw new Error('CORS_ORIGIN must list at least one origin.');
+  }
+  for (const entry of entries) {
+    if (entry === '') {
+      throw new Error('CORS_ORIGIN has an empty entry: two commas in a row, or a comma at either end.');
+    }
+    if (!isOrigin(entry)) {
+      throw new Error(`CORS_ORIGIN entry "${entry}" is not an origin: expected scheme://host[:port], with no path and no trailing slash.`);
+    }
+  }
+  return entries;
+}
+
 /** Reads and validates the environment once, at boot (02 §8). */
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const parsed = schema.safeParse(source);
@@ -18,9 +47,5 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
     const names = [...new Set(parsed.error.issues.map((issue) => String(issue.path[0])))];
     throw new Error(`Missing or invalid environment variables: ${names.join(', ')}. See backend/.env.example.`);
   }
-  // CORS_ORIGIN is a comma-separated list: localhost first, the Vercel URL added after the first deploy.
-  const corsOrigins = parsed.data.CORS_ORIGIN.split(',')
-    .map((origin) => origin.trim())
-    .filter((origin) => origin !== '');
-  return { ...parsed.data, corsOrigins };
+  return { ...parsed.data, corsOrigins: parseCorsOrigins(parsed.data.CORS_ORIGIN) };
 }

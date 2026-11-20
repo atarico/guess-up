@@ -16,6 +16,17 @@ describe('loadEnv', () => {
     expect(env.PORT).toBe(4000);
   });
 
+  it.each([
+    ['a trailing slash', 'http://localhost:3000, https://guess-up.vercel.app/', 'entry "https://guess-up.vercel.app/" is not an origin'],
+    ['a path', 'https://guess-up.vercel.app/play', 'entry "https://guess-up.vercel.app/play" is not an origin'],
+    ['a wildcard', '*', 'entry "*" is not an origin'],
+    ['an empty entry', 'http://localhost:3000,,https://guess-up.vercel.app', 'CORS_ORIGIN has an empty entry'],
+    ['an empty list', ' ', 'CORS_ORIGIN must list at least one origin'],
+    ['an empty variable', '', 'Missing or invalid environment variables: CORS_ORIGIN'],
+  ])('refuses CORS_ORIGIN with %s and says which entry is wrong', (_case, corsOrigin, message) => {
+    expect(() => loadEnv({ ...valid, CORS_ORIGIN: corsOrigin })).toThrow(message);
+  });
+
   it('names missing or invalid variables without printing their values', () => {
     const source = { ...valid, DATABASE_URL: undefined, JWT_SECRET: 'too-short-secret' };
     expect(() => loadEnv(source)).toThrow(/DATABASE_URL, JWT_SECRET/);
