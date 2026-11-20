@@ -88,7 +88,7 @@ export function WelcomeChart() {
       </svg>
       <figcaption className="mt-2 flex justify-between text-xs leading-[1.125rem] text-faint">
         <span>{copy.welcome.heroPast}</span>
-        <span className="w-[28%] text-center">{copy.welcome.heroFuture}</span>
+        <span className="w-[28%] text-center whitespace-nowrap">{copy.welcome.heroFuture}</span>
       </figcaption>
     </figure>
   );

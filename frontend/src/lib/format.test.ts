@@ -2,7 +2,7 @@
 process.env.TZ = 'America/Mexico_City';
 
 import { describe, expect, it } from 'vitest';
-import { dateFull, money, percent, points, share, signedPoints } from './format';
+import { count, dateFull, money, monthYear, percent, points, share, signedPoints } from './format';
 
 const MINUS = '−';
 const NBSP = ' ';
@@ -87,6 +87,22 @@ describe('format (03 §9)', () => {
       expect(share(1)).toBe('100%');
       expect(share(0)).toBe('0%');
       expect(share(0.52)).toBe('52%');
+    });
+  });
+
+  describe('monthYear', () => {
+    it('writes a short month and the year, from the UTC date', () => {
+      expect(monthYear('2019-03-12')).toBe('mar 2019');
+      // The first of the month, read in Mexico City local time, would be the previous month.
+      expect(monthYear('2020-01-01')).toBe('ene 2020');
+      expect(monthYear('2012-12-31')).toBe('dic 2012');
+    });
+  });
+
+  describe('count', () => {
+    it('groups thousands the es-MX way', () => {
+      expect(count(2000)).toBe('2,000');
+      expect(count(48)).toBe('48');
     });
   });
 });

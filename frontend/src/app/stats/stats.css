@@ -1,0 +1,51 @@
+/*
+ * The stats screen draws itself in: bars grow, the ring fills, the marker slides in from zero.
+ * Every keyframe has only a `from` frame, so the final frame is the element's own style and a
+ * browser that skips the animation (the global reduced-motion rule in globals.css) shows the finished
+ * drawing. `both` holds the first frame during each element's delay.
+ */
+@keyframes stats-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes stats-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes stats-ring {
+  from {
+    stroke-dashoffset: var(--ring-full);
+  }
+}
+
+@keyframes stats-marker {
+  from {
+    left: var(--from);
+  }
+}
+
+.stats-bin {
+  transform-origin: bottom;
+  animation: stats-grow-y 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.stats-strip-bar {
+  animation: stats-grow-y 500ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.stats-average {
+  transform-origin: left;
+  animation: stats-grow-x 900ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.stats-ring {
+  animation: stats-ring 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) 300ms both;
+}
+
+.stats-marker {
+  animation: stats-marker 1000ms cubic-bezier(0.2, 0.8, 0.2, 1) 600ms both;
+}

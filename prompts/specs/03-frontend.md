@@ -186,29 +186,30 @@ Announce the headline, the call and the result through an `aria-live="polite"` r
 
 ### 5.4 Stats `/stats`
 
-Top to bottom:
+Top to bottom (the design canvas, artboard "Estadísticas"):
 
-1. For the demo account (`user.isDemo`), a one-line banner. The client keeps only the token (§7), so this screen asks `GET /auth/me` together with `GET /stats` and shows the scoreboard when both have answered. If `/auth/me` fails, there is no banner and the scoreboard still shows.
-2. **The verdict** (the `Verdict` component), in the largest type on the screen.
-3. **Three figures** in a row.
-4. **The coin**: a horizontal band from the coin's 5th to 95th percentile, a centre tick at 0, and a marker for the user's edge. Below it, the coin sentence.
-5. **Secondary figures.**
-6. (P1) **Last 20 rounds**: ticker, cutoff month, the call, the return, a right/wrong mark.
-7. Small print, then the log-out link.
+1. The logo and `Estadísticas`.
+2. For the demo account (`user.isDemo`), a gold dashed banner. The client keeps only the token (§7), so this screen asks `GET /auth/me` together with `GET /stats` and shows the scoreboard when both have answered. If `/auth/me` fails, there is no banner and the scoreboard still shows.
+3. **The verdict**: an overline with the number of decided charts, then the verdict sentence, your picks in `accent`, the cost in `down` or the gain in `up`.
+4. **The verdict card**, only when there is a verdict against the coin: a coin icon, the short verdict and the counts.
+5. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`).
+6. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
+7. **Hits card**: a ring with the hit rate, the count, and the current and best streak.
+8. (P1) **Recent card**, from `GET /rounds?limit=20`: a strip of bars (filled when bought, outlined when passed, height by the size of the return, newest on the right) and a row per chart: ticker, cutoff month, the call, the return, a check or a cross. Left out when the call fails or there is no decided chart.
+9. Small print, `Jugar otra gráfica`, `Cerrar sesión`.
 
 | Element | Text |
 | --- | --- |
-| Demo banner | `Cuenta demo. Sus primeras 40 gráficas las jugó una moneda.` |
-| Three figures | `Tus selecciones` · `Comprar todo` · `Lo que dejaste pasar` |
-| Coin heading | `Contra una moneda` |
-| Hit rate | `Aciertos` |
-| Streaks | `Racha actual` · `Mejor racha` |
-| Charts played | `Gráficas jugadas`, with `19 compras · 23 pases` |
-| (P1) List heading | `Últimas 20 rondas` |
-| (P1) List, the call | `Compraste` / `Pasaste` |
-| Small print | `Rendimientos por precio a 63 jornadas bursátiles (unos 3 meses). No incluyen dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todo".` |
+| Demo banner | `Cuenta demo: estas decisiones las tomó una moneda.` |
+| Overline | `Tu resultado · 48 gráficas decididas` (`1 gráfica decidida`) |
+| Verdict card | `Por ahora, tu criterio no se distingue de lanzar una moneda.` / `Por ahora, mejor que una moneda.` / `Por ahora, peor que una moneda.` · `29 compras · 19 pases` |
+| Averages card | `Rendimiento promedio a 3 meses` · `Tus selecciones` · `Comprar todas` · `Las que pasaste` · `Ventaja de tu criterio` · `Tus selecciones menos comprar todas` · `▼ −1.3 pp` |
+| Coin card | `Tú contra la moneda` · `2,000 monedas compraron 29 gráficas al azar de las mismas 48 que tú viste. Esta es la ventaja que obtuvo cada una.` · marker `Tú −1.3` · legend `90% de las monedas`, `Tu ventaja, en puntos porcentuales` |
+| Hits card | `Aciertos y rachas` · `23 de 48 aciertos` · `Comprar y que suba, o pasar y que no suba` · `Racha actual` · `Mejor` |
+| (P1) Recent card | `Últimas 20 gráficas` (`Tu última gráfica` for one) · `Barra llena: compraste. Barra vacía: pasaste. La más reciente, a la derecha.` · `Compraste` / `Pasaste` · marks `Acierto` / `Fallo` |
+| Small print | `Rendimiento de precio a tres meses, sin dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todas". Con pocas gráficas, el rango de la moneda es amplio: todavía no hay forma de saber si es habilidad.` |
+| Back to the game | `Jugar otra gráfica` |
 | Log out | `Cerrar sesión` |
-| Back to the game (work unit 6, author's text) | `Seguir jugando` |
 
 **Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures set in the monospace face.
 
@@ -224,17 +225,17 @@ Top to bottom:
 
 The figures in these sentences (approved by the author in work unit 6): each percentage is rounded once, to one decimal, and the points are the difference of the two rounded percentages shown in the same sentence, so the sum checks on screen. When that difference is 0.0, the "no cambió el resultado" sentence applies. The verdict against the coin (`worse`, `better`, `coin`) uses the raw edge.
 
-**Coin sentences.** Approved wording. All three start with the same sentence, then continue by verdict:
+**Coin sentences**, under the histogram. The band, then where you stand:
 
-> Una moneda que compra al azar 19 de estas 42 gráficas queda entre −2.1 y +2.0 puntos nueve de cada diez veces.
+> El 90% de las monedas terminó entre −2.1 y +2.0 puntos.
 
 | Verdict | Continuation |
 | --- | --- |
-| `coin` | Tu resultado está dentro de ese rango. Por ahora, tu criterio no se distingue de lanzar una moneda. |
-| `better` | Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al 96% de los lanzamientos. |
-| `worse` | Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el 97% de las veces. |
+| `coin` | Tú quedaste dentro de ese rango y le ganaste al 17% de las monedas. |
+| `better` | Tú quedaste por encima de ese rango y le ganaste al 96% de las monedas. |
+| `worse` | Tú quedaste por debajo de ese rango: la moneda te ganó el 97% de las veces. |
 
-Always include the counts ("19 de estas 42 gráficas"). In `better`, the percentage is the share of coin trials the user beat (`percentile`); in `worse`, it is the share that beat the user (`beatenBy`). A tie counts on neither side. The percentage shown never goes above 99%: with 2,000 simulated trials, 100% would claim more than the simulation can prove. If a number the coin section shows is missing from `/stats` or is not a number (for example, from a backend older than the frontend during a deploy), the section is left out: `NaN` never reaches the screen.
+The intro above the histogram carries the counts ("29 gráficas al azar de las mismas 48"). In `coin` and `better`, the percentage is the share of coin trials the user beat (`percentile`); in `worse`, it is the share that beat the user (`beatenBy`). A tie counts on neither side. The percentage shown never goes above 99%: with 2,000 simulated trials, 100% would claim more than the simulation can prove. If a number the coin section shows is missing from `/stats` or is not a number (for example, from a backend older than the frontend during a deploy), the section is left out: `NaN` never reaches the screen.
 
 ## 6. The chart
 

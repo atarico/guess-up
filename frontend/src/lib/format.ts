@@ -21,6 +21,8 @@ const twoDecimals = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, m
 // API dates have no time: read them as UTC midnight and format in UTC, or a browser in Mexico,
 // behind UTC, would show the previous day.
 const fullDate = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+const monthAndYear = new Intl.DateTimeFormat('es-MX', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+const integer = new Intl.NumberFormat('es-MX');
 
 /** Intl writes negatives with a hyphen; the interface uses the real minus sign. */
 const realMinus = (text: string) => text.replace('-', MINUS);
@@ -48,6 +50,17 @@ export function money(price: number): string {
 /** An API date `YYYY-MM-DD` → `12 mar 2019`. */
 export function dateFull(iso: string): string {
   return fullDate.format(new Date(`${iso}T00:00:00Z`));
+}
+
+/** An API date `YYYY-MM-DD` → `mar 2019`: the day is not needed to place a chart in time (03 §9). */
+export function monthYear(iso: string): string {
+  // Some ICU versions write "mar de 2019"; the list wants the short form.
+  return monthAndYear.format(new Date(`${iso}T00:00:00Z`)).replace(' de ', ' ');
+}
+
+/** A whole number with es-MX grouping → `2,000`. */
+export function count(n: number): string {
+  return integer.format(n);
 }
 
 const wholePercent = new Intl.NumberFormat('es-MX', { style: 'percent', maximumFractionDigits: 0 });

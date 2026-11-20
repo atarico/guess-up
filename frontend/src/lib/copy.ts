@@ -1,9 +1,11 @@
 // Every user-facing string, in Spanish (03 §3). Components never hold Spanish literals.
 
 /** A piece of a sentence: plain text, or a figure set in the monospace face (bold in the verdict, 03 §5.4). */
-export type Part = { text: string; figure: boolean };
+export type Part = { text: string; figure: boolean; tone?: Tone };
+/** The colour a figure takes in the stats screen: yours (accent), the coin's band (gold), a gain or a cost. */
+export type Tone = 'accent' | 'gold' | 'up' | 'down';
 const text = (t: string): Part => ({ text: t, figure: false });
-const figure = (t: string): Part => ({ text: t, figure: true });
+const figure = (t: string, tone?: Tone): Part => (tone ? { text: t, figure: true, tone } : { text: t, figure: true });
 export const copy = {
   appTitle: 'Guess-Up',
   tagline: 'Una gráfica real y anónima, cortada en una fecha pasada al azar. Compras o pasas. Después, la verdad.',
@@ -59,12 +61,9 @@ export const copy = {
     progress: 'Esperando al servidor',
     retrying: (seconds: number) => `Reintentando · ${seconds} s`,
   },
-  // Replaced by `waking`; removed once ServerWaking uses it.
-  serverWaking: 'Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.',
   retry: 'Reintentar',
   // 03 §5.3, §8, §10
   play: {
-    streak: (n: number) => `Racha: ${n}`,
     roundCount: (n: number) => `Gráfica ${n}`,
     statsLink: 'Estadísticas',
     question: '¿Compras o pasas?',
@@ -93,12 +92,8 @@ export const copy = {
     result: { right: 'Acertaste', wrong: 'Fallaste' },
     pass: 'Pasar',
     buy: 'Comprar',
-    keyHints: '← Pasar · → Comprar',
     decisionFailed: 'No se pudo guardar tu respuesta. Intenta de nuevo.',
     noData: 'Todavía no hay gráficas cargadas. La biblioteca de precios se está llenando.',
-    identity: (symbol: string, name: string) => `${symbol} · ${name}`,
-    window: (from: string, to: string) => `${from} → ${to}`,
-    horizon: (to: string) => `los 3 meses siguientes, hasta el ${to}`,
     prices: (from: string, to: string) => `${from} → ${to}`,
     priceNote: 'Precios ajustados por splits.',
     next: 'Siguiente gráfica',
@@ -113,33 +108,26 @@ export const copy = {
     // Accessible labels of the headline's arrow.
     up: 'Subió',
     down: 'Bajó',
-    calls: {
-      buyUp: 'Compraste. Buena decisión.',
-      buyDown: 'Compraste. Bajó.',
-      buyFlat: 'Compraste. No cambió.',
-      passDownOrFlat: 'Pasaste. Buena decisión.',
-      passUp: 'Pasaste. Subió sin ti.',
-    },
   },
   // 03 §5.4. Approved wording: do not rephrase. Figures arrive already formatted (lib/verdict.ts).
   stats: {
     verdict: {
       cost: (picks: string, all: string, points: string) => [
         text('Tus selecciones rindieron '),
-        figure(picks),
+        figure(picks, 'accent'),
         text(' en promedio. Comprar todas las gráficas rindió '),
         figure(all),
         text('. Tu criterio te costó '),
-        figure(`${points} puntos porcentuales`),
+        figure(`${points} puntos porcentuales`, 'down'),
         text(' por compra.'),
       ],
       gain: (picks: string, all: string, points: string) => [
         text('Tus selecciones rindieron '),
-        figure(picks),
+        figure(picks, 'accent'),
         text(' en promedio. Comprar todas las gráficas rindió '),
         figure(all),
         text('. Tu criterio te sumó '),
-        figure(`${points} puntos porcentuales`),
+        figure(`${points} puntos porcentuales`, 'up'),
         text(' por compra.'),
       ],
       same: (all: string) => [
@@ -155,30 +143,6 @@ export const copy = {
         text('Compraste todas las gráficas, así que tu resultado es el mismo que el de comprar todo. Prueba dejar pasar las que no te convenzan.'),
       ],
       boughtNone: [text('Todavía no has comprado ninguna gráfica. Aún no hay nada que medir.')],
-    },
-    coin: {
-      opening: (buys: string, rounds: string, low: string, high: string) => [
-        text('Una moneda que compra al azar '),
-        figure(buys),
-        text(' de estas '),
-        figure(rounds),
-        text(' gráficas queda entre '),
-        figure(low),
-        text(' y '),
-        figure(high),
-        text(' puntos nueve de cada diez veces.'),
-      ],
-      within: [text('Tu resultado está dentro de ese rango. Por ahora, tu criterio no se distingue de lanzar una moneda.')],
-      above: (share: string) => [
-        text('Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al '),
-        figure(share),
-        text(' de los lanzamientos.'),
-      ],
-      below: (share: string) => [
-        text('Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el '),
-        figure(share),
-        text(' de las veces.'),
-      ],
     },
   },
   // 03 §5.4: the cards of the stats screen, in their order.
@@ -210,9 +174,9 @@ export const copy = {
       legendYou: 'Tu ventaja, en puntos porcentuales',
       range: (low: string, high: string) => [
         text('El 90% de las monedas terminó entre '),
-        figure(low),
+        figure(low, 'gold'),
         text(' y '),
-        figure(high),
+        figure(high, 'gold'),
         text(' puntos. '),
       ],
       within: (share: string) => [text('Tú quedaste dentro de ese rango y le ganaste al '), figure(share), text(' de las monedas.')],
@@ -240,14 +204,6 @@ export const copy = {
   statsScreen: {
     // 03 §5.4, only when user.isDemo is true.
     demoBanner: 'Cuenta demo: estas decisiones las tomó una moneda.',
-    picks: 'Tus selecciones',
-    all: 'Comprar todo',
-    passed: 'Lo que dejaste pasar',
-    coinHeading: 'Contra una moneda',
-    hitRate: 'Aciertos',
-    currentStreak: 'Racha actual',
-    bestStreak: 'Mejor racha',
-    played: 'Gráficas jugadas',
     playedSplit: (buys: number, passes: number) =>
       `${buys} ${buys === 1 ? 'compra' : 'compras'} · ${passes} ${passes === 1 ? 'pase' : 'pases'}`,
     smallPrint:
@@ -257,14 +213,11 @@ export const copy = {
     keepPlaying: 'Jugar otra gráfica',
     // A figure that is undefined, such as the picks with no buys.
     missing: '—',
-    coinBandLabel: (low: string, high: string, you: string) => `Rango de la moneda: de ${low} a ${high} puntos. Tu resultado: ${you} puntos.`,
   },
   // 03 §6, §10
   chart: {
     sealed: 'Gráfica anónima de un año de precios, sin nombre, fechas ni escala',
     revealed: (name: string) => `Gráfica de ${name}: un año hasta el corte y los tres meses siguientes`,
-    sealedLabel: 'Gráfica de precios anónima, un año de precios diarios',
-    revealedLabel: (symbol: string, from: string, to: string) => `Gráfica de ${symbol}, del ${from} al ${to}`,
     unknown: '?',
   },
   // 03 §3: sector names arrive in English from the API; anything not listed is shown as it comes.

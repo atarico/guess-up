@@ -1,4 +1,4 @@
-import type { StatsResponse } from './api-types';
+import type { CoinHistogram, StatsResponse } from './api-types';
 import { copy, type Part } from './copy';
 import { percent, points, share, signedPoints } from './format';
 
@@ -46,23 +46,42 @@ const coinShare = (p: number) => share(Math.min(p, 0.99));
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
 /**
- * The coin sentence (03 §5.4), or null when the verdict is not measured against the coin. Also null
- * when a number the coin section shows (the sentence, or the band's edge marker) is missing or not a
- * number, as from a backend older than the frontend: no coin section, never `NaN` on screen.
+ * The one guard of the coin section (sentence, band markers and histogram): true only when every
+ * number it shows is a finite number, as an older backend without a field would not give. The
+ * share each verdict shows is the one it reads: the percentile for coin and better, beatenBy for worse.
  */
-export function coinParts(stats: StatsResponse): Part[] | null {
-  if (!stats.coin) return null;
-  const shownShare = stats.verdict === 'better' ? stats.coin.percentile : stats.verdict === 'worse' ? stats.coin.beatenBy : 0;
-  if (![stats.buys, stats.rounds, stats.edge, stats.coin.p5, stats.coin.p95, shownShare].every(isNumber)) return null;
-  const { coin } = copy.stats;
-  const opening = coin.opening(String(stats.buys), String(stats.rounds), signedPoints(stats.coin.p5), signedPoints(stats.coin.p95));
-  const continuation =
-    stats.verdict === 'better'
-      ? coin.above(coinShare(stats.coin.percentile))
-      : stats.verdict === 'worse'
-        ? coin.below(coinShare(stats.coin.beatenBy))
-        : coin.within;
-  return [...opening, { text: ' ', figure: false }, ...continuation];
+function coinIsShowable(stats: StatsResponse): boolean {
+  const { coin } = stats;
+  if (!coin) return false;
+  const shownShare = stats.verdict === 'worse' ? coin.beatenBy : coin.percentile;
+  // Typed as it may arrive from an older backend: possibly absent, never trusted.
+  const histogram: Partial<CoinHistogram> | undefined = coin.histogram;
+  const histogramOk =
+    !!histogram &&
+    isNumber(histogram.start) &&
+    isNumber(histogram.width) &&
+    Array.isArray(histogram.counts) &&
+    histogram.counts.length > 0 &&
+    histogram.counts.every(isNumber);
+  return [stats.buys, stats.rounds, stats.edge, coin.p5, coin.p95, shownShare].every(isNumber) && histogramOk;
+}
+
+/**
+ * The sentence under the coin card's histogram: the band, then where the user stands. Within the
+ * range and above it show the share of coins the user beat (the percentile); below it, the share
+ * that beat the user, without ties (02 §6). Null when `coinIsShowable` says the coin section cannot show.
+ */
+export function coinCardParts(stats: StatsResponse): Part[] | null {
+  if (!stats.coin || !coinIsShowable(stats)) return null;
+  const { range, within, above, below } = copy.statsCards.coin;
+  const band = range(signedPoints(stats.coin.p5), signedPoints(stats.coin.p95));
+  const where =
+    stats.verdict === 'worse'
+      ? below(coinShare(stats.coin.beatenBy))
+      : stats.verdict === 'better'
+        ? above(coinShare(stats.coin.percentile))
+        : within(coinShare(stats.coin.percentile));
+  return [...band, ...where];
 }
 
 /** The sentence as plain text, for tests and accessible labels. */
