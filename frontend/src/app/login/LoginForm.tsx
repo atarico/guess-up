@@ -7,7 +7,7 @@ import { api, ApiError } from '@/lib/api';
 import type { AuthResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
-import { DEMO } from '@/lib/demo';
+import { DEMO, demoArrival } from '@/lib/demo';
 
 type Mode = 'signup' | 'login';
 
@@ -19,15 +19,13 @@ type Props = { initialMode: Mode; sessionExpired: boolean; demoNow: boolean };
 
 export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
   const router = useRouter();
-  const { signIn } = useAuth();
+  const auth = useAuth();
+  const { signIn } = auth;
   const demo = DEMO;
-  // From the welcome's demo link (`?demo=1`), the form starts filled with the demo credentials and
-  // already sending them.
-  const demoOnArrival = demoNow ? demo : null;
-  const [mode, setMode] = useState<Mode>(demoOnArrival ? 'login' : initialMode);
-  const [email, setEmail] = useState(demoOnArrival?.email ?? '');
-  const [password, setPassword] = useState(demoOnArrival?.password ?? '');
-  const [pending, setPending] = useState(demoOnArrival !== null);
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // State reaches the button on the next render; the ref stops a second submit in between.
   const inFlight = useRef(false);
@@ -71,13 +69,18 @@ export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
     send(PATHS.login, credentials);
   }
 
-  // Arriving with ?demo=1: the state already shows the demo credentials as sending; this sends them once.
+  // Arriving with ?demo=1: once the stored session is known, log in only without one, then remove the
+  // parameter, so a reload or the back button does not log in again (03 §5.2).
+  const arrival = demoArrival(demoNow, auth.status, demo);
   useEffect(() => {
-    if (!demoOnArrival || inFlight.current) return;
-    inFlight.current = true;
-    void request(PATHS.login, demoOnArrival);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
-  }, []);
+    if (arrival === 'nothing' || arrival === 'wait') return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete('demo');
+    window.history.replaceState(window.history.state, '', url);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the log in starts once the session read from storage is known
+    if (arrival === 'logIn' && demo) logInAsDemo(demo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs when the arrival decision changes, not on every render
+  }, [arrival]);
 
   function switchMode() {
     setMode(mode === 'signup' ? 'login' : 'signup');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { demoCredentials } from './demo';
+import { demoArrival, demoCredentials } from './demo';
 
 describe('demoCredentials (03 §5.2): the demo link is rendered only with both variables', () => {
   it('neither variable set: no credentials, so no link', () => {
@@ -18,5 +18,26 @@ describe('demoCredentials (03 §5.2): the demo link is rendered only with both v
 
   it('both set: the credentials the link logs in with', () => {
     expect(demoCredentials('demo@guess-up.test', 'demo-password')).toEqual({ email: 'demo@guess-up.test', password: 'demo-password' });
+  });
+});
+
+describe('demoArrival (03 §5.2): what /login does with ?demo=1', () => {
+  const demo = { email: 'demo@guess-up.test', password: 'demo-password' };
+
+  it('logs in with the demo account only when there is no session', () => {
+    expect(demoArrival(true, 'signedOut', demo)).toBe('logIn');
+  });
+
+  it('with a session open, ignores the parameter: the visitor stays as they were', () => {
+    expect(demoArrival(true, 'signedIn', demo)).toBe('ignore');
+  });
+
+  it('waits while the stored session has not been read yet', () => {
+    expect(demoArrival(true, 'loading', demo)).toBe('wait');
+  });
+
+  it('does nothing without the parameter, or without demo credentials', () => {
+    expect(demoArrival(false, 'signedOut', demo)).toBe('nothing');
+    expect(demoArrival(true, 'signedOut', null)).toBe('ignore');
   });
 });

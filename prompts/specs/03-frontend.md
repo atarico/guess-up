@@ -107,7 +107,7 @@ One form: email, password, submit. A switch toggles between the two modes.
 | `RATE_LIMITED` | `Demasiados intentos. Espera unos minutos e intenta de nuevo.` |
 
 - Demo link fills the demo credentials and submits. The credentials come from `NEXT_PUBLIC_DEMO_EMAIL` and `NEXT_PUBLIC_DEMO_PASSWORD`. **When either is unset, the demo link is not rendered**, here and on the welcome screen. A link that cannot work is never shown. An empty value counts as unset. Both are copied into the bundle at build time, so changing them needs a new deploy.
-- The welcome's demo link opens `/login?demo=1`: the form arrives filled with the demo credentials and sends them at once, the same as the link on this screen.
+- The welcome's demo link opens `/login?demo=1`. Once the stored session is known, the screen logs in with the demo credentials only when no session is open; with one open, the parameter is ignored and the visitor stays as they were. Either way the parameter is then removed from the URL, so a reload or the back button does not log in again.
 - The submit button cannot be pressed twice.
 - On success: store the token, go to `/play`.
 
