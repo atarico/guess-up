@@ -158,9 +158,9 @@ Split-adjusted history is rewritten by the provider whenever a stock splits. The
 `creditBudget.ts`, one instance per process.
 
 - Per minute: sliding 60-second window held in memory, cap **7** (one below the limit as a margin).
-- Per day: `api_usage` row for the current UTC day, cap **750**, incremented in the same call. It lives in the database because the host restarts the process often.
+- Per day: `api_usage` row for the current UTC day, cap **750**, incremented in the same call, in one statement (`insert … on conflict (day) do update … where credits < cap`) so two processes cannot both take the last credit. The minute slot is reserved before the daily counter is asked and handed back if the day refuses. It lives in the database because the host restarts the process often.
 - `tryAcquire(): Promise<boolean>` for user-facing calls: returns `false` at once when over budget. Never waits.
-- `acquire(): Promise<void>` for the seed script: waits for the next free slot.
+- `acquire(): Promise<void>` for the seed script: waits for the next free minute slot. When the daily cap is reached it throws `DailyBudgetExhaustedError` instead of waiting for the next UTC day; the seed stops there and resumes on a later run.
 - Takes a clock as a parameter so tests can fake time.
 
 Known limit, documented rather than solved: the minute window is per process. The seed script run from a laptop and the deployed server do not see each other's minute usage, so seed while the server is idle.

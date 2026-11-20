@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { AppDeps } from '../app.js';
+import { DAILY_CREDIT_CAP } from '../marketdata/creditBudget.js';
 
 // Not `/health`: EasyPrivacy, which Brave Shields and uBlock Origin apply by default, blocks
 // cross-site requests to onrender.com/health (DECISIONS.md). The frontend has its own copy in lib/api.ts.
@@ -8,9 +9,6 @@ export const HEALTH_PATH = '/status';
 // Render's health check needs an answer within 5 s; 2 s leaves room for the network.
 // Only this route uses it; the pool's general timeouts are much longer (db.ts).
 export const HEALTH_DB_TIMEOUT_MS = 2_000;
-
-// Work unit 2 moves this cap into marketdata/creditBudget.ts (02 §5.3).
-const DAILY_CREDIT_CAP = 750;
 
 /** Rejects if `work` has not settled after `ms`. The work itself keeps running until the pool's own timeouts. */
 function withDeadline<T>(work: Promise<T>, ms: number): Promise<T> {
