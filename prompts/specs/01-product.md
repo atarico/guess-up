@@ -158,6 +158,7 @@ Details, states and copy are in `03-frontend.md`.
 
 - **Survivorship bias.** The universe is built from stocks that still trade. Companies that went to zero are missing, so "buy everything" looks better than it was for an investor at the time.
 - **Recognisable charts.** A sharp, market-wide drop (early 2020) is visible in almost any chart from that period and hints at the date. Not solved.
+- **A chart can be matched.** Min-max normalisation hides the price level and the size of the moves, not the shape. Someone holding the same public prices can slide the 252 points over every window of the 60 stocks, which are listed in the public repository, and find the stock and the date. The game relies on the player not doing that, and doing it only changes their own record. A smaller hint of the same kind: creating a round loads the stock's whole history, so its response time depends a little on how long that history is; it is one noisy sample per round, because there are no rerolls, while resuming reads a fixed 252 rows.
 - **Three months is arbitrary.** A different horizon would give a different verdict for the same call.
 - **Price return, no costs.** No dividends, fees, taxes or slippage.
 - **Small samples.** Fifty rounds cannot prove skill. The coin range exists to make that visible.

@@ -81,3 +81,9 @@ Running log of trade-offs and deviations from the specs. It feeds the README. On
   - **Checklist order (R2-001).** Item 7 of the production checklist repeats items 1, 3 and 4 after item 4 has used up the network's 20 attempts, so the limit can look broken. Proposed: fold the 390 px and Shields conditions into items 1–4, or move the limit item last and state the 15-minute wait.
   - **Checklist item 1 guidance (R2-002).** Its failure text merges "no token" (plain `/login`) and "token rejected" (`/login?expired=1`). Proposed: tell the reader to look at the URL and the notice to tell them apart.
   - **02 §4 check (R2-003).** 02 §4 still asks to compare `req.ip` from two networks, which nothing shows since `/ip` was removed. Proposed: say the check now reads the `RateLimit` remaining count from two networks (checklist item 4).
+
+## 2026-11-20 — Work unit 4 (`odd/tasks/04-rounds.md`)
+
+- **The anonymity of a round was attacked on paper before any code** (author's brief; vectors V1–V16 in `odd/tasks/04-rounds.md`). Each way the stock or the date could leak before a decision is covered by a test, closed by the design, or accepted. None needed a change to the 02 §7 contract.
+- **Two accepted limits added to 01 §12.** Matching a chart's shape against public prices of the public universe; and the response time of creating a round, which depends a little on the stock's history. Why accepted: the first cannot be closed without distorting the chart, and the second is one noisy sample per round.
+- **02 §7 made precise, same contract.** A non-UUID round id answers the same `404` as an unknown or foreign one, so no answer tells whether a round exists. An invalid decision body is rejected before anything is read. Resuming reads exactly 252 closes. `GET /stats` counts decided rounds only, because an open round's frozen return counted in "buy everything" would reveal its direction.

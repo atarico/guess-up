@@ -251,7 +251,7 @@ Returns the user's open round if there is one, otherwise creates one.
 ```
 
 - Service: look for an open round → else pick a random `ready` symbol, load its closes, `pickRound`, insert. If the insert hits the unique index (two taps at once), read and return the existing open round.
-- On resume, `points` is rebuilt from stored closes using `symbol` and `cutoff_date`.
+- On resume, `points` is rebuilt from stored closes using `symbol` and `cutoff_date`: the 252 closes up to and including the cutoff, a fixed-size read whose time does not depend on the stock's history.
 - No `ready` symbols → `503 NO_DATA`.
 - **The response object is built from an explicit allow-list of fields.** Never spread a database row into it.
 
@@ -273,7 +273,7 @@ Body `{ "decision": "buy" | "pass" }`.
 }
 ```
 
-- Updates with `where id = $1 and user_id = $2 and decision is null`. If no row was updated and the round exists and is decided, return the reveal with the **stored** decision (idempotent; the first answer stands). Unknown id or another user's round → `404`.
+- Updates with `where id = $1 and user_id = $2 and decision is null`. If no row was updated and the round exists and is decided, return the reveal with the **stored** decision (idempotent; the first answer stands). Unknown id, an id that is not a UUID, or another user's round → the same `404`, so the answer never tells whether a round exists. The body is validated before anything is read: an invalid one is `400 VALIDATION` with no reveal, and the round stays open.
 - Touches Postgres only.
 
 ### `GET /rounds/:id/live` (P1)
@@ -305,6 +305,8 @@ Decided rounds, newest first: `[{ id, symbol, name, cutoffDate, decision, forwar
 ```
 
 `avgPicks`, `avgPassed`, `edge` and `coin` are `null` when undefined (no buys, no passes, or too few rounds).
+
+Every figure is computed from decided rounds only. The open round's frozen return never enters any of them: counted in "buy everything", it would reveal the direction of a chart the user has not answered yet.
 
 ## 8. Cross-cutting
 
