@@ -13,14 +13,14 @@ describe('directionOf: one rule for arrow and colour, from the number as shown',
 });
 
 describe('edgeView', () => {
-  it('a negative edge: down arrow, minus sign, pp', () => {
-    expect(edgeView(-0.013)).toEqual({ text: `${MINUS}1.3 pp`, arrow: '▼', direction: 'down' });
+  it('a negative edge: down arrow, minus sign, puntos', () => {
+    expect(edgeView(-0.013)).toEqual({ text: `${MINUS}1.3 puntos`, arrow: '▼', direction: 'down' });
   });
   it('a positive edge: up arrow', () => {
-    expect(edgeView(0.02)).toEqual({ text: '+2.0 pp', arrow: '▲', direction: 'up' });
+    expect(edgeView(0.02)).toEqual({ text: '+2.0 puntos', arrow: '▲', direction: 'up' });
   });
   it('an edge that rounds to zero has no arrow and no sign, as shown', () => {
-    expect(edgeView(-0.00004)).toEqual({ text: '0.0 pp', arrow: null, direction: 'flat' });
+    expect(edgeView(-0.00004)).toEqual({ text: '0.0 puntos', arrow: null, direction: 'flat' });
   });
   it('null is a dash', () => {
     expect(edgeView(null)).toEqual({ text: '—', arrow: null, direction: 'flat' });

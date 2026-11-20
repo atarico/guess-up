@@ -172,8 +172,8 @@ export const copy = {
       passed: 'Las que pasaste',
       edge: 'Ventaja de tu criterio',
       edgeHint: 'Tus selecciones menos comprar todas',
-      // Percentage points, written short where space is tight.
-      points: (value: string) => `${value} pp`,
+      // Percentage points: "puntos" everywhere but the verdict sentence and the coin legend (03 §3).
+      points: (value: string) => `${value} puntos`,
     },
     coin: {
       heading: 'Tú contra la moneda',
@@ -183,6 +183,8 @@ export const copy = {
       you: (value: string) => `Tú ${value}`,
       legendRange: '90% de las monedas',
       legendYou: 'Tu ventaja, en puntos porcentuales',
+      // Under the histogram: why the coin's spread can have two humps.
+      twoHumps: 'Si ves dos montañas, es porque una sola acción se movió mucho: algunas monedas la compraron y otras no.',
       range: (low: string, high: string) => [
         text('El 90% de las monedas terminó entre '),
         figure(low, 'gold'),

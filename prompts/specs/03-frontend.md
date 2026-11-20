@@ -47,7 +47,7 @@ frontend/src/
 - **Neutral Spanish for users in Mexico.** Address the user as *tú*. Never voseo: no "comprá", "mirá", "tenés", "podés". No regional slang ("volado").
 - Vocabulary: *gráfica* (never "gráfico"), *acción* for a stock, *correo* for email, *racha* for streak, *lanzar una moneda* for a coin flip.
 - Button labels are infinitives: `Comprar`, `Pasar`, `Reintentar`. Sentence case. No exclamation marks.
-- *Puntos porcentuales* in the verdict sentence; *puntos* everywhere else. Both always mean percentage points.
+- *Puntos porcentuales* in the verdict sentence and in the coin card's legend, where the unit is introduced; *puntos* everywhere else, never `pp`. Both always mean percentage points.
 - Tickers, company names and exchange names are shown as the API returns them (names from the curated universe, exchanges from the provider; `02-backend.md` §5.5). Sector names arrive in English and are mapped to Spanish in `copy.ts`, falling back to the raw value: Technology → `Tecnología`, Health Care → `Salud`, Financials → `Finanzas`, Energy → `Energía`, Industrials → `Industria`, Consumer Discretionary → `Consumo discrecional`, Consumer Staples → `Consumo básico`, Communication Services → `Comunicaciones`, Utilities → `Servicios públicos`, Materials → `Materiales`, Real Estate → `Bienes raíces`.
 - The API's `error.message` is English and is never shown. The interface maps `error.code` to its own text (§8).
 - Prices are US dollars, written `USD 184.20`. A bare `$` is never used: in Mexico it reads as pesos. Nothing is converted.
@@ -204,8 +204,8 @@ Top to bottom (the design canvas, artboard "Estadísticas"):
 3. **The verdict**: an overline with the number of decided charts, then the verdict sentence, your picks in `accent`, the cost in `down` or the gain in `up`.
 4. **The verdict card**, only when there is a verdict against the coin: a coin icon, the short verdict and the counts.
 5. `Jugar otra gráfica`, the same button as at the bottom, so the game is one tap away after the verdict without scrolling.
-6. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`).
-7. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
+6. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`); the value drops below its label when the row is too narrow for both (at 320 px).
+7. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the legend, a sentence on why the spread can have two humps, and the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
 8. **Hits card**: a ring with the hit rate, the count, and the current and best streak.
 9. (P1) **Recent card**, from `GET /rounds?limit=20`: a strip of bars (filled when bought, outlined when passed, height by the size of the return, newest on the right) and a row per chart: ticker, cutoff month, the call, the return, a check or a cross. Left out when the call fails or there is no decided chart.
 10. Small print, `Jugar otra gráfica` again, `Cerrar sesión`.
@@ -215,8 +215,8 @@ Top to bottom (the design canvas, artboard "Estadísticas"):
 | Demo banner | `Cuenta demo: estas decisiones las tomó una moneda.` |
 | Overline | `Tu resultado · 48 gráficas decididas` (`1 gráfica decidida`) |
 | Verdict card | `Por ahora, tu criterio no se distingue de lanzar una moneda.` / `Por ahora, mejor que una moneda.` / `Por ahora, peor que una moneda.` · `29 compras · 19 pases` |
-| Averages card | `Rendimiento promedio a 3 meses` · `Tus selecciones` · `Comprar todas` · `Las que pasaste` · `Ventaja de tu criterio` · `Tus selecciones menos comprar todas` · `▼ −1.3 pp` |
-| Coin card | `Tú contra la moneda` · `2,000 monedas compraron 29 gráficas al azar de las mismas 48 que tú viste. Esta es la ventaja que obtuvo cada una.` · marker `Tú −1.3` · legend `90% de las monedas`, `Tu ventaja, en puntos porcentuales` |
+| Averages card | `Rendimiento promedio a 3 meses` · `Tus selecciones` · `Comprar todas` · `Las que pasaste` · `Ventaja de tu criterio` · `Tus selecciones menos comprar todas` · `▼ −1.3 puntos` |
+| Coin card | `Tú contra la moneda` · `2,000 monedas compraron 29 gráficas al azar de las mismas 48 que tú viste. Esta es la ventaja que obtuvo cada una.` · marker `Tú −1.3` · legend `90% de las monedas`, `Tu ventaja, en puntos porcentuales` · `Si ves dos montañas, es porque una sola acción se movió mucho: algunas monedas la compraron y otras no.` |
 | Hits card | `Aciertos y rachas` · `23 de 48 aciertos` · `Comprar y que suba, o pasar y que no suba` · `Racha actual` · `Mejor` |
 | (P1) Recent card | `Últimas 20 gráficas` (`Tu última gráfica` for one) · `Barra llena: compraste. Barra vacía: pasaste. La más reciente, a la derecha.` · `Compraste` / `Pasaste` · marks `Acierto` / `Fallo` |
 | Small print | `Rendimiento de precio a tres meses, sin dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todas". Con pocas gráficas, el rango de la moneda es amplio: todavía no hay forma de saber si es habilidad.` |
