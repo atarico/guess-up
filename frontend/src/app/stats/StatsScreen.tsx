@@ -7,27 +7,38 @@ import { CoinRange } from '@/components/CoinRange';
 import { Sentence } from '@/components/Sentence';
 import { Verdict } from '@/components/Verdict';
 import { api } from '@/lib/api';
-import type { StatsResponse } from '@/lib/api-types';
+import type { MeResponse, StatsResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
 import { percent, share } from '@/lib/format';
 import { coinParts, verdictParts } from '@/lib/verdict';
 
-type View = { kind: 'loading' } | { kind: 'ready'; stats: StatsResponse } | { kind: 'error' };
+type View = { kind: 'loading' } | { kind: 'ready'; stats: StatsResponse; isDemo: boolean } | { kind: 'error' };
 
 const orMissing = (value: number | null, format: (v: number) => string) => (value === null ? copy.statsScreen.missing : format(value));
 
-/** The scoreboard (03 §5.4), top to bottom, without the demo banner (unit 7) and the (P1) list. */
+/** The scoreboard (03 §5.4), top to bottom, without the (P1) list. */
 export function StatsScreen() {
   const auth = useAuth();
   const router = useRouter();
   const token = auth.status === 'signedIn' ? auth.token : null;
   const [view, setView] = useState<View>({ kind: 'loading' });
 
+  /**
+   * The figures, and whether this is the demo account: the client keeps only the token (03 §7), so
+   * GET /auth/me says it. Both are awaited, so the banner never appears after the verdict; if
+   * /auth/me fails, there is simply no banner.
+   */
   const fetchStats = useCallback(
     (bearer: string): Promise<View> =>
-      api<StatsResponse>('/stats', { token: bearer }).then(
-        (stats): View => ({ kind: 'ready', stats }),
+      Promise.all([
+        api<StatsResponse>('/stats', { token: bearer }),
+        api<MeResponse>('/auth/me', { token: bearer }).then(
+          ({ user }) => user.isDemo,
+          () => false,
+        ),
+      ]).then(
+        ([stats, isDemo]): View => ({ kind: 'ready', stats, isDemo }),
         (): View => ({ kind: 'error' }),
       ),
     [],
@@ -72,12 +83,12 @@ export function StatsScreen() {
         </div>
       )}
 
-      {view.kind === 'ready' && <Scoreboard stats={view.stats} onLogOut={auth.signOut} />}
+      {view.kind === 'ready' && <Scoreboard stats={view.stats} isDemo={view.isDemo} onLogOut={auth.signOut} />}
     </main>
   );
 }
 
-function Scoreboard({ stats, onLogOut }: { stats: StatsResponse; onLogOut: () => void }) {
+function Scoreboard({ stats, isDemo, onLogOut }: { stats: StatsResponse; isDemo: boolean; onLogOut: () => void }) {
   const text = copy.statsScreen;
   const coin = coinParts(stats);
   const figures: [string, string][] = [
@@ -88,6 +99,8 @@ function Scoreboard({ stats, onLogOut }: { stats: StatsResponse; onLogOut: () =>
 
   return (
     <>
+      {isDemo && <p className="border-l-2 border-ink pl-3 text-sm">{text.demoBanner}</p>}
+
       <Verdict parts={verdictParts(stats)} />
 
       <dl className="grid grid-cols-3 gap-3">

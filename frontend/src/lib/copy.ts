@@ -139,6 +139,8 @@ export const copy = {
   },
   // 03 §5.4 and §10: the stats screen around the sentences.
   statsScreen: {
+    // 03 §5.4, only when user.isDemo is true.
+    demoBanner: 'Cuenta demo. Sus primeras 40 gráficas las jugó una moneda.',
     picks: 'Tus selecciones',
     all: 'Comprar todo',
     passed: 'Lo que dejaste pasar',

@@ -174,7 +174,7 @@ Announce the headline and the call through an `aria-live="polite"` region.
 
 Top to bottom:
 
-1. For the demo account (`user.isDemo`), a one-line banner.
+1. For the demo account (`user.isDemo`), a one-line banner. The client keeps only the token (§7), so this screen asks `GET /auth/me` together with `GET /stats` and shows the scoreboard when both have answered. If `/auth/me` fails, there is no banner and the scoreboard still shows.
 2. **The verdict** (the `Verdict` component), in the largest type on the screen.
 3. **Three figures** in a row.
 4. **The coin**: a horizontal band from the coin's 5th to 95th percentile, a centre tick at 0, and a marker for the user's edge. Below it, the coin sentence.
