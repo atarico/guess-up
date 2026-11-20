@@ -23,3 +23,8 @@ Running log of trade-offs and deviations from the specs. It feeds the README. On
 ## 2026-11-20 — Twelve Data checked against real calls
 
 - **02 §5.1 confirmed and made precise, no design change**: `order=asc` with `outputsize=5000` returns the most recent 5,000 bars; `adjust=splits` is applied; quote `datetime` is a date only; errors come as real HTTP statuses (404 unknown symbol, charged; 401 bad key, free; 429 minute limit); `/stocks` was free and all 60 universe symbols are on NYSE or NASDAQ and covered by the Basic plan. Why: 02 §5.1 asked for these facts to be checked before relying on them. Cost: 12 credits confirmed by `/api_usage`.
+
+## 2026-11-20 — Work unit 1 (`odd/tasks/01-setup.md`)
+
+- **Node 24 instead of Node 26** (replaces that part of point 6; 02 §2). Why: Render's docs make 24 the default for new services and never mention 26; the author chose not to wait for a failed deploy to find out.
+- **pnpm 10 instead of npm** (02 §2, §3, §5.5, §10; 03 §11; CLAUDE.md). Pinned with `packageManager`, one lockfile per package, no workspace. Render's docs do not mention pnpm, so its build enables corepack; Vercel detects pnpm from the lockfile and is told to honour `packageManager` with `ENABLE_EXPERIMENTAL_COREPACK=1`. Why: the author's choice of package manager.

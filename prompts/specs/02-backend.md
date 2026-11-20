@@ -38,11 +38,11 @@ Rule of thumb: routes parse and respond, services decide, repositories talk SQL,
 
 `createApp(deps)` receives the repositories and the market-data provider: `index.ts` passes the Postgres ones, route tests pass in-memory ones and `fakeProvider` (§9). It exists from work unit 1 so unit 3 does not rewrite it.
 
-Tooling: Node 26 (the current LTS), pinned in `engines` and `.nvmrc` in both packages; ESM (`"type": "module"`); `typescript`, `tsx` for `npm run dev`, and the needed `@types/*`; ESLint with `typescript-eslint`; Vitest and `supertest`. The local environment is loaded with `node --env-file` (no `dotenv`).
+Tooling: Node 24 (LTS), pinned in `engines` and `.nvmrc` in both packages; pnpm 10 as the package manager, pinned with the `packageManager` field, one `pnpm-lock.yaml` per package; ESM (`"type": "module"`); `typescript`, `tsx` for `pnpm dev`, and the needed `@types/*`; ESLint with `typescript-eslint`; Vitest and `supertest`. The local environment is loaded with `node --env-file` (no `dotenv`).
 
 ## 3. Database
 
-Plain SQL in `backend/sql/001_init.sql`, applied by hand or with `npm run migrate`. Accessed with `pg` and parameterised queries. No ORM: five small tables are easier to explain than a schema DSL.
+Plain SQL in `backend/sql/001_init.sql`, applied by hand or with `pnpm migrate`. Accessed with `pg` and parameterised queries. No ORM: five small tables are easier to explain than a schema DSL.
 
 ```sql
 create extension if not exists pgcrypto;
@@ -176,11 +176,11 @@ Known limit, documented rather than solved: the minute window is per process. Th
 
 ### 5.5 Seeding
 
-- `npm run seed` reads `data/universe.ts`, upserts each symbol as `pending`, then for every symbol that is not `ready`: `acquire()` → fetch → store → mark `ready` or `failed`. Idempotent and resumable. About 60 symbols takes roughly nine minutes at 7 per minute.
+- `pnpm seed` reads `data/universe.ts`, upserts each symbol as `pending`, then for every symbol that is not `ready`: `acquire()` → fetch → store → mark `ready` or `failed`. Idempotent and resumable. About 60 symbols takes roughly nine minutes at 7 per minute.
 - `symbols.name` and `symbols.sector` come from `universe.ts`; `symbols.exchange` comes from `meta.exchange` in the `time_series` response.
 - (P1) `--max-age-days <n>` also re-downloads `ready` symbols whose `fetched_at` is older than `n` days, replacing each series whole as §5.2 requires. Without the flag, a `ready` symbol is never fetched again.
 - Logs one line per symbol: bars stored, date range, credits used today.
-- `npm run seed:demo` (P0) creates the demo user and 40 decided rounds whose decisions come from a seeded coin. It uses the same `roundService` as real play, so demo rounds obey the same rules.
+- `pnpm seed:demo` (P0) creates the demo user and 40 decided rounds whose decisions come from a seeded coin. It uses the same `roundService` as real play, so demo rounds obey the same rules.
   - Needs at least one `ready` symbol; exits with a clear message otherwise.
   - Idempotent: creates the user if missing (`is_demo = true`) and tops the history up to 40 decided rounds. `--reset` deletes the demo user's rounds first.
   - Credentials come from `DEMO_EMAIL` and `DEMO_PASSWORD`. They are **public by design**: printed in the README and shipped to the browser. They are not secrets and are not redacted in session logs.
@@ -325,10 +325,10 @@ Vitest. Route tests use supertest with in-memory repositories and `fakeProvider`
 
 ## 10. Deployment
 
-- **Render** free web service, root directory `backend`, build `npm ci && npm run build`, start `node dist/index.js`, health check path `/health`.
+- **Render** free web service, root directory `backend`, build `corepack enable && pnpm install --frozen-lockfile && pnpm build`, start `node dist/index.js`, health check path `/health`. Render's docs do not mention pnpm, so corepack installs the version pinned in `packageManager`.
 - The free instance sleeps after 15 minutes without traffic and takes up to about a minute to wake. The frontend handles this (`03-frontend.md` §8). In-memory state (minute window, quote cache) is lost on sleep, which is safe by design.
 - **Supabase** pauses free projects after a week of low activity. A scheduled GitHub Action calls `/health` once a day so the database is awake when the reviewers open the app (P1).
-- Run the migration and `npm run seed` once against the production database from a laptop; then `npm run seed:demo`.
+- Run the migration and `pnpm seed` once against the production database from a laptop; then `pnpm seed:demo`.
 
 ## 11. Explicitly not built
 

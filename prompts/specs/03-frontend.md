@@ -299,8 +299,8 @@ Accessibility labels and titles, also from `copy.ts`:
 
 ## 11. Checks
 
-- `npm run typecheck`, `npm run lint`, `npm run build` clean.
-- Unit tests for `format.ts` only (`npm run test`, Vitest), asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`. Components are checked by hand; there is no time budget for a browser test suite.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build` clean.
+- Unit tests for `format.ts` only (`pnpm test`, Vitest), asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`. Components are checked by hand; there is no time budget for a browser test suite.
 - Copy check before each deploy: search the frontend source for a bare `$` followed by a digit, for English interface text, and for voseo forms. All three searches come back empty.
 - Manual pass before each deploy, at 390 px and at desktop width: sign up → play three rounds → stats → log out → demo account → stats. Then once with the backend stopped, to see every error state.
 

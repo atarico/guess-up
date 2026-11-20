@@ -77,8 +77,8 @@ Before using a framework API you are not certain about (Next.js, Express 5, Tail
 Fill this in when the scaffold exists, and keep it current. Expected shape:
 
 ```
-backend:   npm run dev | test | typecheck | lint | build | migrate | seed | seed:demo
-frontend:  npm run dev | test | typecheck | lint | build
+backend:   pnpm dev | test | typecheck | lint | build | migrate | seed | seed:demo
+frontend:  pnpm dev | test | typecheck | lint | build
 ```
 
 ## How we work here
