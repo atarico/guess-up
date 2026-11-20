@@ -127,7 +127,7 @@ Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "R
 
 1. **Top bar** (44 px): the logo on the left; on the right the streak pill and a text link to Stats, 44 px tall. Below 420 px wide the logo is the mark alone and its name is left to screen readers: with the name the row is 4 px too wide at 390 px. With the mark alone it fits at 320 px, a three-digit streak included.
 2. **Chart**, flexible, then a reserved 18 px row for the dates of the reveal. Sealed state.
-3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): the round count and three chips, the question, a hint, the progress to the first verdict, the two buttons, a note.
+3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): the round count and three chips (or, while it shows, the "how it works" card), the question, a hint, the progress to the first verdict, a `¿Cómo funciona?` button, the two buttons, a note.
 4. **Two buttons**, side by side, in the bottom thumb zone: buy on the left, pass on the right.
 
 | Element | Text |
@@ -138,6 +138,8 @@ Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "R
 | Chips | `Acción real` · `Un año` · `Sin nombre ni fechas` |
 | Question | `¿Compras o pasas?` |
 | Hint | `Después verás la empresa, las fechas y lo que pasó en los tres meses siguientes.` |
+| "How it works" card, three lines | `Esta es la gráfica real de una acción, sin nombre ni fechas.` · `Decide si la comprarías o la dejarías pasar. Después verás qué acción era y qué pasó.` · `A las 10 gráficas recibes tu veredicto: si tu criterio le gana a lanzar una moneda.` |
+| Button that shows the card again | `¿Cómo funciona?` |
 | Progress, until 10 decided charts | `Faltan 6 gráficas para tu primer veredicto.` (`Falta 1 gráfica para tu primer veredicto.`), the words of §5.4 |
 | Left button | `Comprar` |
 | Right button | `Pasar` |
@@ -145,6 +147,8 @@ Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "R
 | Key hints | `← Comprar · → Pasar` |
 
 The round count leads the chips because the top bar has no room for a second pill at 390 px (measured in work unit 10: the logo broke onto two lines). The streak and the round count come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. The streak pill is hidden until its first value arrives.
+
+The first time this browser plays, the "how it works" card takes the place of the chips and of the hint, which its second line repeats (`lib/howItWorks.ts`). It is per browser, not per account, so a visitor on the demo account sees it too. It goes with the decision, since the reveal takes the block, and `¿Cómo funciona?`, under the progress line while the card is hidden, brings it back until the next decision. The browser keeps only that a decision was made here (`guess-up.howItWorks.seen`), nothing about a round; if storage cannot be read, the card shows. Placed above the chart instead, it left the chart 74 px tall at 390 × 664 and pushed the buttons off a 320 × 568 screen; in the block the chart keeps its size and the buttons show without scrolling at 390 × 844, 390 × 664, 375 × 548, 360 × 640 and 320 × 568.
 
 The progress line counts down to the first verdict (`lib/progress.ts`): it starts from `roundsUntilVerdict` in the same `/stats` answer, follows the same rule for an answer asked before a decision, and goes down by one with each recorded decision. It is not shown while unknown, and is gone from the tenth decided chart on. On the reveal of the decision that leaves no chart to go, `/play` asks `GET /stats` once more; when it has a verdict against the coin (`coin`, `better` or `worse`), the reveal shows the tenth chart's notice. With every chart bought or every chart passed there is no such verdict, so there is no notice; a failed call means no notice either. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
 
@@ -340,7 +344,7 @@ Accessibility labels and titles, also from `copy.ts`:
 ## 11. Checks
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` clean.
-- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3; `demo.ts`, whether the demo link is rendered (§5.2); `copy.ts`, the singular and plural of the streak pill (§5.3); `progress.ts`, the charts left, the progress line and when the tenth chart's notice shows (§5.3). Components are checked by hand; there is no time budget for a browser test suite.
+- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3; `demo.ts`, whether the demo link is rendered (§5.2); `copy.ts`, the singular and plural of the streak pill (§5.3); `progress.ts`, the charts left, the progress line and when the tenth chart's notice shows (§5.3); `howItWorks.ts`, when the card shows (§5.3). Components are checked by hand; there is no time budget for a browser test suite.
 - Copy check before each deploy: search the frontend source for a bare `$` followed by a digit, for English interface text, and for voseo forms. All three searches come back empty.
 - Manual pass before each deploy, at 390 px and at desktop width: sign up → play three rounds → stats → log out → demo account → stats. Then once with the backend stopped, to see every error state.
 
@@ -352,4 +356,4 @@ Accessibility labels and titles, also from `copy.ts`:
 
 ## 13. Not built
 
-Dark mode, swipe gestures, sharing, sound and haptics, onboarding tutorial, installable PWA, a second interface language or a language switch, zoom or pan on the chart.
+Dark mode, swipe gestures, sharing, sound and haptics, an onboarding tutorial that holds up the game (the short card of §5.3 is built), installable PWA, a second interface language or a language switch, zoom or pan on the chart.

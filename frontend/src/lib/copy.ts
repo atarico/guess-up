@@ -72,6 +72,15 @@ export const copy = {
     onceNote: 'Tu decisión se registra una sola vez.',
     // Comprar is the left button, so the left arrow buys (03 §5.3).
     keys: '← Comprar · → Pasar',
+    // The card above the chart, the first time this browser plays (lib/howItWorks.ts), and the button that shows it again.
+    howItWorks: {
+      lines: [
+        'Esta es la gráfica real de una acción, sin nombre ni fechas.',
+        'Decide si la comprarías o la dejarías pasar. Después verás qué acción era y qué pasó.',
+        'A las 10 gráficas recibes tu veredicto: si tu criterio le gana a lanzar una moneda.',
+      ],
+      open: '¿Cómo funciona?',
+    },
     // The top bar pill says what the streak counts: right calls in a row.
     streak: (n: number) => [text('Racha: '), figure(String(n)), text(n === 1 ? ' acierto' : ' aciertos')],
     // The reveal (03 §5.3).

@@ -13,6 +13,7 @@ import type { DecisionResponse, LiveResponse, RoundResponse, Reveal, StatsRespon
 import { useAuth } from '@/lib/auth';
 import { chartNumberAfter } from '@/lib/chartNumber';
 import { copy } from '@/lib/copy';
+import { cardAfter, cardOnLoad, SEEN_KEY } from '@/lib/howItWorks';
 import { progressParts, remainingAfter, verdictReady } from '@/lib/progress';
 import { callLine, headline } from '@/lib/reveal';
 
@@ -25,8 +26,8 @@ type Screen =
 
 /**
  * The game (03 §5.3): one chart, one question, then the truth. Before the decision this screen asks
- * for the round and for GET /stats, which covers decided rounds only, keeps nothing in storage and
- * writes nothing to the console.
+ * for the round and for GET /stats, which covers decided rounds only, keeps nothing about a round in
+ * storage (only whether a decision was made in this browser, for the card) and writes nothing to the console.
  */
 export function PlayScreen() {
   const auth = useAuth();
@@ -39,6 +40,8 @@ export function PlayScreen() {
   const [chartNumber, setChartNumber] = useState<number | null>(null);
   // Charts left before the first verdict, the same way: from /stats, then down with each decision (lib/progress.ts).
   const [remaining, setRemaining] = useState<number | null>(null);
+  // The "how it works" card; hidden until storage is read after mount, so the server's HTML matches.
+  const [card, setCard] = useState(false);
   // Decisions sent from this page, so a /stats answer can tell whether one was sent after it was asked.
   const decisionsSent = useRef(0);
   // State reaches the buttons on the next render; the ref stops a second decision in between.
@@ -80,6 +83,16 @@ export function PlayScreen() {
     if (auth.status === 'signedOut') router.replace('/login');
   }, [auth.status, router]);
 
+  // The first time this browser plays, the card shows (lib/howItWorks.ts). Storage may be blocked: then it shows.
+  useEffect(() => {
+    let stored: string | null = null;
+    try {
+      stored = window.localStorage.getItem(SEEN_KEY);
+    } catch {}
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- read once on mount, after hydration, like the token (lib/auth.tsx)
+    setCard(cardOnLoad(stored));
+  }, []);
+
   useEffect(() => {
     if (!token) return;
     let current = true;
@@ -115,6 +128,10 @@ export function PlayScreen() {
         const result = await api<DecisionResponse>(`/rounds/${screen.id}/decision`, { method: 'POST', body: { decision }, token });
         setStreak(result.streak.current);
         setRemaining(remainingAfter(remaining, { kind: 'decided' }));
+        setCard(cardAfter('decided'));
+        try {
+          window.localStorage.setItem(SEEN_KEY, '1');
+        } catch {}
         setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal, live: { kind: 'loading' }, streak: result.streak, verdictReady: false });
         // The decision that leaves no chart to go: ask /stats, now counting it, whether there is a verdict
         // against the coin. It is optional: without an answer there is no notice.
@@ -214,23 +231,43 @@ export function PlayScreen() {
       <section className="h-[clamp(448px,55svh,464px)] shrink-0 short:h-[360px]">
         {(screen.kind === 'loading' || screen.kind === 'sealed') && (
           <div className="flex h-full flex-col pt-3.5">
-            <ul className="flex flex-wrap gap-2">
-              {/* The chart number leads the chips: the top bar of the design has no room for a second pill. Hidden while unknown (lib/chartNumber.ts). */}
-              {chartNumber !== null && (
-                <li className="tabular flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg">{copy.play.roundCount(chartNumber)}</li>
-              )}
-              {copy.play.chips.map((chip) => (
-                <li key={chip} className="flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs text-muted">
-                  {chip}
-                </li>
-              ))}
-            </ul>
+            {/* The card takes the place of the chips and the hint, which it repeats, so the chart keeps its size (03 §5.3). */}
+            {card ? (
+              <div className="card flex flex-col gap-1 px-3.5 py-2.5 text-[13px] leading-[18px] text-pretty text-muted">
+                {copy.play.howItWorks.lines.map((line, i) => (
+                  <p key={line} className={i === 0 ? 'font-medium text-fg' : undefined}>
+                    {line}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {/* The chart number leads the chips: the top bar of the design has no room for a second pill. Hidden while unknown (lib/chartNumber.ts). */}
+                {chartNumber !== null && (
+                  <li className="tabular flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs font-medium text-fg">{copy.play.roundCount(chartNumber)}</li>
+                )}
+                {copy.play.chips.map((chip) => (
+                  <li key={chip} className="flex h-7 items-center rounded-full border border-line-strong px-2.5 text-xs text-muted">
+                    {chip}
+                  </li>
+                ))}
+              </ul>
+            )}
             <h1 className="mt-[22px] font-display text-[34px] leading-[38px] font-bold tracking-[-0.02em] short:mt-4 short:text-[30px] short:leading-[34px]">{copy.play.question}</h1>
-            <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted">{copy.play.questionHint}</p>
+            {!card && <p className="mt-2.5 text-[15px] leading-[22px] text-pretty text-muted">{copy.play.questionHint}</p>}
             {progress && (
               <p className="mt-3 text-[13px] leading-5 text-pretty text-muted">
                 <Sentence parts={progress} figureClassName="tabular font-semibold text-fg" />
               </p>
+            )}
+            {!card && (
+              <button
+                type="button"
+                onClick={() => setCard(cardAfter('asked'))}
+                className="mt-1 -mb-3 min-h-11 self-start text-[13px] text-muted underline underline-offset-4"
+              >
+                {copy.play.howItWorks.open}
+              </button>
             )}
             <div className="mt-auto">
               {screen.kind === 'sealed' && screen.failed && (
