@@ -105,7 +105,7 @@ alter table api_usage    enable row level security;
 Notes for the agent:
 
 - **Supabase exposure.** We use Supabase as plain Postgres. Tables in `public` can be reachable through Supabase's auto-generated Data API. We do both: `001_init.sql` enables row level security on every table with no policies (the backend's database role bypasses it), and the Data API is turned off in project settings. `users.password_hash` must never be readable with the anon key.
-- **Connection string.** Use the pooler connection string in *session* mode from the Supabase dashboard (Render's network is IPv4). Keep the pool small (`max: 5`). General timeouts, so a database that never answers cannot hang a request: `connectionTimeoutMillis` 10 s and `query_timeout` 30 s, generous enough for the seed's transaction of about 5,000 rows per symbol.
+- **Connection string.** Use the pooler connection string in *session* mode from the Supabase dashboard (Render's network is IPv4). The server, `migrate` and the seed open connections only through `createPool` in `src/db.ts`, which verifies TLS against the committed Supabase root CA with `rejectUnauthorized: true`. A `DATABASE_URL` carrying SSL parameters (`ssl…`, `uselibpqcompat`) would override that, so it stops the process with a message that names the parameter, never the URL or its values. Keep the pool small (`max: 5`). General timeouts, so a database that never answers cannot hang a request: `connectionTimeoutMillis` 10 s and `query_timeout` 30 s, generous enough for the seed's transaction of about 5,000 rows per symbol.
 - Size: about 60 symbols × up to 5,000 rows is roughly 300k rows, well inside the free database.
 
 ## 4. Auth
