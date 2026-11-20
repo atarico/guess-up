@@ -118,3 +118,8 @@ Design points 03 did not define, each settled the simplest way (author's brief):
   - **The chart's label offsets are bare numbers** (8, 16, 10, 5, 3.5, 4) tied to `LABEL_BAND` and the 10 px font. Proposed: name them next to `LABEL_BAND`.
   - **`NBSP` and `MINUS` in `format.ts` and its test are literal characters,** invisible or easy to mistake, not escapes. Proposed: write `' '` and `'−'`.
   - **Checked, not a defect: "a lost decision response leaves the user stuck"** (resilience and reliability). If the server recorded a decision whose answer was lost, the retry gets `200` with the stored reveal, because a repeated decision is idempotent (02 §7, `backend/test/decision.test.ts`). So the retry shows the reveal; nothing to change.
+
+## 2026-11-20 — Work unit 6 (`odd/tasks/06-stats.md`)
+
+- **`computeStats` receives the coin's range** (02 §6). The verdict (`worse`, `better`, `coin`) depends on that range, so the function now takes it as a second argument. The service runs the coin only when there is a verdict to make: at least 10 rounds, with some buys and some passes. The function refuses to judge without it.
+- **p5 and p95 are defined by index** (02 §6): the sorted coin edges at `floor(5% of trials)` from each end. With 2,000 trials, exactly 1,800 lie between them, inclusive, which is what "nueve de cada diez veces" says. The bounds count as `coin`.

@@ -219,12 +219,16 @@ normalise(values: number[]): number[]      // (v-min)/(max-min); all 0.5 when fl
 
 isCorrect(decision: 'buy'|'pass', r: number): boolean   // buy && r>0, or pass && r<=0
 
-computeStats(rounds: { decision: 'buy'|'pass'; r: number }[]): Stats   // chronological
+computeStats(rounds: { decision: 'buy'|'pass'; r: number }[], coin: { p5, p95, edges } | null): Stats
+//   chronological; `coin` is needed exactly when there is a verdict against it
+//   (at least 10 rounds, some buys and some passes) and ignored otherwise
 
 coinBenchmark(returns: number[], buys: number, seed: number, trials = 2000):
   { p5: number; p95: number; edges: number[] }
 //   each trial: choose `buys` rounds at random without replacement,
 //   edge = mean(chosen) - mean(all)
+//   p5, p95 = the sorted edges at floor(5% of trials) from each end, so exactly
+//   90% of the trials lie between them, inclusive ("nueve de cada diez veces")
 ```
 
 - `rng` is injected everywhere; production uses `Math.random` for picking rounds and a small seeded generator (mulberry32) for the coin.
