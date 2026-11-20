@@ -38,6 +38,7 @@ Where the specs leave a choice open; each one is also in `DECISIONS.md`.
 | T4 | Demo banner on Stats from `GET /auth/me` | S4, S8 | inline | done | `feat(frontend): show the demo banner on Stats`; no pure logic to test (the banner shows when `user.isDemo` is true). Browser at 390 px with the API mocked: the demo account's Stats starts with `Cuenta demo. Sus primeras 40 gráficas las jugó una moneda.` above the verdict, which shows without playing; an ordinary token gets no banner; `/stats` asked `GET /stats` and `GET /auth/me` only. The banner wraps to two lines at 390 px: the approved text is longer than one line there |
 | T5 | RDD per commit; review if due; blocking findings fixed in their own commit, the rest pending in `DECISIONS.md` | S9 | inline | done | `cc47300` passive docs; `af8908f` high, review due on the open slice `a09aa59..af8908f`: granted by the author, 0 findings, acknowledged (L3); `b156990` medium, under budget; `d3ea2cc` medium, under budget. Nothing blocking, nothing pending |
 | T7 | No `NaN` from an incomplete `/stats`: the coin section is left out (L5) | L5 | inline | done | `fix(frontend): hide the coin section when /stats lacks a number`; RED: 2 new tests failed, the `worse` case without `beatenBy` read `la moneda te gana el NaN%` / GREEN: 48 frontend tests. Browser at 390 px, API mocked as an older backend (`worse`, no `beatenBy`): the verdict and figures show, no coin section, no `NaN` on the page |
+| T8 | Discard weekend bars on ingest; check the rounds; how to fetch CVS again (L6) | L6 | inline | done | `fix(seed): discard Saturday and Sunday bars on ingest`; fixtures moved to weekdays (173 green), RED 4 of 4 against a stub `isWeekend`, GREEN 177; typecheck, lint, build green. Read-only query in production: one weekend bar (CVS 2009-07-26), no round with it in its window, the only rounds are the demo's 40 (none on CVS) |
 | T6 | All checks, 03 §11 search, author steps, phone checklist, session log `prompts/sessions/07-demo.md` | S6, S8, S10 | inline | done | `docs: close unit 7 with the author steps and the session log`; backend 173 tests, frontend 46, typecheck, lint and build green in both; 03 §11 searches empty (no bare `$` with a digit, no voseo, no literal text in components); author steps and phone checklist below; session log with the prompts checked verbatim by script |
 
 Route: inline for every task. No writer trigger: each unit is small and the author must explain it; no independent verifier (S9).
@@ -120,3 +121,15 @@ Antes del push arregla lo del NaN: si a /stats le falta un campo o no es un nume
 ````
 
 Recorded as T7.
+
+- **L6** (2026-11-20 15:04 UTC, author's request after the full seed, verbatim; the terminal output pasted with it is in `prompts/sessions/07-demo.md`, Prompt 4):
+
+````text
+Corri el seed: 59 ready, C fallo por error de red (lo reintento yo). El seed:check muestra que CVS tiene una vela el 2009-07-26, que es domingo, con un salto de +144% y -59%. Es un dato malo del proveedor.
+1. Agrega al seed un control que descarte velas de sabado o domingo, con test, y anotalo en 02 seccion 5.2 y en DECISIONS.md.
+2. Pasame el comando para volver a bajar CVS solo.
+3. Revisa si alguna ronda guardada, la de la demo incluida, usa CVS con esa fecha dentro de su ventana. Si hay, decime si corro seed:demo --reset.
+Tambien el arreglo del NaN que te pedi antes. Despues pusheo.
+````
+
+Recorded as T8. Seed state from that output: 60 `ready` (C failed once with a network error and was fetched on a second run), `seed:demo` created `demo@test.com` with 40 rounds and the verdict `coin`.
