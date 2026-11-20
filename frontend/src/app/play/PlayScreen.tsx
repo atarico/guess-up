@@ -213,7 +213,10 @@ export function PlayScreen() {
         <div className="flex items-center gap-2">
           {streak !== null && (
             <p className="flex h-8 items-center rounded-full border border-line bg-surface px-3 text-[13px] whitespace-nowrap text-muted">
-              <Sentence parts={copy.play.streak(streak)} figureClassName="tabular font-semibold text-fg" />
+              {/* One span: in a flex row each loose piece of text is its own item, and loses its edge spaces. */}
+              <span>
+                <Sentence parts={copy.play.streak(streak)} figureClassName="tabular font-semibold text-fg" />
+              </span>
             </p>
           )}
           <Link href="/stats" className="flex h-11 items-center rounded-xl border border-line bg-surface px-3 text-[13px] font-medium whitespace-nowrap text-fg">
