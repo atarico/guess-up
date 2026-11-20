@@ -1,6 +1,6 @@
 # Session 07 — Work unit 7: the demo account
 
-- **Date:** 2026-11-20, 14:29 to about 14:50 UTC, in the same Claude Code session as the fixes after unit 6 (`06-stats.md`, part 2).
+- **Date:** 2026-11-20, 14:29 to about 14:55 UTC, in the same Claude Code session as the fixes after unit 6 (`06-stats.md`, part 2).
 - **Tool:** Claude Code 2.1.329, with the Gentle AI ODD rules, RDD and Engram memory. No sub-agents and no independent verifier (the brief ruled it out). The browser checks ran with a cached `playwright-core` from a scratch script, against `next dev` with the whole API mocked in the browser: nothing reached the production backend or database. The only production access was `pnpm seed:check`, read-only.
 - **Model:** Claude Opus 5.5 (`claude-opus-5-5`).
 - **Plan and logbook:** `odd/tasks/07-demo.md`: specs S1–S10 quoting the author, assumptions A1–A6, tasks T1–T6, the author steps, the phone checklist and the log.
@@ -70,6 +70,14 @@ Revisar este cambio
 
 **Outcome:** the review ran with the risk, resilience and reliability lenses on `a09aa59..af8908f`: 0 findings in each, approved and acknowledged. Nothing to fix and nothing to add to `DECISIONS.md` as pending.
 
+### Prompt 3 — 14:49 UTC
+
+````text
+Antes del push arregla lo del NaN: si a /stats le falta un campo o no es un numero, la frase de la moneda no se muestra. Nunca NaN en pantalla, con un test.
+````
+
+**Outcome:** the AI had warned that Vercel usually deploys before Render, and that for those minutes the new frontend would read "la moneda te gana el NaN%" from the old `/stats`, which has no `beatenBy`. Two tests first (a field missing, a field that is not a number); RED showed exactly `la moneda te gana el NaN%`. `coinParts` now returns null unless every number of the coin section is finite, and the section is left out. Checked in the browser with an old-style `/stats`: verdict and figures, no coin section, no `NaN`. Logged as L5 and T7 in the task document.
+
 ## Done-when list of the brief, with the evidence
 
 | Criterion | Evidence |
@@ -90,7 +98,8 @@ Revisar este cambio
 
 - **The review preflight was sent with its lenses before the untracked files were declared,** and was refused (`invalid_request`). The AI then guessed the JSON of the untracked selection and was refused again. `review status` accepts `--untracked-scope=exclude`, the same flag as `assess`; with it, the review started.
 - **The first log-in form change failed lint and typecheck:** it set state synchronously inside an effect, and used an imported constant inside a callback, which TypeScript does not narrow. The demo arrival now starts in its sending state and the effect only sends the request; the callback uses a local constant.
-- **The AI wrote a time it had not checked** (14:52 UTC) in the task document's log; corrected to the real time before the commit.
+- **The AI wrote times it had not checked** in the task document's log, twice (14:52 for L3, about 14:55 for L5); both were corrected from the clock and the transcript before their commits.
+- **The `NaN` window was only reported, not fixed,** until the author asked (Prompt 3). The fix is a guard in `coinParts`.
 - **The AI cannot read `.env` files,** `.env.example` included (a permission rule; it did not try other ways). Whether both examples list the demo variables is in the author's step 2.
 - **Nothing was fixed by hand by the author.** Steps 1 to 5 and the phone checklist are theirs and had not run when this log was written.
 
@@ -102,5 +111,7 @@ On `main`, not pushed (the author pushes), after the fixes of `06-stats.md` part
 - `af8908f` feat(backend): add pnpm seed:demo
 - `b156990` feat(frontend): add the demo link to the welcome and log-in screens
 - `d3ea2cc` feat(frontend): show the demo banner on Stats
+- `c872a5a` docs: close unit 7 with the author steps and the session log
+- `2dc2a23` fix(frontend): hide the coin section when /stats lacks a number
 
-The author steps, this log and the closed task document are one more commit, made afterwards.
+This update of the log is one more commit, made afterwards.
