@@ -675,7 +675,7 @@ Listo, ya esta. Commitea el punto 5, cerra la sesion con el log y pusheo yo.
 
 ### Resulting commits (continuation)
 
-On `main`. When this was written, `origin/main` was at `3630fe3`, and all of these were waiting for the author's push:
+On `main`. The first version of this list said `origin/main` was at `3630fe3`; that was stale (the AI had not fetched). A fetch afterwards showed `origin/main` at `baebee9`: the author had already pushed the first four below. The other seven were waiting for the author's push:
 
 - `f7e7e06` docs: record the Supabase move to us-east-1
 - `b210162` docs(odd): record the unit 1 deploy checklist results
