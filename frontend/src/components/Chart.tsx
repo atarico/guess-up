@@ -90,6 +90,10 @@ export function Chart({ points, reveal }: Props) {
             )}
           </svg>
         )}
+        {/* The question zone as a box, for the guided tour to point at (lib/tour.ts); it draws nothing. */}
+        {ready && !reveal && points.length > 0 && (
+          <div data-tour="zone" aria-hidden="true" className="pointer-events-none absolute top-0 bottom-0" style={{ left: cutX, width: width - cutX }} />
+        )}
         {ready && reveal && (
           <span className="chart-labels absolute top-0 text-[11px] leading-[14px] text-muted" style={{ right: cutRight }}>
             {copy.play.cutLabel}

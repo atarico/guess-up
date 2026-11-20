@@ -72,13 +72,22 @@ export const copy = {
     onceNote: 'Tu decisión se registra una sola vez.',
     // Comprar is the left button, so the left arrow buys (03 §5.3).
     keys: '← Comprar · → Pasar',
-    // The card above the chart, the first time this browser plays (lib/howItWorks.ts), and the button that shows it again.
-    howItWorks: {
-      lines: [
-        'Esta es la gráfica real de una acción, sin nombre ni fechas.',
-        'Decide si la comprarías o la dejarías pasar. Después verás qué acción era y qué pasó.',
-        'A las 10 gráficas recibes tu veredicto: si tu criterio le gana a lanzar una moneda.',
-      ],
+    // The guided tour, the first time this browser plays (lib/tour.ts): one bubble per part, in this order.
+    // The author's words (session 12), with their accents.
+    tour: {
+      steps: {
+        chart: 'Esto es un año real de una acción. Le quitamos el nombre, las fechas y los precios: solo ves la forma.',
+        zone: 'Lo que pasó en los tres meses siguientes está tapado. Ahí está la respuesta.',
+        decide: 'Decide si la comprarías. Tu decisión se guarda y no se puede cambiar.',
+        streak: 'Tus aciertos seguidos: comprar y que suba, o pasar y que no suba.',
+        progress: 'A las 10 gráficas ves tu veredicto: si tu criterio le gana a comprar todo.',
+        stats: 'Aquí ves tus resultados y te comparas con una moneda.',
+      },
+      next: 'Siguiente',
+      skip: 'Saltar',
+      // The last step's button: there is no next one.
+      done: 'Listo',
+      // The button under the question that starts the tour again; also the bubble's accessible name.
       open: '¿Cómo funciona?',
     },
     // The top bar pill says what the streak counts: right calls in a row.
