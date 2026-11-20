@@ -28,7 +28,7 @@ Quoted from the author's request (L1), verbatim.
 
 | ID | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- | --- |
-| T1 | The wait in `api.ts`, test-first (S6); 03 §8 and `DECISIONS.md` with S3–S5 | S2–S6 | inline | pending | |
+| T1 | The wait in `api.ts`, test-first (S6); 03 §8 and `DECISIONS.md` with S3–S5 | S2–S6 | inline | done | `feat(frontend): wait for a sleeping server in api.ts`; RED 5 of 10 against a stub (the 90 s test first passed because the old code failed at once; it now checks the failure comes at 90 s, not before) / GREEN 10: answer before 3 s (no screen, no `/status`), answer at 10 s with `/status` never answering (screen on then off, delivered once, no retry), network error then `db: true` (sent twice, succeeds), a 502 with an HTML body (sent again), `db: false` (`INTERNAL`, original aborted, screen off), 90 s (`NETWORK` at exactly 90 s, no requests after), and 401, 409, 400 and our `503 NO_DATA` delivered with no retry. 58 frontend tests, typecheck, lint green |
 | T2 | `ServerWaking` with the 03 §8 text from `copy.ts`, in the root layout; browser check at 390 px | S1, S2, S8 | inline | pending | |
 | T3 | RDD; all checks; the author's local and production steps; session log `prompts/sessions/08-cold-start.md` | S7–S10 | inline | pending | |
 

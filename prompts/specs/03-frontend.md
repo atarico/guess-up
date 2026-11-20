@@ -256,7 +256,7 @@ Keep 4% padding top and bottom so the line never touches the edge. The chart mus
 
 | Situation | Behaviour | Text |
 | --- | --- | --- |
-| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/status` (the health check, `02-backend.md` §7) every 3 s, then continue automatically. If it answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). | `Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.` |
+| First request while the backend is asleep | After 3 s without a response show `ServerWaking`. Poll `/status` (the health check, `02-backend.md` §7) every 3 s, then continue automatically. If it answers with `db: false`, stop waiting and show the generic error (the "Offline, 5xx" row). The rules of the wait are below the table. | `Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.` |
 | Loading a round | Chart-shaped skeleton; buttons visible and disabled. | — |
 | Submitting a decision | Both buttons disabled at once; no double submit. On failure, re-enable. The round is still open server-side, so retrying is safe. | `No se pudo guardar tu respuesta. Intenta de nuevo.` |
 | Open round resumed | Nothing special. The same chart appears. | — |
@@ -265,6 +265,13 @@ Keep 4% padding top and bottom so the line never touches the edge. The chart mus
 | Offline, 5xx, or any unmapped error code | One-line error with a retry button. Never a blank screen. | `Algo salió mal. Intenta de nuevo.` · button `Reintentar` |
 | Session expired | Back to `/login` with a notice. | `Tu sesión expiró. Inicia sesión de nuevo.` |
 | Fewer than 10 rounds on Stats | The `insufficient` verdict and whatever secondary figures exist. | see §5.4 |
+
+The wait for a sleeping server lives in `api.ts` alone, so it covers every call (log in, a round, a decision, the stats):
+
+- **Not only `/status`.** The original request stays in flight while `/status` is asked; when it answers, the wait ends, even if `/status` never did. The result is delivered once.
+- **A retry only when the server never got the request:** a network error, or a `502`, `503` or `504` whose body is not one of our API's errors. Any other answer is delivered as it is, `401`, `409`, `400` and our own `503 NO_DATA` included. The request is sent again once `/status` answers `db: true`. `/status` is asked one request at a time: Render holds a request while it wakes, so it answers late rather than never.
+- **At most 90 s.** Then the call fails, and each screen shows its failure state: the generic error with `Reintentar` on `/play` and `/stats`, the generic error under the form on `/login`, and the decision's own message after a decision. The waiting screen never stays up without an end.
+- **`ServerWaking`** is a full-screen notice over the page, in the root layout, with a live region that is on the page from the start, so screen readers announce the text when it appears.
 
 ## 9. Formatting
 
