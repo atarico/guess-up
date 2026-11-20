@@ -19,6 +19,7 @@ Quoted from the author's request (L1), verbatim.
 - **S11 Package manager** (L4). "vamos a usar pnpm como gestor no npm"
 - **S12 Node version** (L4). "A4: usa Node 24 desde ahora, no esperemos a que falle el deploy. Actualiza la spec y DECISIONS.md."
 - **S13 Health check path** (L14). "Sí, renombrá GET /health a GET /status. Es parte de la unidad 1: sumalo como tarea en odd/tasks/01-setup.md, no abras otro documento." / "La ruta queda definida en un solo lugar de cada lado (una constante en el backend y otra en el frontend), así un segundo cambio de nombre es de una línea." / "La línea de DECISIONS.md tiene que decir qué regla bloquea, cómo lo comprobaste, por qué /status y por qué no el proxy por Vercel." / "Spec, código, test y DECISIONS.md van en el mismo commit." / "Decime el orden exacto para que el deploy no falle: cuándo cambio el Health Check Path en Render respecto del push." / "Actualizá la lista de pruebas con /status y sumá una prueba con Brave Shields encendido."
+- **S14 Supabase region** (L18). "Sí, movemos Supabase a us-east-1 ahora. Es parte de la unidad 1: sumalo como tarea en odd/tasks/01-setup.md." / "Medí el tiempo de respuesta de /status contra el backend desplegado, ya despierto: tres pedidos seguidos con curl y el tiempo total de cada uno. Quiero el número de antes para compararlo con el de después." / "No me pidas la URL ni la contraseña, y no las muestres." / "Corré la migración contra la base nueva." / "Repetí en el proyecto nuevo las mismas comprobaciones de solo lectura: las cinco tablas, RLS activado en todas, el índice de una ronda abierta por usuario, los advisors de seguridad y la respuesta de la Data API." / "Volvé a medir /status tres veces y pasame el antes y el después." / "Buscá si la referencia del proyecto viejo quedó en algún archivo del repo o en la configuración del MCP, sin abrir los .env." / "Recién con todo eso en verde te confirmo y borro el proyecto viejo. No lo des por borrado antes." / "Una línea en DECISIONS.md: por qué las dos regiones tienen que coincidir, qué se movió y los tiempos medidos antes y después." / "Si la conexión falla por el certificado, frená y mostrame el error. No cambies la configuración de SSL para que pase."
 
 Assumptions, accepted by the author in L4 ("Ok al plan"), with A2, A3 and A4 settled as noted:
 
@@ -41,13 +42,14 @@ Assumptions, accepted by the author in L4 ("Ok al plan"), with A2, A3 and A4 set
 | T3 | `GET /health` per 02 §7, including `db: false`; wired in `index.ts`; supertest route test with in-memory deps | S3 | inline | done | `099ae19` feat(backend): add GET /health; 6 tests green (2 for /health, in-memory deps); built server with an unreachable database answers 200 `{"ok":true,"db":false}` |
 | T4 | Frontend scaffold with `create-next-app` (Next.js 16, Tailwind 4, ESLint, App Router, `src/`, pnpm), Node 24, `pnpm test` with Vitest, provisional page that calls `/health` and shows the response, strings in `copy.ts` | S1, S4 | inline | done | `a8c7a1a` feat(frontend): scaffold next app with provisional health page; typecheck, lint, test (no tests yet, A8), build green; in a browser at 390 px the page on :3000 fetched :4000/health across origins and showed `200 {"ok":true,"db":false}` |
 | T5 | `CLAUDE.md` Commands section completed; `prompts/system/CLAUDE.md` synced | S9 | inline | done | `docs: fill in the commands section of CLAUDE.md`; copies identical (cmp) |
-| T6 | **Author:** Supabase project, Data API off, `DATABASE_URL` in `backend/.env`, CA certificate saved | S2, S6 | author | done for the database (T7 connected through the Session pooler with the committed CA); the Data API switch was not verified by the AI | |
+| T6 | **Author:** Supabase project, Data API off, `DATABASE_URL` in `backend/.env`, CA certificate saved | S2, S6 | author | done, with one deviation | database reachable through the Session pooler with the committed CA (T7); Data API: REST endpoints return `503 PGRST002` and no data, and the security advisors show only the expected INFO `rls_enabled_no_policy` on the 5 tables (L17); **region is `us-west-2` (Oregon), not `us-east-1` as A2 agreed** (L17) |
 | T7 | Run the migration against Supabase after T6; evidence: table names and RLS flags, never the URL | S2 | inline | done | `pnpm migrate`: "Applied sql/001_init.sql"; 5 tables with RLS on and 0 policies; both indexes present; a second run fails on `relation "users" already exists` and rolls back; client connection is TLS 1.3, authorized against the Supabase CA, rejected (`SELF_SIGNED_CERT_IN_CHAIN`) without it; Render `/health` then answered `db: true` |
 | T8 | **Author:** GitHub repo and push; Render web service; `/health` answers on the Render URL | S4, S6, S8 | author | done | author's checklist results (L10): step 1 `{"ok":true,"db":true,...} 200`, step 4 `0`, step 5 `NOT_FOUND 404` |
-| T9 | **Author:** Vercel project; then `CORS_ORIGIN` updated on Render | S4, S6, S8 | author | pending, marked only on checklist results | step 2 passed (CORS header for the Vercel origin); step 3 (the page in a browser) not yet reported |
+| T9 | **Author:** Vercel project; then `CORS_ORIGIN` updated on Render | S4, S6, S8 | author | done | step 2 passed (L10: CORS header for the Vercel origin); step 3 passed (L15: the deployed page shows `https://guess-up-api.onrender.com/status` and `200 { "ok": true, "db": true, ... }`) |
 | T10 | Test checklist for both URLs (`/status` after T12, CORS from Vercel and from another origin, unknown route, cold start, Brave Shields on); T8 and T9 marked from the author's results | S8, S9 | inline | pending | |
 | T11 | Session log `prompts/sessions/01-setup.md` | S9 | inline | pending | |
 | T12 | Rename `GET /health` to `GET /status` (S13): one `HEALTH_PATH` constant per side, specs 01 §15, 02 §7 (intro and route), 02 §10 (twice), 03 §8, `DECISIONS.md`, tests, this document | S13 | inline | done | `fix: rename the health check to /status to avoid ad blockers`; backend 7 tests (including `/health` → 404), typecheck, lint and build green; frontend typecheck, lint, test and build green; built server: `/status` 200, `/health` 404 |
+| T13 | Move Supabase to `us-east-1` (S14): measure `/status` before (3 warm requests); the author creates the project and loads `DATABASE_URL`; migrate; repeat the read-only checks (5 tables, RLS, `one_open_round_per_user`, security advisors, Data API); measure after; search the repo and the MCP configuration for the old project ref without opening `.env` files; `DECISIONS.md` line; the author deletes the old project only after all of that is green | S14 | inline + author | done (L21) | new project `guess-up-east` in `us-east-1`; migrate applied; 5 tables, RLS on, 0 policies; `one_open_round_per_user` present; TLS 1.3 verified against the committed CA; advisors INFO only; Data API probe `503 PGRST002`, author turned it off in the dashboard; `/status` medians 0.369 s → 0.285 s; old ref absent from the repo and its history |
 
 Route evidence: no writer is delegated. The backend and frontend skeletons are independent, but the frontend is mostly generated by `create-next-app` and its authored part is well under 100 lines, so parallel writers would cost more than they save.
 
@@ -85,6 +87,20 @@ Free plan: a project is paused after one week of inactivity; the daily ping is P
 
    Do not set `PORT` (Render sets 10000), `TRUST_PROXY_HOPS` (unit 3) or `DEMO_EMAIL` / `DEMO_PASSWORD` (unit 7). Node 24 comes from `engines` in `backend/package.json` (Render's default for new services is also 24). Render sets `NODE_ENV=production` only at runtime, so the build still installs the dev dependencies that TypeScript needs.
 5. **Create Web Service.** When the deploy is live, `https://<render-url>/health` should answer `{"ok":true,"db":true,...}`.
+
+### Moving Supabase to `us-east-1` (T13)
+
+Checked against supabase.com/docs (connecting to Postgres, securing your API, regions; L2, L17). The AI never asks for or prints the URL or the password (S14).
+
+1. Dashboard → **New project**. Organization: the same. Name: `guess-up-east`, so the two projects are easy to tell apart while both exist (it can be renamed later). Database password: let the form generate it and keep it in your password manager. **Region: East US (North Virginia), `us-east-1`.** If the form offers to disable the Data API, disable it.
+2. **Integrations → Data API → Overview → Enable Data API**: off, if it is still on.
+3. **Connect** (top of the project) → **Session pooler**. Copy that URI: user `postgres.<new-ref>`, host `aws-<n>-us-east-1.pooler.supabase.com`, **port 5432**. Not "Direct connection" (`db.<ref>.supabase.co`, IPv6 only, Render is IPv4) and not "Transaction pooler" (port 6543). Replace the password placeholder; percent-encode reserved characters; do not add `sslmode` (it would override the CA in `src/db.ts`).
+4. `backend/.env`: replace `DATABASE_URL` with that URI.
+5. Render → **Environment** → `DATABASE_URL` → the same URI → **Save and deploy** (no rebuild needed). Until the migration runs, `/status` answers `db: false`; that is expected and does not fail the health check.
+6. Tell me, without the URL. I migrate and run the checks.
+7. Only after I report everything green, and after your confirmation, delete `guess-up` (the `us-west-2` one): its project **Settings → General → Delete project**.
+
+The certificate in `backend/certs/supabase-ca.crt` is Supabase's root CA, expected to be the same for the new project. If the TLS check fails, I stop and show the error without touching the SSL settings (S14).
 
 ### Moving the Render health check to `/status` (T12)
 
@@ -223,4 +239,62 @@ Sí, renombrá GET /health a GET /status. Es parte de la unidad 1: sumalo como t
 ````
 
 Mentions of `/health` found before editing: 01 §15; 02 §7 (intro and the route heading); 02 §10 (Render health check path, daily ping); 03 §8; `backend/src/routes/health.ts`; `backend/test/health.test.ts`; `frontend/src/app/page.tsx`. None in `CLAUDE.md`. Left as they are, on purpose: the file and function names `routes/health.ts` / `healthRouter` (they name the concept, not the path); 01 §11 "Daily health ping" (concept); earlier `DECISIONS.md` lines and session logs (history). Render's order was checked in its docs (task T12 and "Moving the Render health check to `/status`").
-- **Next:** the author follows "Moving the Render health check to `/status`", then re-runs the checklist including step 7, repeats step 6 after a real spin-down, and answers whether the Supabase Data API is off. The author pushes `main`, creates Render (T8) and Vercel (T9), runs the checklist and sends the results → T10, then T11.
+- **L15** (2026-11-20). The author's browser, on the deployed page, verbatim:
+
+````text
+https://guess-up-api.onrender.com/status
+
+200 {
+  "ok": true,
+  "db": true,
+  "symbolsReady": 0,
+  "credits": {
+    "usedToday": 0,
+    "dailyCap": 750
+  }
+}
+````
+
+The new frontend and backend are deployed and the page shows the response, so step 3 passes and T9 is marked. Not stated: which browser and whether Shields was on (step 7), whether Render's Health Check Path is now `/status`, and the re-run of steps 1, 2, 4 and 5 against `/status`.
+- **L16** (2026-11-20). Steps 1, 2, 4 and 5 re-run against `/status`, author's output verbatim:
+
+````text
+{"ok":true,"db":true,"symbolsReady":0,"credits":{"usedToday":0,"dailyCap":750}} 200
+access-control-allow-origin: https://guess-up-frontend-kappa.vercel.app
+0
+{"error":{"code":"NOT_FOUND","message":"Route not found"}} 404
+{"error":{"code":"NOT_FOUND","message":"Route not found"}} 404
+````
+
+All four pass, and `/health` now answers 404 in production, so the rename is deployed.
+- **L17** (2026-11-20). The author: "ya autoricé, en render dice /status y sí era Brave". Render's Health Check Path is `/status`, so the move in T12 is complete. The L15 capture was taken in Brave, but in test 2 (L13) Shields was turned off for this site and Brave remembers that per site, so step 7 still needs Shields confirmed on. Supabase checked through its MCP (read-only tools): the project `guess-up` is `ACTIVE_HEALTHY`, Postgres 17, **region `us-west-2`**, created 2026-11-20 00:48 UTC, before A2 was agreed. Render is in Virginia, so every query crosses the continent. Security advisors: only `rls_enabled_no_policy` (INFO) on `api_usage`, `daily_closes`, `rounds`, `symbols` and `users`, which is the intended state. Data API probe with the publishable key (public by design; redacted in logs): `/rest/v1/` → 401 "Secret API key required"; `/rest/v1/users` and `/rest/v1/symbols` → `503 PGRST002` "Could not query the database for the schema cache". Supabase's docs say that with the Data API disabled "none of the auto-generated REST endpoints respond, regardless of grants or RLS"; the observation matches that, but PGRST002 is not documented as the marker of a disabled API, so the dashboard toggle stays the definitive check. Either way, no row is readable through it. A zsh slip on the AI's side: a loop variable named `path` overwrote `PATH`; renamed and re-run. The idle timer for step 6 started at 06:46:19 UTC, not at the time first told to the author; the request goes at about 07:02 UTC.
+- **L18** (2026-11-20, author, verbatim):
+
+````text
+Sí, movemos Supabase a us-east-1 ahora. Es parte de la unidad 1: sumalo como tarea en odd/tasks/01-setup.md.
+
+Antes de que yo toque nada
+- Medí el tiempo de respuesta de /status contra el backend desplegado, ya despierto: tres pedidos seguidos con curl y el tiempo total de cada uno. Quiero el número de antes para compararlo con el de después.
+
+Lo que hago yo
+- Creo el proyecto nuevo en us-east-1 con la Data API apagada, cargo la DATABASE_URL nueva en backend/.env y en Render, y te aviso. Pasame los pasos exactos del dashboard y recordame qué cadena de conexión copiar (la del pooler en modo sesión, no la directa).
+- No me pidas la URL ni la contraseña, y no las muestres.
+
+Lo que hacés vos cuando te avise
+- Corré la migración contra la base nueva.
+- Repetí en el proyecto nuevo las mismas comprobaciones de solo lectura: las cinco tablas, RLS activado en todas, el índice de una ronda abierta por usuario, los advisors de seguridad y la respuesta de la Data API.
+- Volvé a medir /status tres veces y pasame el antes y el después.
+- Buscá si la referencia del proyecto viejo quedó en algún archivo del repo o en la configuración del MCP, sin abrir los .env.
+
+Recién con todo eso en verde te confirmo y borro el proyecto viejo. No lo des por borrado antes.
+
+Registro
+- Una línea en DECISIONS.md: por qué las dos regiones tienen que coincidir, qué se movió y los tiempos medidos antes y después.
+- Si la conexión falla por el certificado, frená y mostrame el error. No cambies la configuración de SSL para que pase.
+````
+
+The step 6 timer was still running (request at about 07:02 UTC), so the before-measurement waits for it: measuring earlier would wake Render and void the cold-start test.
+- **L19** (2026-11-20). Step 6, run by the AI: idle timer from 06:46:19 UTC, request at 07:02:19 UTC → `200` in 0.371 s (first byte 0.371 s), then a second request in 0.361 s. No spin-up delay, so no cold start was observed even after 16 minutes. Either something reached the service in that window (the author had been asked to re-check the page in Brave) or Render had not spun it down; nothing in the app logs requests, so this cannot be told apart. Step 6 stays open. T13 before-measurement (07:02 UTC, Render in Virginia, Supabase in `us-west-2`, measured from the author's machine in Argentina): `/status` 0.459 s, 0.369 s, 0.347 s; baseline without database, `/does-not-exist` → 404: 0.283 s, 0.549 s, 0.228 s. Medians 0.369 s and 0.283 s, so the database part of `/status` is about 0.09 s. Three samples are noisy; the after-measurement uses the same commands.
+- **L20** (2026-11-20). The author: "listo", then "revisa de nuevo lo de la data api porque la apague". `backend/.env` points at the new project (shape check: `us-east-1` Session pooler host, port 5432, `postgres.<ref>`, not the old ref, no `sslmode`). `pnpm migrate`: "Applied sql/001_init.sql". Read-only checks on `guess-up-east` (`us-east-1`, `ACTIVE_HEALTHY`): 5 tables, RLS on, 0 policies; `one_open_round_per_user` is `UNIQUE ... (user_id) WHERE (decision IS NULL)`; TLS 1.3, authorized against the committed CA (same root, no certificate change); security advisors: only INFO `rls_enabled_no_policy` on the 5 tables. Data API: the probe gives `503 PGRST002` before and after the author's toggle, and PostgREST 14.18 stays connected as `authenticator`, so neither the probe nor SQL can tell on from off; the dashboard toggle, which the author turned off, is the evidence, and no row is readable either way. Found on the way: `anon` and `authenticated` hold Supabase's default grants on the `public` tables, `TRUNCATE` included; RLS covers row access and the Data API has no truncate endpoint, so nothing is exposed today; revoking those grants would be one more layer (proposal, not done). After-measurement (07:07 UTC): `/status` 0.285 / 0.331 / 0.238 s, `/does-not-exist` 0.215 / 0.219 / 0.496 s; 15 interleaved pairs: `/status` median 222 ms, no-database 206 ms, pairwise difference median 11 ms. Old ref `kdlntnnyviylmycpazrz`: not in the working tree (`.env` files excluded), not in the tracked `.env.example` files, not in the git history; it is in `~/.claude.json`, in two project-scoped MCP servers named `supabase` (`https://mcp.supabase.com/mcp?project_ref=kdlntnnyviylmycpazrz&read_only...`), one for `~/Escritorio` and one for this repo. The old project no longer appears in the MCP project list, and reading it returns "You do not have permission"; whether it was deleted is for the author to say. `DECISIONS.md` has the region line.
+- **L21** (2026-11-20). The author: "sí, ya lo borré; actualizá las entradas del MCP". The old `us-west-2` project is deleted (author; consistent with it missing from the MCP project list). Both local-scope MCP servers named `supabase` (this repo and `~/Escritorio`) were replaced with `claude mcp remove supabase -s local` and `claude mcp add -s local -t http supabase "https://mcp.supabase.com/mcp?project_ref=tczeaklxxkyrjqafifbi&read_only=true&features=database,docs,debugging"`, keeping the same options; `claude mcp get supabase` shows the new URL in both, and `~/.claude.json` has no mention of the old ref left. Those entries still need their own sign-in, as before. T13 done.
+- **Next:** step 6 with a strict no-traffic window; Shields back on for step 7 → T10; then T11 (session log). The author pushes `main`, creates Render (T8) and Vercel (T9), runs the checklist and sends the results → T10, then T11.
