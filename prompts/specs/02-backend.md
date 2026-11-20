@@ -29,6 +29,7 @@ backend/src/
 │   ├── provider.ts        MarketDataProvider interface
 │   ├── twelveData.ts      the only file that knows the provider's URLs and shapes
 │   ├── fakeProvider.ts    used by every test
+│   ├── seed.ts            runSeed: the seed's logic, tested with fakes (§5.5)
 │   └── creditBudget.ts    per-minute and per-day limiter
 ├── middleware/            requireAuth.ts, validate.ts, errors.ts
 ├── data/universe.ts       curated list: { symbol, name, sector }
@@ -179,6 +180,8 @@ Known limit, documented rather than solved: the minute window is per process. Th
 
 - `pnpm seed` reads `data/universe.ts`, upserts each symbol as `pending`, then for every symbol that is not `ready`: `acquire()` → fetch → store → mark `ready` or `failed`. Idempotent and resumable. About 60 symbols takes roughly nine minutes at 7 per minute.
 - `symbols.name` and `symbols.sector` come from `universe.ts`; `symbols.exchange` comes from `meta.exchange` in the `time_series` response.
+- `pnpm seed --only <SYMBOL>` fetches just that symbol (it must be in the universe): one credit, for an end-to-end check of the real client. The whole universe is still upserted.
+- Outcome per symbol: a limit error is retried once after the clock minute turns; an unknown symbol, an unavailable provider or a series rejected by §5.2 marks it `failed` (the next run tries it again); a rejected API key or the daily credit cap stops the whole run, which a later run resumes. The logic lives in `marketdata/seed.ts` (`runSeed`), tested with the fake provider and an in-memory store; `scripts/seed.ts` wires the real database, budget and client.
 - (P1) `--max-age-days <n>` also re-downloads `ready` symbols whose `fetched_at` is older than `n` days, replacing each series whole as §5.2 requires. Without the flag, a `ready` symbol is never fetched again.
 - Logs one line per symbol: bars stored, date range, credits used today.
 - `pnpm seed:demo` (P0) creates the demo user and 40 decided rounds whose decisions come from a seeded coin. It uses the same `roundService` as real play, so demo rounds obey the same rules.
