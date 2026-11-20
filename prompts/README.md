@@ -48,6 +48,7 @@ Each log has the prompts, verbatim and in order, then a section **"What the AI g
 | [`07-demo.md`](sessions/07-demo.md) | The demo account; the `NaN` guard; weekend bars after the full seed | [section](sessions/07-demo.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
 | [`08-cold-start.md`](sessions/08-cold-start.md) | The wait for a sleeping server and its screen | [section](sessions/08-cold-start.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
 | [`09-polish.md`](sessions/09-polish.md) | Two fixes, this README and the project README, the closing checks, the live price | [section](sessions/09-polish.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
+| [`10-app-style.md`](sessions/10-app-style.md) | The list of pending items; then the author's design canvas on the `app-style` branch: dark theme, the design's copy, the coin histogram and the last 20 charts | [section](sessions/10-app-style.md#what-the-ai-got-wrong--what-was-fixed-by-hand) |
 
 ## Folders
 

@@ -36,7 +36,7 @@ In the **reveal**, right after the decision (01 §7, 03 §5.3). Before it, the s
 | Price at the cutoff and three months later, in `USD` | `daily_closes` |
 | Today's price and the change since the cutoff (P1) | Twelve Data `/quote`, through the same client and budget, cached 15 minutes per symbol. Optional: the reveal is complete without it, and a muted note says when it is unavailable |
 
-**Stats** turns your decisions into averages: your picks, buying everything, what you passed on, your edge in percentage points, the coin's range and the verdict, hit rate and streaks (03 §5.4). Of the four P1 items, only today's price was built; see [What was left out](#what-was-left-out).
+**Stats** turns your decisions into averages: your picks, buying everything, what you passed on, your edge in percentage points, a histogram of the 2,000 coins with their 90% range and your marker, the verdict, hit rate and streaks, and your last 20 charts with ticker, cutoff month and return (03 §5.4). Of the four P1 items, today's price and the last-20 list were built; see [What was left out](#what-was-left-out).
 
 ## Run it locally
 
@@ -77,7 +77,7 @@ pnpm dev
 | `NEXT_PUBLIC_API_URL` | The backend's URL |
 | `NEXT_PUBLIC_DEMO_EMAIL`, `NEXT_PUBLIC_DEMO_PASSWORD` | Optional. Without both, the demo link is not rendered |
 
-**Checks**, in each package: `pnpm test` (Vitest, no network and no database; backend 203 tests, frontend 73), `pnpm typecheck`, `pnpm lint`, `pnpm build`. These steps were followed on a clean clone on 2026-11-20 without any secret: install, test, typecheck, lint and build pass in both packages. `migrate`, `seed` and `dev` need the variables above. Without them, the backend refuses to start and names what is missing.
+**Checks**, in each package: `pnpm test` (Vitest, no network and no database; backend 223 tests, frontend 96), `pnpm typecheck`, `pnpm lint`, `pnpm build`. These steps were followed on a clean clone on 2026-11-20 without any secret: install, test, typecheck, lint and build pass in both packages. `migrate`, `seed` and `dev` need the variables above. Without them, the backend refuses to start and names what is missing.
 
 ## Architecture
 
@@ -112,6 +112,7 @@ The full log, with the reason and the cost of each, is [`DECISIONS.md`](DECISION
 
 | Decision | Why | Cost |
 | --- | --- | --- |
+| A dark phone design from the author's canvas, Inter and Space Grotesk | The author's design (unit 10, `odd/tasks/10-app-style.md`) | The specs' copy was rewritten to match; a short-phone variant keeps the chart readable at 390 × 664 |
 | Rounds built from stored history | The free API limit cannot stop the game | Prices are as of the last seed |
 | Anonymity enforced by the server, with a contract test | A UI rule could leak through the network tab | None in the product; it shaped the API |
 | Score against "buy everything" and a 2,000-trial seeded coin | A beginner can read "worse than a coin" without statistics | The coin reruns on every `/stats` call |
@@ -136,7 +137,7 @@ The full log, with the reason and the cost of each, is [`DECISIONS.md`](DECISION
 | Leaderboards, sharing | The comparison that matters is against a coin |
 | Play before sign-up, password reset, email verification | Time |
 | Dividends | Price return only, labelled as such |
-| P1 not built: the last-20-rounds list, the daily health ping, `seed --max-age-days` | Time. Today's price, first in the order of 01 §11, was built |
+| P1 not built: the daily health ping, `seed --max-age-days` | Time. Today's price and the last-20 list were built |
 
 ## Known limitations
 
