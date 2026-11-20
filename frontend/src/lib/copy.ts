@@ -2,10 +2,11 @@
 export const copy = {
   appTitle: 'Guess-Up',
   tagline: 'Una gráfica real de una acción, sin nombre ni fechas. Comprar o pasar. Después, la verdad.',
-  // Provisional page of work unit 1; removed with it in work unit 5.
-  healthCheck: {
-    title: 'Comprobación del servidor',
-    loading: 'Consultando el servidor…',
-    error: 'No se pudo conectar con el servidor.',
+  // 03 §5.1
+  welcome: {
+    headline: '¿De verdad sabes leer una gráfica?',
+    start: 'Empezar',
+    logIn: 'Iniciar sesión',
+    footer: 'Precios históricos reales de Twelve Data. Esto no es asesoría de inversión.',
   },
 };

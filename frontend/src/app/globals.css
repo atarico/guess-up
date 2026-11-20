@@ -1,26 +1,64 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Visual direction, 03 §4: a printed exam sheet. One theme; up and down only after a decision. */
+@theme {
+  --color-paper: #f6f4ef;
+  --color-ink: #14171a;
+  --color-muted: #6b7075;
+  --color-rule: #dad6cc;
+  --color-up: #0e7c55;
+  --color-down: #b93a26;
 }
 
+/* next/font defines these variables on <html> (layout.tsx). */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Visible focus in ink on everything a keyboard can reach (03 §10). */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* Every number in tabular figures, so values do not jitter as they change (03 §4). */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The two button styles shared by the welcome and log-in screens; at least 48 px tall (03 §10). */
+@layer components {
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    padding: 0 1.25rem;
+    border: 1px solid var(--color-ink);
+    border-radius: 2px;
+    font-weight: 500;
+    touch-action: manipulation;
+  }
+
+  .button-primary {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .button-secondary {
+    background: transparent;
+    color: var(--color-ink);
+  }
+
+  .button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }

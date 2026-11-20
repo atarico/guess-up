@@ -193,7 +193,7 @@ Details, states and copy are in `03-frontend.md`.
 | --- | --- | --- | --- |
 | 1 | Scaffold both packages, schema, `/status` (health check), **deploy both skeletons** | 30 min | `01-setup.md` |
 | 2 | Twelve Data client, credit budget, seed script, universe | 30 min | `02-market-data.md` |
-| 3 | Auth: register, login, JWT middleware | 25 min | `03-auth.md` |
+| 3 | Auth: register, login, JWT middleware; welcome and log-in screens, client session (03 §5.1, §5.2, §7) | 25 min | `03-auth.md` |
 | 4 | Domain (test-first) and rounds API, no-leak test | 40 min | `04-rounds.md` |
 | 5 | Play screen and reveal | 45 min | `05-play.md` |
 | 6 | Stats API and screen | 25 min | `06-stats.md` |
