@@ -240,8 +240,9 @@ Keep 4% padding top and bottom so the line never touches the edge. The chart mus
 ## 7. Auth on the client
 
 - Token in `localStorage` under one key, read once into the auth context on mount.
-- `api.ts` adds `Authorization: Bearer <token>` to every request. A `401` clears the token and sends the user to `/login`.
-- `/play` and `/stats` render nothing but a neutral skeleton until the token has been read, then redirect if there is none. No flash of protected content.
+- `api.ts` adds `Authorization: Bearer <token>` to every request whose caller passes the token from the auth context: the protected calls. Register and log in send none.
+- When the server answers `UNAUTHORIZED` to a request that carried a token, `api.ts` clears the token and loads `/login?expired=1`, which shows the session notice (§8). It checks the code, not the status, so `401 INVALID_CREDENTIALS` stays on the form.
+- `/play` and `/stats` render nothing but a neutral skeleton until the token has been read, then redirect to `/login` if there is none, without the notice: with no token nothing was rejected, and the app cannot tell a lost session from a visitor who never logged in (`DECISIONS.md`). No flash of protected content.
 - Trade-off for `DECISIONS.md` and the README: `localStorage` is readable by any script on the page. The alternative, an httpOnly cookie, needs frontend and backend on the same site, and they are on two different hosts here. The app renders no user-generated HTML and loads no third-party scripts, which keeps the exposure small. With more time: proxy the API through the Next.js host and switch to a cookie.
 
 ## 8. States that must exist
