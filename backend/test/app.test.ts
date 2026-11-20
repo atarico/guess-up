@@ -1,8 +1,9 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../src/app.js';
+import { fakeDeps } from './fakeDeps.js';
 
-const app = createApp({ corsOrigins: ['http://localhost:3000'] });
+const app = createApp(fakeDeps());
 
 describe('app', () => {
   it('answers an unknown route with 404 and the standard error shape', async () => {
