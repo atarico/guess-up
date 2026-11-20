@@ -30,13 +30,39 @@ Quoted from the author's request (L1), verbatim.
 | --- | --- | --- | --- | --- | --- |
 | T1 | The wait in `api.ts`, test-first (S6); 03 §8 and `DECISIONS.md` with S3–S5 | S2–S6 | inline | done | `feat(frontend): wait for a sleeping server in api.ts`; RED 5 of 10 against a stub (the 90 s test first passed because the old code failed at once; it now checks the failure comes at 90 s, not before) / GREEN 10: answer before 3 s (no screen, no `/status`), answer at 10 s with `/status` never answering (screen on then off, delivered once, no retry), network error then `db: true` (sent twice, succeeds), a 502 with an HTML body (sent again), `db: false` (`INTERNAL`, original aborted, screen off), 90 s (`NETWORK` at exactly 90 s, no requests after), and 401, 409, 400 and our `503 NO_DATA` delivered with no retry. 58 frontend tests, typecheck, lint green |
 | T2 | `ServerWaking` with the 03 §8 text from `copy.ts`, in the root layout; browser check at 390 px | S1, S2, S8 | inline | done | `feat(frontend): show ServerWaking while a call waits`; no pure logic beyond `api.ts` (T1). Browser at 390 px, API mocked, `playwright-core` scratch script: the `role="status"` region is on the page and empty at 1 s; slow answer (10 s) with a silent `/status`: the notice at 4 s, no horizontal scroll, gone and buttons enabled about 10 s in, 1 round request and 1 `/status`; `db: false`: the generic error with `Reintentar`; a network error then `db: true`: 2 round requests, the chart loads; 90 s on the page's clock: the notice at 3.5 s and at 88.5 s, the generic error at 91.5 s, `Reintentar` loads the round. The first run of the probe waited for a disabled button and read too early; fixed to wait for it to be enabled |
-| T3 | RDD; all checks; the author's local and production steps; session log `prompts/sessions/08-cold-start.md` | S7–S10 | inline | pending | |
+| T3 | RDD; all checks; the author's local and production steps; session log `prompts/sessions/08-cold-start.md` | S7–S10 | inline | done | `docs: close unit 8 with the author steps and the session log`; RDD in L3 (`83a1f30` medium, under budget after the reviewed boundary); backend 177 tests, frontend 58, typecheck, lint and build green in both; 03 §11 searches empty; author steps below |
 
 Route: inline for every task: one small unit each, and the author must explain it. No independent verifier (S9).
 
 ## Author steps
 
-Filled at close.
+### On your machine
+
+Both packages run locally (`pnpm dev` in each; the frontend's `NEXT_PUBLIC_API_URL` points at `http://localhost:4000`). Nothing is added to the backend to slow it down.
+
+**A. Network-error path (backend off, then on).**
+
+1. Start the backend, log in at `http://localhost:3000`, and open `/play`.
+2. Stop the backend (Ctrl+C) and reload `/play`. At 3 s: `Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.` over the whole page.
+3. Within 90 s, start the backend again. About 3 s after `API listening on port 4000`, the notice goes away and the chart shows with its buttons enabled. You touch nothing.
+4. Optional: leave the backend off for more than 90 s. The notice goes away and `/play` shows `Algo salió mal. Intenta de nuevo.` with `Reintentar`. Start the backend and press `Reintentar`: the chart loads.
+
+**B. Slow-response path (browser throttling, no code).** In Chrome or Brave on the desktop:
+
+1. With the backend running, open `/play` and let it load without throttling, so the page's own files are not slowed.
+2. DevTools (F12) → Network → the throttling menu (`No throttling`) → `Add…` → a custom profile with latency `10000` ms; select it.
+3. Press `Comprar` or `Pasar`, or `Siguiente gráfica` after a reveal. At 3 s the notice appears; it goes away by itself when the answer arrives, after about 20 s (the browser's CORS check before the request is slowed too). The reveal or the next chart shows; nothing was tapped.
+4. Set throttling back to `No throttling`.
+
+### Against production, from the phone
+
+In Brave with Shields on, after more than 15 minutes with no traffic to the API (no tab with the site open):
+
+1. Open the Vercel URL; signed in, you land on `/play`. The page itself loads at once (Vercel does not sleep).
+2. At 3 s the notice covers the page. It stays while Render wakes, usually 30 to 60 s.
+3. It goes away by itself, and the chart shows with `Gráfica N` in the top bar. No tap.
+4. If it takes more than 90 s: `Algo salió mal. Intenta de nuevo.` with `Reintentar`; one tap loads the chart, since the server is awake by then.
+5. Optional: with TalkBack or VoiceOver on, the notice is read out when it appears.
 
 ## Log
 
@@ -87,3 +113,5 @@ La sesión registrada en prompts/sessions/08-cold-start.md.
 - **L2** (15:50 UTC) Retry safety against 02 §7, reported to the author: `POST /auth/register` is the one call a retry can change: if the account was created and the answer was lost to a network error, the retry gets `409 EMAIL_TAKEN`. `POST /auth/login` changes nothing (it counts toward the `/auth` rate limit); `GET /auth/me`, `GET /stats` and `GET /status` only read; `POST /rounds` creates or resumes the one open round; `POST /rounds/:id/decision` is idempotent (the first answer stands). A1 resolves the clash between "503" in S4 and `503 NO_DATA` in 03 §8 with S4's own rule.
 
 - **L3** (about 15:53 UTC) RDD on `58de031`: assessed `medium`; the AI raised it with item 4 (concurrency: `answerOf` races the original request, `/status` polls and two timers), so the open slice `af8908f..58de031` was due. Consent relayed; the author chose "Revisar este cambio" (`granted`). Lenses risk, resilience, reliability, lineage `review-48ef0e009d081636`: approved and acknowledged, with two non-blocking findings recorded in `DECISIONS.md`: the missing notice in that commit (resolved by T2) and `/login?demo=1` replacing an existing session (pending, fix proposed). The reviewed boundary is now `58de031`.
+
+- **L4** (15:57 UTC) Closed: T1–T3 done. All checks green. The author runs paths A and B, the production check, and the push.
