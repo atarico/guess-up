@@ -1,16 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { MIN_BARS, prepareSeries } from '../src/domain/series.js';
+import { isWeekend, MIN_BARS, prepareSeries } from '../src/domain/series.js';
+import { tradingDays } from './fakeDeps.js';
 
-/** `n` consecutive daily bars with positive closes, oldest first. */
-function bars(n: number) {
-  const start = Date.parse('2010-01-01T00:00:00Z');
-  return Array.from({ length: n }, (_, i) => ({
-    d: new Date(start + i * 86_400_000).toISOString().slice(0, 10),
-    close: 10 + i / 100,
-  }));
-}
+/** `n` trading days (weekdays) with positive closes, oldest first, like a real series. */
+const bars = (n: number) => tradingDays(n, (i) => 10 + i / 100);
+
+describe('isWeekend', () => {
+  it('is true on Saturday and Sunday, false on weekdays (CVS had a bar on Sunday 2009-07-26)', () => {
+    expect(isWeekend('2009-07-25')).toBe(true);
+    expect(isWeekend('2009-07-26')).toBe(true);
+    expect(isWeekend('2009-07-24')).toBe(false);
+    expect(isWeekend('2009-07-27')).toBe(false);
+  });
+});
 
 describe('prepareSeries (02 §5.2)', () => {
+  it('discards Saturday and Sunday bars and keeps the weekdays in order', () => {
+    const weekdays = bars(MIN_BARS + 1); // Monday 2011-01-03 onwards
+    // A Saturday and a Sunday spike, like CVS on 2009-07-26, between Friday 01-07 and Monday 01-10.
+    const input = [...weekdays.slice(0, 5), { d: '2011-01-08', close: 10.05 }, { d: '2011-01-09', close: 24.5 }, ...weekdays.slice(5)];
+
+    expect(prepareSeries(input)).toEqual({ ok: true, bars: weekdays.slice(0, -1) });
+  });
+
+  it('counts the 400 bars after discarding the weekend bars', () => {
+    const input = [...bars(MIN_BARS).slice(0, 5), { d: '2011-01-08', close: 10.05 }, ...bars(MIN_BARS).slice(5)];
+    expect(prepareSeries(input)).toEqual({ ok: false, reason: 'only 399 bars after dropping the latest one (minimum 400)' });
+  });
+
   it('drops the most recent bar, which may be a partial trading day, and keeps the rest in order', () => {
     const input = bars(MIN_BARS + 1);
     const result = prepareSeries(input);

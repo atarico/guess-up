@@ -152,8 +152,9 @@ Checked on 2026-11-20 against the docs and real calls (`DECISIONS.md`):
 Split-adjusted history is rewritten by the provider whenever a stock splits. Therefore:
 
 - A symbol's series is always written from **one** response, in **one** transaction: delete that symbol's rows, insert the new ones, update `symbols`. Never append new bars to old ones; mixing two adjustment bases produces a fake cliff in the chart.
+- Discard Saturday and Sunday bars on ingest, before any other check: no exchange in the universe trades then, so such a bar is a provider error (CVS had one on Sunday 2009-07-26, at 2.4 times its neighbours). The seed's log line names the bars it dropped.
 - Drop the most recent bar on ingest (it may be a partial trading day).
-- Reject the response and mark the symbol `failed` if it has fewer than 400 bars or any non-positive close. Precisely (`domain/series.ts`): every close of the response must be positive, the latest one included; the count is taken after the latest bar is dropped, so at least 400 bars are stored.
+- Reject the response and mark the symbol `failed` if it has fewer than 400 bars or any non-positive close. Precisely (`domain/series.ts`): after the weekend bars are discarded, every close must be positive, the latest one included; the count is taken after the latest bar is dropped, so at least 400 bars are stored.
 - A round's `forward_return` is a ratio of two closes from the same snapshot, so a later re-adjustment cannot change a recorded result (invariant 5).
 
 ### 5.3 Credit budget
@@ -182,10 +183,10 @@ Known limit, documented rather than solved: the minute window is per process. Th
 - `pnpm seed` reads `data/universe.ts`, upserts each symbol as `pending`, then for every symbol that is not `ready`: `acquire()` → fetch → store → mark `ready` or `failed`. Idempotent and resumable. About 60 symbols takes roughly nine minutes at 7 per minute.
 - `symbols.name` and `symbols.sector` come from `universe.ts`; `symbols.exchange` comes from `meta.exchange` in the `time_series` response.
 - `pnpm seed:check` is the read-only report to run after seeding: symbols by status, bars and date range per symbol, and day-to-day moves above 40%, which usually mean a corporate action the split adjustment did not undo (01 §12). It runs inside a read-only transaction.
-- `pnpm seed --only <SYMBOL>` fetches just that symbol (it must be in the universe): one credit, for an end-to-end check of the real client. The whole universe is still upserted.
+- `pnpm seed --only <SYMBOL>` fetches just that symbol (it must be in the universe): one credit, for an end-to-end check of the real client. The whole universe is still upserted. Like a full run, it skips a symbol that is already `ready`; to fetch a `ready` symbol again, set its status to `pending` first (`update symbols set status = 'pending' where symbol = '<SYMBOL>'`). While `pending`, no new round picks it.
 - Outcome per symbol: a limit error is retried once after the clock minute turns; an unknown symbol, an unavailable provider or a series rejected by §5.2 marks it `failed` (the next run tries it again); a rejected API key or the daily credit cap stops the whole run, which a later run resumes. The logic lives in `marketdata/seed.ts` (`runSeed`), tested with the fake provider and an in-memory store; `scripts/seed.ts` wires the real database, budget and client.
 - (P1) `--max-age-days <n>` also re-downloads `ready` symbols whose `fetched_at` is older than `n` days, replacing each series whole as §5.2 requires. Without the flag, a `ready` symbol is never fetched again.
-- Logs one line per symbol: bars stored, date range, credits used today.
+- Logs one line per symbol: bars stored, date range, credits used today, and the weekend bars dropped, if any.
 - `pnpm seed:demo` (P0) creates the demo user and 40 decided rounds whose decisions come from a seeded coin. It uses the same `roundService` as real play, so demo rounds obey the same rules.
   - Needs at least one `ready` symbol; exits with a clear message otherwise, before writing anything.
   - Idempotent: creates the user if missing (`is_demo = true`) and tops the history up to 40 decided rounds. `--reset` deletes the demo user's rounds first, open or decided.

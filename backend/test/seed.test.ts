@@ -10,6 +10,7 @@ import {
   UpstreamNotFoundError,
 } from '../src/marketdata/provider.js';
 import { type SeedDeps, type SeedStore, runSeed } from '../src/marketdata/seed.js';
+import { tradingDays } from './fakeDeps.js';
 
 const universe: UniverseEntry[] = [
   { symbol: 'AAA', name: 'Alpha Inc.', sector: 'Technology' },
@@ -17,14 +18,9 @@ const universe: UniverseEntry[] = [
   { symbol: 'CCC', name: 'Gamma Co.', sector: 'Utilities' },
 ];
 
-/** `n` daily bars with positive closes, oldest first. */
+/** `n` trading days (weekdays) with positive closes, oldest first, like a real series. */
 function series(n: number, exchange = 'NYSE'): DailySeries {
-  const start = Date.parse('2010-01-01T00:00:00Z');
-  const bars = Array.from({ length: n }, (_, i) => ({
-    d: new Date(start + i * 86_400_000).toISOString().slice(0, 10),
-    close: 20 + i / 100,
-  }));
-  return { exchange, bars };
+  return { exchange, bars: tradingDays(n, (i) => 20 + i / 100) };
 }
 
 /** The tables the seed touches, in memory. */
@@ -99,8 +95,18 @@ describe('runSeed (02 §5.5)', () => {
     expect(run.counts().acquired).toBe(3);
     expect(run.memory.closes.get('AAA')).toHaveLength(449); // the latest bar is dropped
     expect(run.memory.symbols.get('BBB')).toMatchObject({ name: 'Beta Corp.', status: 'ready', exchange: 'NASDAQ' });
-    expect(run.lines[0]).toBe('AAA ready: 449 bars, 2010-01-01 → 2011-03-25, credits used today: 1');
+    expect(run.lines[0]).toBe('AAA ready: 449 bars, 2011-01-03 → 2012-09-20, credits used today: 1');
     expect(run.lines).toHaveLength(3);
+  });
+
+  it('stores a series without its weekend bars, and names them in the log line', async () => {
+    const weekdays = series(450);
+    const withSunday = { exchange: 'NYSE', bars: [...weekdays.bars.slice(0, 5), { d: '2011-01-09', close: 49 }, ...weekdays.bars.slice(5)] };
+    const run = seedDeps({ AAA: withSunday }, memoryStore(), { only: 'AAA' });
+    await runSeed(run.deps);
+
+    expect(run.memory.closes.get('AAA')).toEqual(weekdays.bars.slice(0, -1));
+    expect(run.lines[0]).toBe('AAA ready: 449 bars, 2011-01-03 → 2012-09-20, credits used today: 1, weekend bars dropped: 2011-01-09');
   });
 
   it('is idempotent: a second run fetches nothing', async () => {

@@ -1,5 +1,5 @@
 import type { UniverseEntry } from '../data/universe.js';
-import { prepareSeries } from '../domain/series.js';
+import { isWeekend, prepareSeries } from '../domain/series.js';
 import {
   type DailyClose,
   type DailySeries,
@@ -91,7 +91,10 @@ export async function runSeed(deps: SeedDeps): Promise<SeedResult> {
     const used = await deps.store.creditsUsedToday();
     const first = check.bars[0].d;
     const last = check.bars[check.bars.length - 1].d;
-    deps.log(`${symbol} ready: ${check.bars.length} bars, ${first} → ${last}, credits used today: ${used}`);
+    // prepareSeries discarded these; naming them lets the author see a provider error was caught.
+    const weekend = series.bars.filter((bar) => isWeekend(bar.d)).map((bar) => bar.d);
+    const dropped = weekend.length > 0 ? `, weekend bars dropped: ${weekend.join(', ')}` : '';
+    deps.log(`${symbol} ready: ${check.bars.length} bars, ${first} → ${last}, credits used today: ${used}${dropped}`);
     result.ready.push(symbol);
   }
 
