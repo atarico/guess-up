@@ -73,8 +73,10 @@ export function WelcomeChart() {
         </g>
 
         <path d={YEAR.area} fill="url(#welcome-area)" className="welcome-area" />
-        <path d={YEAR.up} className="welcome-future welcome-future-up" />
-        <path d={YEAR.down} className="welcome-future welcome-future-down" />
+        <g className="welcome-futures">
+          <path d={YEAR.up} className="welcome-future welcome-future-up" />
+          <path d={YEAR.down} className="welcome-future welcome-future-down" />
+        </g>
         <path d={YEAR.line} pathLength={1} className="welcome-line" />
         <circle cx={CUT} cy={YEAR.tip.y} r={10} className="welcome-halo" />
         <circle cx={CUT} cy={YEAR.tip.y} r={4.5} className="welcome-tip" />

@@ -36,7 +36,15 @@
   animation: welcome-appear 0.3s ease 1.6s backwards;
 }
 
-/* The two possible futures, dotted, breathing in turn once the line is drawn. */
+/*
+ * The two possible futures, dotted, breathing in turn once the line is drawn. The group fades them in
+ * when the line ends; until its turn, each one waits at the opacity its breathing starts from
+ * (backwards), instead of its normal full opacity.
+ */
+.welcome-futures {
+  animation: welcome-appear 0.4s ease 1.8s backwards;
+}
+
 .welcome-future {
   fill: none;
   stroke: var(--color-accent);
@@ -46,11 +54,11 @@
 }
 
 .welcome-future-up {
-  animation: welcome-breathe 2.8s ease-in-out 2.2s infinite;
+  animation: welcome-breathe 2.8s ease-in-out 2.2s infinite backwards;
 }
 
 .welcome-future-down {
-  animation: welcome-breathe 2.8s ease-in-out 3.6s infinite;
+  animation: welcome-breathe 2.8s ease-in-out 3.6s infinite backwards;
 }
 
 .welcome-question {
