@@ -1,10 +1,10 @@
 # Session 11 — After the submission: the audit and the onboarding
 
-- **Date:** 2026-11-20, from about 18:45 to 19:45 UTC, after the submission.
+- **Date:** 2026-11-20, from about 18:45 to 20:35 UTC, after the submission.
 - **Tool:** Claude Code 2.1.329, with the Gentle AI ODD rules, RDD and Engram memory. One Sonnet subagent ran the read-only audit of the code against 03 §5 and §6. The parent read the unit 10 design canvas with the Artifact tool, and the unit 10 scope question from the session transcript. Browser checks used the Playwright MCP against `next dev`, with a fake API in the session scratchpad, so neither the production backend nor its database was touched.
 - **Model:** Claude Opus 5.5 (`claude-opus-5-5`).
 - **Plan and logbook:** `odd/tasks/11-onboarding.md` (branch `ux/onboarding`, from `fixes`).
-- **Time:** about one hour.
+- **Time:** about an hour and fifty minutes.
 - **Secrets:** none in this file.
 
 ## Prompts
@@ -120,6 +120,16 @@ En el bloque (Recomendado)
 
 **Outcome:** the card in the question block, then changes 4 to 6, the fix of the streak pill and item 12.
 
+### Prompt 6
+
+````text
+Pushea la rama ux/onboarding y abri el PR contra fixes con gh. No mergees.
+Antes arregla lo de la grafica de 78 px a 375 x 548 y confirmame si el tag submission incluye el README.
+En la descripcion del PR pone que cambia, como probarlo y la URL de la rama que tengo que sumar a CORS_ORIGIN.
+````
+
+**Outcome:** the tag `submission` holds `README.md` as last changed by `35d9732`, the same README the branch has. A `tiny` variant for phones 600 px tall or less: 140 px of chart at 375 × 548, where it was 78 (`8bab444`). `fixes` and `ux/onboarding` pushed; `fixes` was needed as the PR's base and points at `ea32269`, already public on `main`. The tag was not pushed. The branch alias for `CORS_ORIGIN` was read from Vercel's commit status (scope and project) and checked: it redirects to Vercel's login, while an alias for a branch that does not exist answers 404. PR #2 opened against `fixes`, not merged.
+
 ## What the AI got wrong / what was fixed by hand
 
 - **The streak pill read `Racha:6aciertos`.** Its text sat loose in a flex row, where each piece becomes a flex item and loses its edge spaces. Change 1 was committed that way; a screenshot showed it four commits later, and the fix is its own commit (`9533256`).
@@ -129,11 +139,14 @@ En el bloque (Recomendado)
 - **The audit subagent's report had wrong line numbers, some past the end of their files (`DecisionButtons.tsx:246` in a 25-line file), and one false claim:** that `copy.play.live.today` was unused, when `lib/reveal.ts` uses it. The AI checked every finding against the code before reporting and dropped that one.
 - **A `pkill -f` pattern matched the AI's own shell** and killed it, which left the fake API down for one check. It was restarted; nothing in the repository was affected.
 - **ESLint caught a `setState` inside an effect** (reading the card's flag after hydration); it is resolved the way `lib/auth.tsx` already reads the token.
+- **The first try at very short phones did not fit.** Tighter spacing and type alone left the block without the card needing 342 px of 310 at 375 × 548; the hint and today's price row had to go there. Each try was measured before the commit.
+- **The tap area of `¿Cómo funciona?` could reach `Comprar` on a very short phone.** Its 44 px box reaches 12 px below its text. With the block full, that box overlapped the decision button, where a tap meant for the card would have bought. Found while measuring the `tiny` variant; the buttons now keep 12 px more below it.
+- **The `branch-pr` skill was written for the Gentle AI repository** (an approved issue, `type:*` labels, a template). This repository has none of them, so only its generic rules were followed.
 - **Nothing was fixed by hand by the author.**
 
 ## Resulting commits
 
-On `ux/onboarding`, not pushed (the author pushes, opens the PR against `fixes` and merges). The tag `submission` (annotated, on `f1ba936`) is local too.
+On `ux/onboarding`, pushed, in PR #2 against `fixes` (the author merges). The tag `submission` (annotated, on `f1ba936`) stays local.
 
 - `f6cf24c` docs: bring 03 up to the code and record the audit after the submission
 - `56d33a3` feat(frontend): name the stats link and say what the streak counts
@@ -144,5 +157,7 @@ On `ux/onboarding`, not pushed (the author pushes, opens the PR against `fixes` 
 - `bade8f8` feat(frontend): bring back the question zone in the sealed chart
 - `9533256` fix(frontend): keep the spaces in the streak pill
 - `42edc74` fix(frontend): label the arrows on Stats for screen readers
+- `6cb44cc` docs: close the onboarding work with its logbook and session log
+- `8bab444` fix(frontend): give the chart room on very short phones
 
-The closed logbook, this log and its entry in `prompts/README.md` are one more commit, made afterwards.
+The logbook and this log, updated for prompt 6, are one more commit, made afterwards.

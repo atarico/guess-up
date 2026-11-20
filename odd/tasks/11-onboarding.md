@@ -44,6 +44,8 @@ Quoted from the author (L1, L3, L4), verbatim.
 | T6 | Change 5: the two-humps sentence, `puntos` for `pp`; 03 §3 | S11, S4 | inline | done | `a12623d`; RED 3 `statsView.test.ts`, GREEN. The edge at 20 px: beside its label at 390 and 480, below at 320, no overflow |
 | T7 | Change 6: the `?` zone in the sealed chart; 03 §6 | S12, S4 | inline | done | `bade8f8`; measured: largest x difference of the year between sealed and revealed 0 px, the cut line at the zone's edge in both |
 | T8 | Change 12: `Subió`/`Bajó` on the Stats arrows | S13 | inline | done | `42edc74`; RED 2 `arrowLabel`, GREEN; the edge and both recent rows labelled in the browser |
+| T10 | The chart on very short phones (L9) | L9 | inline | done | `8bab444`; the `tiny` variant: 140 px at 375 × 548 (was 78), 160 at 320 × 568 (was 98), every state of the block within 310 px, no scrolling; 390 × 664 unchanged; typecheck, lint, 117 tests, build |
+| T11 | Publish: push, PR against `fixes` with what changes, how to test and the `CORS_ORIGIN` URL (L9) | L9, S16 | inline | done | `fixes` and `ux/onboarding` pushed, tag not pushed; PR #2; alias checked (302 to Vercel's login, a made-up alias 404) |
 | T9 | Close: checks, browser pass, session log in the after-submission section, branch test notes | S14, S16, S17 | inline | done | frontend typecheck, lint, 117 tests, build; backend 223 tests; 03 §11 searches empty; `prompts/sessions/11-onboarding.md` and the section in `prompts/README.md`. Not done: a real phone (the author's) |
 
 Routes: every unit is under about 100 changed lines and most share `copy.ts`, `PlayScreen.tsx` or the specs, so all run inline; no independent verifier (S17).
@@ -137,3 +139,12 @@ Con esto tenés mi ok para el paso 3. Orden de commits: primero el de docs que p
 - **L6** (answer through the question tool, verbatim). The card above the chart, measured: the chart 74 px at 390 × 664, the buttons off a 320 × 568 screen; in the question block: no change to the chart, the buttons on screen at the five sizes. The author selected `En el bloque (Recomendado)`.
 - **L7** RDD after every commit: `gentle-ai review assess --base-ref ea32269 --committed-only`, untracked files excluded: medium, `review_due` false, `under_budget`, up to 617 changed lines; no review ran. No independent verifier (S17).
 - **L8** (about 19:45 UTC) Closed: T0–T9 done on `ux/onboarding`, nothing pushed. Scratch removed: the fake API and the Playwright output (`.playwright-mcp/`). Next: the author pushes `fixes` and `ux/onboarding` (and the tag when asked), opens the PR against `fixes`, tests the preview on a real phone, and merges.
+- **L9** (2026-11-20, author's request, verbatim):
+
+````text
+Pushea la rama ux/onboarding y abri el PR contra fixes con gh. No mergees.
+Antes arregla lo de la grafica de 78 px a 375 x 548 y confirmame si el tag submission incluye el README.
+En la descripcion del PR pone que cambia, como probarlo y la URL de la rama que tengo que sumar a CORS_ORIGIN.
+````
+
+- **L10** (about 20:35 UTC) The tag `submission` holds `README.md` as last changed by `35d9732`, unchanged since. T10 and T11 done: `8bab444`; `fixes` (needed as the PR's base, at `ea32269`) and `ux/onboarding` pushed; PR #2 against `fixes`, not merged. Branch alias `https://guess-up-frontend-git-ux-onboarding-ataricos-projects.vercel.app`, read from Vercel's commit status (scope `ataricos-projects`, project `guess-up-frontend`).
