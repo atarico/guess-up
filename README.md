@@ -15,7 +15,7 @@ Built as a take-home technical test for RUUT (Fullstack role), with AI as a pair
 **Two-minute tour**
 
 1. Open the app and tap **Probar la cuenta demo**.
-2. Play one chart: **Comprar** or **Pasar**. The first time, a three-line card says how a round works. The reveal that follows is the financial-data view.
+2. Play one chart: **Comprar** or **Pasar**. The first time, a short guided tour points at each part of the screen; **Saltar** skips it. The reveal that follows is the financial-data view.
 3. Tap **Estadísticas** in the top bar. The demo account started with 40 rounds played by a coin, so the verdict is there without playing ten rounds yourself.
 
 > The backend runs on Render's free plan and sleeps after 15 minutes without traffic. The first request can take up to a minute: the app shows a "Despertando el servidor" screen and continues on its own.
@@ -202,7 +202,7 @@ The full log, with dates and alternatives, is in [`DECISIONS.md`](DECISIONS.md).
 - **No rerolls.** One open round per user, enforced by a partial unique index in Postgres. Closing the app does not skip a hard chart, and two taps at once still leave one open round.
 - **Results are frozen.** A round stores its forward return when it is created, so later data refreshes can never change a recorded result.
 - **Honest numbers.** The sample size sits next to every verdict. A rounded value never shows a sign the real value does not have. Coin ties count on neither side, and the share of coins you beat is rounded down, so it never flatters the user.
-- **No tutorial that holds up the game.** A three-line card the first time a browser plays, gone with the first decision, and a countdown to the first verdict. Added after the submission: first-time players did not know what was measured or when the verdict would come.
+- **A guided tour that can be skipped.** Six steps the first time a browser plays, each pointing at one part of the screen, with **Saltar** on every step, and a countdown to the first verdict. Added after the submission: first-time players did not know what was measured or when the verdict would come. A three-line card came first; the author replaced it with the tour.
 - **Neutral Spanish for Mexico.** Tú, never voseo; `es-MX` dates and numbers; prices always labelled `USD`, because a bare `$` reads as pesos in Mexico.
 
 **Security**
@@ -292,6 +292,7 @@ The submitted version is commit [`f1ba936`](https://github.com/atarico/guess-up/
   - `Estadísticas` as text instead of an icon, and `puntos` instead of `pp`;
   - the `?` zone back in the sealed chart, so nothing moves sideways at the reveal;
   - room for the chart on very short phones.
+- **A guided tour** (branch `tutorial`): six steps that replace the three-line card, each pointing at one part of the play screen.
 
 ## Time spent
 
