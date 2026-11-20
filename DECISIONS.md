@@ -96,3 +96,18 @@ Running log of trade-offs and deviations from the specs. It feeds the README. On
   - **The frozen return has two names:** `r` in `DecidedRound` and `forwardReturn` everywhere else. Proposed: `forwardReturn` everywhere.
   - **`L` and `H` read as opaque letters** where they are imported. They are the names 02 §6 uses. Proposed: `SHOWN_DAYS` and `HORIZON_DAYS` at the use sites, keeping the spec's letters in the domain file's comments.
   - **The repository SQL has no automated test** (reliability). It was run by hand this unit (entry above). Proposed: an opt-in `pnpm test:db` against a local Postgres named by an environment variable, outside the default `pnpm test`, which stays without network or database.
+
+## 2026-11-20 — Work unit 5 (`odd/tasks/05-play.md`)
+
+Design points 03 did not define, each settled the simplest way (author's brief):
+
+- **Until `GET /stats` exists, the top bar shows only the streak, and only after the first decision of a page load** (03 §5.3; unit 6 brings the round count, the stats link and log-out). The decision response carries the streak; before any decision there is no number to show, and a `0` would be false for a returning player.
+- **The chart is drawn in the pixels of its own box** (03 §6). A `ResizeObserver` measures it, so lines, dots and text stay sharp from 320 to 480 px without stretching an SVG. The ink line still has `vector-effect: non-scaling-stroke`.
+- **The reveal sequence is CSS keyframes whose last frame is the element's normal style** (03 §6, §4). With `prefers-reduced-motion: reduce` the animations are off and the final state shows at once; no JavaScript timers.
+- **The bottom panel keeps the reveal card's height in every state** (03 §10). The question and the buttons sit at the bottom of it, so the chart is the same size sealed and revealed (measured: 280 px in both at 390 × 664), and one empty line is reserved for the (P1) live price. The cost is empty space above the question before the decision.
+- **The page is `100svh` tall,** the visible height with the browser's bars showing, so both buttons are on screen without scrolling (measured at 390 × 664).
+- **Labels on the revealed chart:** start date left, cutoff date right-aligned to the cutoff, end date at the right edge; each price just above its dot (below it when the dot is at the top). There is no collision avoidance, so the end price can sit on top of the future line.
+- **The headline arrow is `▲` above zero and `▼` below; at exactly zero there is none,** and `0.0%` is shown alone. The arrow's accessible name is `Subió` or `Bajó` (03 §10).
+- **The `aria-live` region is always on the page and only filled at the reveal,** with the arrow's word, the percent and the call line, because a region added together with its text is often not read out.
+- **Hover styles apply only on devices that can hover.** On a phone, `:hover` stays on the last button tapped, which left `Siguiente gráfica` underlined after a decision.
+- **PENDING, text for the author: the call line for a buy when the return is exactly zero** (03 §5.3 has "up" and "down" for a buy, "down or flat" for a pass). Until the author gives the text, that case uses `Compraste. Bajó.`, which is how `isCorrect` scores it (a wrong buy), although the price did not fall. It needs equal closes at the cutoff and 63 days later.

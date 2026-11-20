@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { copy } from '@/lib/copy';
-import { ProvisionalPlay } from './ProvisionalPlay';
+import { PlayScreen } from './PlayScreen';
 
 export const metadata: Metadata = { title: copy.titles.play };
 
-// Provisional protected page of work unit 3; work unit 5 replaces it with the game.
+// 03 §5.3. Client-rendered: the token lives in the browser (03 §2).
 export default function PlayPage() {
-  return <ProvisionalPlay />;
+  return <PlayScreen />;
 }

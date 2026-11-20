@@ -41,10 +41,30 @@ export const copy = {
   // 03 §8: offline, 5xx or any code without its own text.
   genericError: 'Algo salió mal. Intenta de nuevo.',
   retry: 'Reintentar',
-  // Provisional /play of work unit 3; replaced by the game in work unit 5.
-  provisionalPlay: {
-    signedInAs: 'Sesión iniciada como',
-    logOut: 'Cerrar sesión',
+  // 03 §5.3, §8, §10
+  play: {
+    streak: (n: number) => `Racha: ${n}`,
+    question: '¿Comprarías esta acción?',
+    pass: 'Pasar',
+    buy: 'Comprar',
+    keyHints: '← Pasar · → Comprar',
+    decisionFailed: 'No se pudo guardar tu respuesta. Intenta de nuevo.',
+    noData: 'Todavía no hay gráficas cargadas. La biblioteca de precios se está llenando.',
+    identity: (symbol: string, name: string) => `${symbol} · ${name}`,
+    window: (from: string, to: string) => `${from} → ${to}`,
+    horizon: (to: string) => `los 3 meses siguientes, hasta el ${to}`,
+    prices: (from: string, to: string) => `${from} → ${to}`,
+    priceNote: 'Precios ajustados por splits.',
+    next: 'Siguiente gráfica',
+    // Accessible labels of the headline's arrow.
+    up: 'Subió',
+    down: 'Bajó',
+    calls: {
+      buyUp: 'Compraste. Buena decisión.',
+      buyDown: 'Compraste. Bajó.',
+      passDownOrFlat: 'Pasaste. Buena decisión.',
+      passUp: 'Pasaste. Subió sin ti.',
+    },
   },
   // 03 §6, §10
   chart: {

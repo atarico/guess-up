@@ -57,14 +57,19 @@ body {
     color: var(--color-ink);
   }
 
-  /* Hover stays monochrome: no colour before a decision (03 §4). */
-  .button:not(:disabled):hover {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
+  /*
+   * Hover stays monochrome: no colour before a decision (03 §4). Only on devices that can hover:
+   * on a phone, :hover sticks to the last button tapped.
+   */
+  @media (hover: hover) {
+    .button:not(:disabled):hover {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
 
-  .button-secondary:not(:disabled):hover {
-    background: var(--color-rule);
+    .button-secondary:not(:disabled):hover {
+      background: var(--color-rule);
+    }
   }
 
   .button:disabled {
