@@ -27,7 +27,7 @@ Quoted verbatim from the author (L1, L2).
 | ID | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- | --- |
 | T1 | Foundation: tokens, fonts, logo, buttons, all copy, API types; 03 §4 | S1, S2, C3 | inline | done | `feat(frontend): lay the foundation of the app style`; the design's tokens in `globals.css`, Inter and Space Grotesk, `Logo`, `.button`, `.card`, the chart CSS moved to `components/Chart.css`, every new string in `copy.ts` beside the old keys, `CoinHistogram` and `RecentRound` in `api-types.ts`; frontend typecheck, lint, 73 tests and build green |
-| T2 | Backend: coin histogram (domain, test-first) and `GET /rounds?limit=20`; 02 §6, §7 | S2, C1, C2 | delegated | pending | |
+| T2 | Backend: coin histogram (domain, test-first) and `GET /rounds?limit=20`; 02 §6, §7 | S2, C1, C2 | delegated | done | `feat(backend): add the coin histogram and the recent rounds`; writer (Sonnet): RED 6 of 6 `coinHistogram` tests (`not a function`), GREEN; 16 cases in `recentRounds.test.ts` (shape, order, limit and default, 400 for 0/21/abc/−1/1.5/empty, 401, another user's rounds, an open round absent and not leaked in body, headers or logs). Parent: the unit 4 test that expected `GET /rounds` to 404 rewritten to check the list without the open round. Backend 223 tests, typecheck, lint, build green |
 | T3 | Play, reveal and chart | S1, S2 | delegated | pending | |
 | T4 | Stats: verdict card, averages, coin histogram, hits and streaks, last 20 | S2, C1, C2 | delegated | pending | |
 | T5 | Welcome, log-in and the waking screen with its counter | S1, S2 | inline | pending | |

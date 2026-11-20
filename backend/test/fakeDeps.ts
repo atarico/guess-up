@@ -134,6 +134,20 @@ export function inMemoryRounds(): RoundsRepository & { rows: Map<string, Row> } 
         .sort((a, b) => (a.decidedAt ?? 0) - (b.decidedAt ?? 0))
         .map((r) => ({ decision: r.decision as 'buy' | 'pass', r: r.forwardReturn }));
     },
+    async recentDecided(userId, limit) {
+      return [...rows.values()]
+        .filter((r) => r.userId === userId && r.decision !== null)
+        .sort((a, b) => (b.decidedAt ?? 0) - (a.decidedAt ?? 0))
+        .slice(0, limit)
+        .map((r) => ({
+          id: r.id,
+          symbol: r.symbol,
+          cutoffDate: r.cutoffDate,
+          decision: r.decision as 'buy' | 'pass',
+          forwardReturn: r.forwardReturn,
+          decidedAt: new Date(r.decidedAt ?? 0),
+        }));
+    },
     async deleteForUser(userId) {
       const ids = [...rows.values()].filter((r) => r.userId === userId).map((r) => r.id);
       for (const id of ids) rows.delete(id);

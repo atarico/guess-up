@@ -6,6 +6,9 @@ export type OpenRound = { id: string; symbol: string; cutoffDate: string };
 
 export type StoredRound = OpenRound & { forwardReturn: number; decision: Decision | null };
 
+/** A decided round as the repository lists it; the service adds the name and `correct`. */
+export type DecidedRow = { id: string; symbol: string; cutoffDate: string; decision: Decision; forwardReturn: number; decidedAt: Date };
+
 export type NewRound = { userId: string; symbol: string; cutoffDate: string; forwardReturn: number };
 
 export type RoundsRepository = {
@@ -21,6 +24,8 @@ export type RoundsRepository = {
   findOwn(id: string, userId: string): Promise<StoredRound | null>;
   /** The user's decided rounds in the order they were decided, for the streak. */
   decidedInOrder(userId: string): Promise<DecidedRound[]>;
+  /** The user's latest decided rounds, newest decision first. Never an open round. */
+  recentDecided(userId: string, limit: number): Promise<DecidedRow[]>;
   /** Deletes every round of the user, open or decided, and returns how many; only `pnpm seed:demo --reset` calls it. */
   deleteForUser(userId: string): Promise<number>;
 };
@@ -70,6 +75,19 @@ export function roundsRepository(pool: pg.Pool): RoundsRepository {
           where user_id = $1 and decision is not null
           order by decided_at, created_at`,
         [userId],
+      );
+      return rows;
+    },
+
+    async recentDecided(userId, limit) {
+      // `decision is not null` is what keeps an open round out (invariant 1); `limit` is a checked integer, still a parameter.
+      const { rows } = await pool.query<DecidedRow>(
+        `select id, symbol, cutoff_date::text as "cutoffDate", decision, forward_return::float8 as "forwardReturn", decided_at as "decidedAt"
+           from rounds
+          where user_id = $1 and decision is not null
+          order by decided_at desc, created_at desc
+          limit $2`,
+        [userId, limit],
       );
       return rows;
     },

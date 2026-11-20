@@ -26,6 +26,18 @@ export type Reveal = {
   correct: boolean;
 };
 
+/** One line of the history on the stats screen (02 §7, GET /rounds). Decided rounds only. */
+export type RecentRound = {
+  id: string;
+  symbol: string;
+  name: string;
+  cutoffDate: string;
+  decision: Decision;
+  forwardReturn: number;
+  correct: boolean;
+  decidedAt: string;
+};
+
 export type DecisionResult = { reveal: Reveal; streak: { current: number; best: number } };
 
 type Deps = {
@@ -120,6 +132,33 @@ export function roundService(deps: Deps) {
         },
         streak: streaks(await deps.rounds.decidedInOrder(userId)),
       };
+    },
+
+    /**
+     * The user's latest decided rounds, newest first (02 §7). The repository lists decided rounds
+     * only, so an open round cannot appear; the names come from the symbols table, one lookup per stock.
+     */
+    async recent(userId: string, limit: number): Promise<RecentRound[]> {
+      const decided = await deps.rounds.recentDecided(userId, limit);
+      const symbols = [...new Set(decided.map((round) => round.symbol))];
+      const infos = await Promise.all(symbols.map((symbol) => deps.symbols.find(symbol)));
+      const names = new Map(infos.flatMap((info) => (info ? [[info.symbol, info.name] as const] : [])));
+
+      // Field by field, never a spread row (02 §7).
+      return decided.map((round) => {
+        const name = names.get(round.symbol);
+        if (name === undefined) throw new Error('A decided round has no symbol in the stored data');
+        return {
+          id: round.id,
+          symbol: round.symbol,
+          name,
+          cutoffDate: round.cutoffDate,
+          decision: round.decision,
+          forwardReturn: round.forwardReturn,
+          correct: isCorrect(round.decision, round.forwardReturn),
+          decidedAt: round.decidedAt.toISOString(),
+        };
+      });
     },
   };
 }

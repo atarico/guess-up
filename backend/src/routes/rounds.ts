@@ -6,6 +6,9 @@ import { requireAuth } from '../middleware/requireAuth.js';
 import { validateBody } from '../middleware/validate.js';
 import { liveForRound, roundService } from '../services/roundService.js';
 
+// `limit` is an integer from 1 to 20 (02 §7). Express 5's req.query is read-only, so it is parsed, not replaced.
+const recentQuery = z.object({ limit: z.coerce.number().int().min(1).max(20).default(20) });
+
 const decisionBody = z.object({ decision: z.enum(['buy', 'pass']) });
 
 /** Postgres would throw on a malformed uuid; answer the same 404 as an unknown round (V9). */
@@ -31,6 +34,13 @@ export function roundsRouter(deps: Pick<AppDeps, 'jwtSecret' | 'rounds' | 'close
     const id = roundIdOf(req.params.id);
     const { reveal, streak } = await rounds.decide(req.userId as string, id, decision);
     res.json({ reveal, streak });
+  });
+
+  // (P1) The caller's decided rounds, newest first. An open round never appears (invariant 1).
+  router.get('/rounds', auth, async (req, res) => {
+    const parsed = recentQuery.safeParse(req.query);
+    if (!parsed.success) throw new ApiError(400, 'VALIDATION', 'limit: must be an integer from 1 to 20');
+    res.json({ rounds: await rounds.recent(req.userId as string, parsed.data.limit) });
   });
 
   // (P1) Always 200 for a decided round of the caller: a missing price is an answer, not an error (02 §7).

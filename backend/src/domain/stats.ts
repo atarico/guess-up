@@ -1,3 +1,5 @@
+import { coinHistogram, type CoinHistogram } from './coin.js';
+
 // Game-layer figures over decided rounds (01 §8, 02 §6). computeStats joins this file in work unit 6.
 
 export type Decision = 'buy' | 'pass';
@@ -38,7 +40,7 @@ export type Stats = {
   avgAll: number | null;
   avgPassed: number | null;
   edge: number | null;
-  coin: { p5: number; p95: number; percentile: number; beatenBy: number; trials: number } | null;
+  coin: { p5: number; p95: number; percentile: number; beatenBy: number; trials: number; histogram: CoinHistogram } | null;
   verdict: Verdict;
   roundsUntilVerdict: number;
   hitRate: number | null;
@@ -92,5 +94,5 @@ export function computeStats(rounds: DecidedRound[], coin: { p5: number; p95: nu
   const percentile = coin.edges.filter((e) => e < edge).length / coin.edges.length;
   const beatenBy = coin.edges.filter((e) => e > edge).length / coin.edges.length;
   const verdict: Verdict = edge < coin.p5 ? 'worse' : edge > coin.p95 ? 'better' : 'coin';
-  return { ...figures, coin: { p5: coin.p5, p95: coin.p95, percentile, beatenBy, trials: coin.edges.length }, verdict };
+  return { ...figures, coin: { p5: coin.p5, p95: coin.p95, percentile, beatenBy, trials: coin.edges.length, histogram: coinHistogram(coin.edges) }, verdict };
 }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { coinHistogram } from '../src/domain/coin.js';
 import { computeStats, type DecidedRound, isCorrect, needsCoin, streaks } from '../src/domain/stats.js';
 
 describe('isCorrect (01 §6, 02 §6)', () => {
@@ -112,7 +113,24 @@ describe('computeStats (01 §8, 02 §6)', () => {
     const rounds = tenRounds(0.02, 0);
     const edge = computeStats(rounds, wideCoin).edge as number;
     const coin = { p5: -0.02, p95: 0.02, edges: [edge - 0.03, edge - 0.01, edge, edge + 0.01, edge + 0.03] };
-    expect(computeStats(rounds, coin).coin).toEqual({ p5: -0.02, p95: 0.02, percentile: 0.4, beatenBy: 0.4, trials: 5 });
+    expect(computeStats(rounds, coin).coin).toEqual({
+      p5: -0.02,
+      p95: 0.02,
+      percentile: 0.4,
+      beatenBy: 0.4,
+      trials: 5,
+      histogram: coinHistogram(coin.edges),
+    });
+  });
+
+  it('adds the coin histogram: every trial counted once in 40 bins', () => {
+    const rounds = tenRounds(0.02, 0);
+    const edge = computeStats(rounds, wideCoin).edge as number;
+    const coin = { p5: -0.02, p95: 0.02, edges: [edge - 0.03, edge - 0.01, edge, edge + 0.01, edge + 0.03] };
+    const { histogram } = computeStats(rounds, coin).coin!;
+    expect(histogram.counts).toHaveLength(40);
+    expect(histogram.counts.reduce((sum, c) => sum + c, 0)).toBe(5);
+    expect(histogram.start).toBe(edge - 0.03);
   });
 
   it('counts a tie with a coin trial on neither side', () => {
