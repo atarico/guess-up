@@ -2,37 +2,51 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { api, ApiError } from '@/lib/api';
 import type { AuthResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { copy } from '@/lib/copy';
+import { DEMO } from '@/lib/demo';
 
 type Mode = 'signup' | 'login';
 
 const PATHS: Record<Mode, string> = { signup: '/auth/register', login: '/auth/login' };
 
-export function LoginForm({ initialMode, sessionExpired }: { initialMode: Mode; sessionExpired: boolean }) {
+type Credentials = { email: string; password: string };
+
+type Props = { initialMode: Mode; sessionExpired: boolean; demoNow: boolean };
+
+export function LoginForm({ initialMode, sessionExpired, demoNow }: Props) {
   const router = useRouter();
   const { signIn } = useAuth();
-  const [mode, setMode] = useState<Mode>(initialMode);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [pending, setPending] = useState(false);
+  const demo = DEMO;
+  // From the welcome's demo link (`?demo=1`), the form starts filled with the demo credentials and
+  // already sending them.
+  const demoOnArrival = demoNow ? demo : null;
+  const [mode, setMode] = useState<Mode>(demoOnArrival ? 'login' : initialMode);
+  const [email, setEmail] = useState(demoOnArrival?.email ?? '');
+  const [password, setPassword] = useState(demoOnArrival?.password ?? '');
+  const [pending, setPending] = useState(demoOnArrival !== null);
   const [error, setError] = useState<string | null>(null);
   // State reaches the button on the next render; the ref stops a second submit in between.
   const inFlight = useRef(false);
 
   const text = copy.login[mode];
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  /** Sends the credentials once at a time (03 §5.2). */
+  function send(path: string, body: Credentials) {
     if (inFlight.current) return;
     inFlight.current = true;
     setPending(true);
     setError(null);
+    void request(path, body);
+  }
+
+  /** On success, stores the token and goes to /play; on failure, shows why and frees the button. */
+  async function request(path: string, body: Credentials) {
     try {
-      const { token } = await api<AuthResponse>(PATHS[mode], { method: 'POST', body: { email, password } });
+      const { token } = await api<AuthResponse>(path, { method: 'POST', body });
       signIn(token);
       // The button stays disabled until /play has loaded.
       router.replace('/play');
@@ -43,6 +57,27 @@ export function LoginForm({ initialMode, sessionExpired }: { initialMode: Mode; 
       setPending(false);
     }
   }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    send(PATHS[mode], { email, password });
+  }
+
+  /** The demo link: fills the form with the demo credentials and logs in with them (03 §5.2). */
+  function logInAsDemo(credentials: Credentials) {
+    setMode('login');
+    setEmail(credentials.email);
+    setPassword(credentials.password);
+    send(PATHS.login, credentials);
+  }
+
+  // Arriving with ?demo=1: the state already shows the demo credentials as sending; this sends them once.
+  useEffect(() => {
+    if (!demoOnArrival || inFlight.current) return;
+    inFlight.current = true;
+    void request(PATHS.login, demoOnArrival);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
 
   function switchMode() {
     setMode(mode === 'signup' ? 'login' : 'signup');
@@ -119,6 +154,12 @@ export function LoginForm({ initialMode, sessionExpired }: { initialMode: Mode; 
       <button type="button" onClick={switchMode} disabled={pending} className="mt-6 min-h-12 touch-manipulation self-center text-sm underline underline-offset-4 hover:decoration-2">
         {text.switchMode}
       </button>
+
+      {demo && (
+        <button type="button" onClick={() => logInAsDemo(demo)} disabled={pending} className="mt-2 min-h-12 touch-manipulation self-center text-sm underline underline-offset-4 hover:decoration-2">
+          {copy.demoLink}
+        </button>
+      )}
     </main>
   );
 }

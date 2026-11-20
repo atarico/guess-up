@@ -106,7 +106,8 @@ One form: email, password, submit. A switch toggles between the two modes.
 | `VALIDATION` | `Revisa el correo y la contraseña. La contraseña debe tener al menos 8 caracteres.` |
 | `RATE_LIMITED` | `Demasiados intentos. Espera unos minutos e intenta de nuevo.` |
 
-- Demo link fills the demo credentials and submits. The credentials come from `NEXT_PUBLIC_DEMO_EMAIL` and `NEXT_PUBLIC_DEMO_PASSWORD`. **When either is unset, the demo link is not rendered**, here and on the welcome screen. A link that cannot work is never shown.
+- Demo link fills the demo credentials and submits. The credentials come from `NEXT_PUBLIC_DEMO_EMAIL` and `NEXT_PUBLIC_DEMO_PASSWORD`. **When either is unset, the demo link is not rendered**, here and on the welcome screen. A link that cannot work is never shown. An empty value counts as unset. Both are copied into the bundle at build time, so changing them needs a new deploy.
+- The welcome's demo link opens `/login?demo=1`: the form arrives filled with the demo credentials and sends them at once, the same as the link on this screen.
 - The submit button cannot be pressed twice.
 - On success: store the token, go to `/play`.
 
@@ -309,7 +310,7 @@ Accessibility labels and titles, also from `copy.ts`:
 ## 11. Checks
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` clean.
-- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3. Components are checked by hand; there is no time budget for a browser test suite.
+- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3; `demo.ts`, whether the demo link is rendered (§5.2). Components are checked by hand; there is no time budget for a browser test suite.
 - Copy check before each deploy: search the frontend source for a bare `$` followed by a digit, for English interface text, and for voseo forms. All three searches come back empty.
 - Manual pass before each deploy, at 390 px and at desktop width: sign up → play three rounds → stats → log out → demo account → stats. Then once with the backend stopped, to see every error state.
 

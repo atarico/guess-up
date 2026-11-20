@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { copy } from '@/lib/copy';
+import { DEMO } from '@/lib/demo';
 import { RedirectIfSignedIn } from './RedirectIfSignedIn';
 
 // Welcome, 03 §5.1. Server-rendered, so a first visit shows it at once; a signed-in visitor
@@ -20,6 +21,12 @@ export default function Welcome() {
         <Link href="/login" className="button button-secondary">
           {copy.welcome.logIn}
         </Link>
+        {/* The log-in form fills the demo credentials and submits them (03 §5.1, §5.2). */}
+        {DEMO && (
+          <Link href="/login?demo=1" className="mt-3 inline-flex min-h-12 items-center self-center text-sm underline underline-offset-4">
+            {copy.demoLink}
+          </Link>
+        )}
       </div>
 
       <footer className="mt-auto border-t border-rule pt-4 text-xs leading-relaxed text-muted">{copy.welcome.footer}</footer>

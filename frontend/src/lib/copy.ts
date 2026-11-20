@@ -7,6 +7,8 @@ const figure = (t: string): Part => ({ text: t, figure: true });
 export const copy = {
   appTitle: 'Guess-Up',
   tagline: 'Una gráfica real de una acción, sin nombre ni fechas. Comprar o pasar. Después, la verdad.',
+  // 03 §5.1 and §5.2: the same text link on both screens, shown only with the demo credentials.
+  demoLink: 'Probar la cuenta demo',
   // Page titles, 03 §10.
   titles: {
     login: 'Guess-Up · Iniciar sesión',
