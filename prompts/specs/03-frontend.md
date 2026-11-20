@@ -125,16 +125,16 @@ The logo at the top, a link back to the welcome screen. Then one form: email, pa
 
 Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "Revelación"):
 
-1. **Top bar** (44 px): the logo on the left; on the right a `Racha N` pill and a 44 × 44 icon link to Stats.
+1. **Top bar** (44 px): the logo on the left; on the right the streak pill and a text link to Stats, 44 px tall. Below 420 px wide the logo is the mark alone and its name is left to screen readers: with the name the row is 4 px too wide at 390 px. With the mark alone it fits at 320 px, a three-digit streak included.
 2. **Chart**, flexible, then a reserved 18 px row for the dates of the reveal. Sealed state.
 3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): the round count and three chips, the question, a hint, the two buttons, a note.
 4. **Two buttons**, side by side, in the bottom thumb zone: buy on the left, pass on the right.
 
 | Element | Text |
 | --- | --- |
-| Streak pill | `Racha` and the number |
+| Streak pill | `Racha: 3 aciertos` (`Racha: 1 acierto`, `Racha: 0 aciertos`) |
 | Round count, the first chip | `Gráfica 17` |
-| Stats link (icon), `aria-label` | `Ver estadísticas` |
+| Stats link | `Estadísticas` |
 | Chips | `Acción real` · `Un año` · `Sin nombre ni fechas` |
 | Question | `¿Compras o pasas?` |
 | Hint | `Después verás la empresa, las fechas y lo que pasó en los tres meses siguientes.` |
@@ -336,7 +336,7 @@ Accessibility labels and titles, also from `copy.ts`:
 ## 11. Checks
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` clean.
-- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3; `demo.ts`, whether the demo link is rendered (§5.2). Components are checked by hand; there is no time budget for a browser test suite.
+- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3; `demo.ts`, whether the demo link is rendered (§5.2); `copy.ts`, the singular and plural of the streak pill (§5.3). Components are checked by hand; there is no time budget for a browser test suite.
 - Copy check before each deploy: search the frontend source for a bare `$` followed by a digit, for English interface text, and for voseo forms. All three searches come back empty.
 - Manual pass before each deploy, at 390 px and at desktop width: sign up → play three rounds → stats → log out → demo account → stats. Then once with the backend stopped, to see every error state.
 

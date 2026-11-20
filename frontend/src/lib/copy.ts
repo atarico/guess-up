@@ -72,8 +72,8 @@ export const copy = {
     onceNote: 'Tu decisión se registra una sola vez.',
     // Comprar is the left button, so the left arrow buys (03 §5.3).
     keys: '← Comprar · → Pasar',
-    streakLabel: 'Racha',
-    statsLabel: 'Ver estadísticas',
+    // The top bar pill says what the streak counts: right calls in a row.
+    streak: (n: number) => [text('Racha: '), figure(String(n)), text(n === 1 ? ' acierto' : ' aciertos')],
     // The reveal (03 §5.3).
     inThreeMonths: 'en 3 meses',
     cutLabel: 'Corte',

@@ -7,6 +7,7 @@ import { Chart } from '@/components/Chart';
 import { DecisionButtons } from '@/components/DecisionButtons';
 import { Logo } from '@/components/Logo';
 import { type LiveState, RevealCard } from '@/components/RevealCard';
+import { Sentence } from '@/components/Sentence';
 import { api, ApiError } from '@/lib/api';
 import type { DecisionResponse, LiveResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -170,17 +171,15 @@ export function PlayScreen() {
   return (
     <main className="mx-auto flex h-svh w-full max-w-[480px] flex-col px-4 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
       <header className="flex h-11 shrink-0 items-center justify-between gap-2">
-        <Logo />
+        <Logo nameWhenWide />
         <div className="flex items-center gap-2">
-          {streak !== null && <Pill label={copy.play.streakLabel} value={streak} />}
-          <Link
-            href="/stats"
-            aria-label={copy.play.statsLabel}
-            className="flex size-11 items-center justify-center rounded-xl border border-line bg-surface text-fg"
-          >
-            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-              <path d="M4 16V9M10 16V4M16 16v-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+          {streak !== null && (
+            <p className="flex h-8 items-center rounded-full border border-line bg-surface px-3 text-[13px] whitespace-nowrap text-muted">
+              <Sentence parts={copy.play.streak(streak)} figureClassName="tabular font-semibold text-fg" />
+            </p>
+          )}
+          <Link href="/stats" className="flex h-11 items-center rounded-xl border border-line bg-surface px-3 text-[13px] font-medium whitespace-nowrap text-fg">
+            {copy.play.statsLink}
           </Link>
         </div>
       </header>
@@ -238,15 +237,5 @@ export function PlayScreen() {
         {announcement}
       </p>
     </main>
-  );
-}
-
-/** A small label of the top bar, such as `Racha 3`. */
-function Pill({ label, value }: { label: string; value?: number }) {
-  return (
-    <p className="flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-[13px] text-muted">
-      {label}
-      {value !== undefined && <span className="tabular font-semibold text-fg">{value}</span>}
-    </p>
   );
 }
