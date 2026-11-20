@@ -83,6 +83,7 @@ A dark phone app, quiet until the reveal (the author's design canvas "Guess-Up �
 
 | Element | Text |
 | --- | --- |
+| Top | The logo (`components/Logo.tsx`): the mark and `Guess-Up` |
 | Picture | A year of an invented line, the hidden three months with a gold `?` and two dotted possible futures (`components/WelcomeChart.tsx`); `aria-label` `Gráfica anónima de un año de precios; los tres meses siguientes están ocultos` |
 | Under the picture | `Un año, sin nombre ni fechas` · `3 meses después` |
 | Headline | `¿De verdad sabes leer una gráfica?` |
@@ -96,7 +97,7 @@ Signed-in visitors go straight to `/play`.
 
 ### 5.2 Log in / sign up `/login`
 
-One form: email, password, submit. A switch toggles between the two modes.
+The logo at the top, a link back to the welcome screen. Then one form: email, password, submit. A switch toggles between the two modes.
 
 | Element | Create account | Log in |
 | --- | --- | --- |
@@ -124,15 +125,15 @@ One form: email, password, submit. A switch toggles between the two modes.
 
 Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "Revelación"):
 
-1. **Top bar** (44 px): the logo on the left; on the right a `Racha N` pill, a `Gráfica N` pill (hidden below 380 px wide, where the row does not fit) and a 44 × 44 icon link to Stats.
+1. **Top bar** (44 px): the logo on the left; on the right a `Racha N` pill and a 44 × 44 icon link to Stats.
 2. **Chart**, flexible, then a reserved 18 px row for the dates of the reveal. Sealed state.
-3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): three chips, the question, a hint, the two buttons, a note.
+3. **Question block** (fixed height, the same as the reveal block, so the chart keeps its size): the round count and three chips, the question, a hint, the two buttons, a note.
 4. **Two buttons**, side by side, in the bottom thumb zone: buy on the left, pass on the right.
 
 | Element | Text |
 | --- | --- |
 | Streak pill | `Racha` and the number |
-| Round count | `Gráfica 17` |
+| Round count, the first chip | `Gráfica 17` |
 | Stats link (icon), `aria-label` | `Ver estadísticas` |
 | Chips | `Acción real` · `Un año` · `Sin nombre ni fechas` |
 | Question | `¿Compras o pasas?` |
@@ -142,9 +143,11 @@ Layout at 390 × 844, top to bottom (the design canvas, artboards "Jugar" and "R
 | Note under the buttons | `Tu decisión se registra una sola vez.` |
 | Key hints | `← Comprar · → Pasar` |
 
-The top bar's numbers come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
+The round count leads the chips because the top bar has no room for a second pill at 390 px (measured in work unit 10: the logo broke onto two lines). The streak and the round count come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. The streak pill is hidden until its first value arrives. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
 
 Button rules: identical size, weight, border and fill (`raised`, `edge`), 64 px tall with 12 px between them. No "primary" styling on either. Disabled the instant one is pressed.
+
+Short phones (`max-height: 760px`, the `short` variant in `globals.css`): both blocks tighten to 360 px, the headline number is smaller and the reveal leaves out its streak card, since the `Racha` pill already shows the current streak. At 390 × 664 the chart keeps about 190 px.
 
 Desktop: the same column, centred, maximum width 480 px. Keyboard: `←` buy and `→` pass (they follow the buttons), `Enter` or `Space` for next chart. Show the key hints only on devices with a fine pointer.
 
@@ -162,7 +165,7 @@ Reveal block, in this order:
 | (P1) Live, unavailable (muted) | `El precio de hoy no está disponible en este momento (límite de la API).` |
 | (P1) Live, unavailable for another reason (muted) | `El precio de hoy no está disponible en este momento.` |
 | Price note, below the card (muted) | `Precios ajustados por splits.` |
-| Streak card | `Racha actual` N · `Mejor racha` N |
+| Streak card (left out on short phones) | `Racha actual` N · `Mejor racha` N |
 | Button | `Siguiente gráfica` |
 
 The window and the horizon are no longer written out: the dates under the chart (start, cutoff, end) show them.
@@ -211,7 +214,7 @@ Top to bottom (the design canvas, artboard "Estadísticas"):
 | Back to the game | `Jugar otra gráfica` |
 | Log out | `Cerrar sesión` |
 
-**Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures set in the monospace face.
+**Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures, set bold with tabular figures (§4).
 
 | State | Text |
 | --- | --- |
@@ -311,9 +314,9 @@ All in `format.ts`, all via `Intl` with the locale `es-MX`. This is formatting o
 ## 10. Accessibility and feel
 
 - `<html lang="es-MX">`.
-- Everything reachable and operable by keyboard; visible focus ring on `ink`.
-- Text contrast at least 4.5:1 on `paper`; `up` and `down` as specified meet it.
-- Touch targets at least 48 px; the two decision buttons at least 56 px.
+- Everything reachable and operable by keyboard; visible focus ring in `accent`.
+- Text contrast at least 4.5:1 on `page`; `up` and `down` as specified meet it.
+- Touch targets at least 44 px; the two decision buttons at least 56 px (they are 64, §5.3).
 - No layout shift between sealed and revealed: reserve the reveal card's height.
 - `viewport` set so the game does not zoom on double-tap; text remains user-scalable.
 
@@ -321,10 +324,12 @@ Accessibility labels and titles, also from `copy.ts`:
 
 | Where | Text |
 | --- | --- |
-| Sealed chart | `Gráfica de precios anónima, un año de precios diarios` |
-| Revealed chart | `Gráfica de NVDA, del 12 mar 2018 al 11 jun 2019` |
-| Coin band | `Rango de la moneda: de −2.1 a +2.0 puntos. Tu resultado: −1.3 puntos.` |
-| (P1) Right / wrong mark in the list | `Acierto` / `Error` |
+| Sealed chart | `Gráfica anónima de un año de precios, sin nombre, fechas ni escala` |
+| Revealed chart | `Gráfica de NVIDIA Corporation: un año hasta el corte y los tres meses siguientes` |
+| Coin histogram | `Histograma de la ventaja de 2,000 monedas, con el rango donde cae el 90% y tu ventaja marcada` |
+| (P1) Right / wrong mark in the list | `Acierto` / `Fallo` |
+| (P1) Today's price while it loads | `Cargando el precio de hoy` |
+| (P1) Strip of the last charts | `Rendimiento a tres meses de tus últimas gráficas` |
 | Up / down arrow | `Subió` / `Bajó` |
 | Page titles | `Guess-Up` · `Guess-Up · Iniciar sesión` · `Guess-Up · Jugar` · `Guess-Up · Estadísticas` |
 
