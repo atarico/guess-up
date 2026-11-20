@@ -11,6 +11,7 @@ import { healthRouter } from './routes/health.js';
 export type AppDeps = {
   corsOrigins: string[];
   jwtSecret: string;
+  trustProxyHops: number;
   db: { ping(): Promise<void> };
   symbols: { countReady(): Promise<number> };
   apiUsage: { usedToday(): Promise<number> };
@@ -19,6 +20,11 @@ export type AppDeps = {
 
 export function createApp(deps: AppDeps) {
   const app = express();
+  // On Render the socket belongs to a proxy. Trusting exactly the measured number of hops makes
+  // req.ip the visitor, so the /auth limit counts per visitor (02 §4). Never `true`: the client
+  // could then choose its own address. At 0 nothing is set, and express-rate-limit warns if a
+  // forwarded header ever shows up.
+  if (deps.trustProxyHops > 0) app.set('trust proxy', deps.trustProxyHops);
   app.use(requestLog);
   app.use(helmet());
   // Only listed origins get CORS headers back; the browser blocks every other origin.

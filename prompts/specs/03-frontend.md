@@ -104,6 +104,7 @@ One form: email, password, submit. A switch toggles between the two modes.
 | `EMAIL_TAKEN` | `Ya existe una cuenta con ese correo.` |
 | `INVALID_CREDENTIALS` | `Correo o contraseña incorrectos.` |
 | `VALIDATION` | `Revisa el correo y la contraseña. La contraseña debe tener al menos 8 caracteres.` |
+| `RATE_LIMITED` | `Demasiados intentos. Espera unos minutos e intenta de nuevo.` |
 
 - Demo link fills the demo credentials and submits. The credentials come from `NEXT_PUBLIC_DEMO_EMAIL` and `NEXT_PUBLIC_DEMO_PASSWORD`. **When either is unset, the demo link is not rendered**, here and on the welcome screen. A link that cannot work is never shown.
 - The submit button cannot be pressed twice.

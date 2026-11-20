@@ -6,6 +6,8 @@ const schema = z.object({
   TWELVE_DATA_API_KEY: z.string().min(1),
   CORS_ORIGIN: z.string().min(1),
   PORT: z.coerce.number().int().positive(),
+  // Proxies between the visitor and Express; measured on Render, 0 locally (02 §4).
+  TRUST_PROXY_HOPS: z.coerce.number().int().nonnegative().default(0),
 });
 
 export type Env = z.infer<typeof schema> & { corsOrigins: string[] };

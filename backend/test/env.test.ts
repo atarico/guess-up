@@ -27,6 +27,15 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ ...valid, CORS_ORIGIN: corsOrigin })).toThrow(message);
   });
 
+  it('reads TRUST_PROXY_HOPS as a whole number, 0 when it is not set', () => {
+    expect(loadEnv(valid).TRUST_PROXY_HOPS).toBe(0);
+    expect(loadEnv({ ...valid, TRUST_PROXY_HOPS: '3' }).TRUST_PROXY_HOPS).toBe(3);
+  });
+
+  it.each(['-1', '1.5', 'true'])('refuses TRUST_PROXY_HOPS=%s', (hops) => {
+    expect(() => loadEnv({ ...valid, TRUST_PROXY_HOPS: hops })).toThrow(/TRUST_PROXY_HOPS/);
+  });
+
   it('names missing or invalid variables without printing their values', () => {
     const source = { ...valid, DATABASE_URL: undefined, JWT_SECRET: 'too-short-secret' };
     expect(() => loadEnv(source)).toThrow(/DATABASE_URL, JWT_SECRET/);

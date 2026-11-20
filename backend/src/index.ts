@@ -11,6 +11,7 @@ const pool = createPool(env.DATABASE_URL);
 const app = createApp({
   corsOrigins: env.corsOrigins,
   jwtSecret: env.JWT_SECRET,
+  trustProxyHops: env.TRUST_PROXY_HOPS,
   db: {
     async ping() {
       await pool.query('select 1');

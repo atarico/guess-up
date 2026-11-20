@@ -31,6 +31,7 @@ export function fakeDeps(overrides: Partial<AppDeps> = {}): AppDeps {
   return {
     corsOrigins: ['http://localhost:3000'],
     jwtSecret: TEST_JWT_SECRET,
+    trustProxyHops: 0,
     db: { ping: async () => {} },
     symbols: { countReady: async () => 3 },
     apiUsage: { usedToday: async () => 5 },
