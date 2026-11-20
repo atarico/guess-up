@@ -65,7 +65,7 @@ None of these needs a change to the 02 §7 contract.
 | T4 | `isCorrect` and `streaks`, test-first | S2 | inline | done | `feat(backend): add isCorrect and the streak to the domain`; RED 7 of 7 failed against the stub / GREEN 7 passed; `domain/stats.ts` holds both, with the `Decision` and `DecidedRound` types `computeStats` will reuse in unit 6; typecheck, lint green |
 | T5 | Repositories, `roundService.createOrResume`, `POST /rounds`; tests V1–V7, V10, V16 on the API, S5 items 1–3 | S3, S4, S5 | inline | done | `feat(backend): create or resume a round with POST /rounds`; 11 tests in `test/rounds.test.ts`: 401 without token; the no-leak contract on a new round and on a resumed one (exact keys, 252 points in [0, 1], no symbol, name or `YYYY-MM-DD` in the body or any header, none in the logs); same id and points on resume; cutoff and frozen forward return stored at creation; stock first, then cutoff; resume reads 252 closes, never the whole series (V12); two requests held until both had looked → one open round, one `resumed: false` and one `true`, same id; each user their own round; `503 NO_DATA`; a round that cannot be rebuilt → `500` with no symbol or date in body or logs; `GET /rounds/:id` and `GET /rounds` are plain `404` (V10). The `NO_DATA` test found that the unit 3 error handler turned any `ApiError` of 500 or more into `500 INTERNAL`; fixed in this commit. Repositories: rounds (whole), symbol and close reads (dates as text, numbers as float8). 128 tests, typecheck, lint green |
 | T6 | `POST /rounds/:id/decision`, reveal and streak; tests V8, V9, S5 items 4–5 | S3, S4, S5 | inline | done | `feat(backend): decide a round and reveal it`; 8 tests in `test/decision.test.ts`: 401; the reveal equals the stored data field by field (dates, 252 history, 63 future, frozen return, `correct`) with the streak; a second decision with the other option returns the same body and the stored `buy` stays; three invalid bodies → `400`, no `reveal`, no leak, round still open and decidable after; the same `404` body for another user's round, an unknown UUID and a non-UUID id, with the round left open; the streak across right, wrong, right calls. The in-memory rounds table now throws on a malformed UUID like Postgres, and the non-UUID case fails without the route's guard (mutation observed, then restored). 136 tests, typecheck, lint, build green |
-| T7 | SQL on a throwaway local Postgres (A9); push; production curl commands for the author | S6 | inline | pending | |
+| T7 | SQL on a throwaway local Postgres (A9); push; production curl commands for the author | S6 | inline | done | Local Postgres 16 (Homebrew, data directory in the scratchpad, TCP on localhost:55432), `001_init.sql` applied, the real app and repositories driven by a scratch script: the resume query failed on the reserved alias `window` → `fix(backend): stop using a reserved word in the resume query` (`964ce93`); after it: sealed create, resume with the same id and points, the race leaves one open round (`on conflict … where decision is null` returns no row on the second insert), `numeric(9,6)` keeps 0.123457, the reveal matches the stored row, the second decision keeps `buy`, the three `404` bodies are identical, the invalid body leaves the round open. Production commands under Author steps |
 | T8 | Session log `prompts/sessions/04-rounds.md` | S8 | inline | pending | |
 
 Route evidence: no writer is delegated; each task builds on the one before (domain → service → routes), and the brief rules out the independent verifier.
@@ -74,7 +74,67 @@ Route evidence: no writer is delegated; each task builds on the one before (doma
 
 ### Production checks (T7)
 
-Written at T7.
+Run them after Render serves this unit (`curl -s https://guess-up-api.onrender.com/rounds -X POST` answers `401`, not `404`). Production has one `ready` stock today, so every round is AAPL; that does not change any result below. zsh, with `jq`.
+
+**Setup.** Copy each token from the browser: DevTools → Application → Local Storage → the Vercel origin → `guess-up.token` (log in as your user, then as a second user in a private window). `read -rs` keeps them off the screen and out of the history; `curl` reads them from the variables.
+
+```sh
+API=https://guess-up-api.onrender.com
+read -rs 'TOKEN?Token of your user: '; echo
+read -rs 'OTHER?Token of the other user: '; echo
+sealed() { jq -c '{keys: keys, resumed, points: (.round.points | length), inRange: (.round.points | all(. >= 0 and . <= 1))}'; }
+leaks() { grep -cE 'AAPL|Apple|[0-9]{4}-[0-9]{2}-[0-9]{2}' || true; }
+```
+
+1. **Create a round.**
+   ```sh
+   R1=$(curl -s -X POST "$API/rounds" -H "Authorization: Bearer $TOKEN"); ID=$(print -r -- "$R1" | jq -r .round.id)
+   print -r -- "$R1" | sealed; print -r -- "$R1" | leaks
+   ```
+   - Expected: `{"keys":["resumed","round"],"resumed":false,"points":252,"inRange":true}`, then `0`. `resumed` is `true` if you already had an open round; that is fine.
+   - If it fails: other keys, or a non-zero count, is a leak (V1); `503 NO_DATA` means no stock is `ready`; `500` with a fresh deploy points at the SQL.
+2. **Repeat the request.**
+   ```sh
+   R2=$(curl -s -X POST "$API/rounds" -H "Authorization: Bearer $TOKEN")
+   print -r -- "$R2" | sealed; [[ $(print -r -- "$R2" | jq -r .round.id) == $ID ]] && echo same-id
+   [[ $(print -r -- "$R1" | jq -c .round.points) == $(print -r -- "$R2" | jq -c .round.points) ]] && echo same-points
+   ```
+   - Expected: `"resumed":true`, `same-id`, `same-points`.
+   - If it fails: a new id is a reroll (invariant 2); different points mean the rebuild reads a different window (V2, V16).
+3. **Two requests at once,** with that round still open.
+   ```sh
+   for i in 1 2; do curl -s -X POST "$API/rounds" -H "Authorization: Bearer $TOKEN" | jq -c '{id: .round.id, resumed}' & done; wait
+   ```
+   - Expected: two lines, both with `$ID` and `"resumed":true`.
+   - If it fails: a different id means a second open round.
+4. **Decide.**
+   ```sh
+   curl -s -X POST "$API/rounds/$ID/decision" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"decision":"buy"}' \
+     | jq -c '{symbol: .reveal.symbol, cutoff: .reveal.cutoffDate, end: .reveal.endDate, decision: .reveal.decision, r: .reveal.forwardReturn, correct: .reveal.correct, history: (.reveal.history | length), future: (.reveal.future | length), streak}'
+   ```
+   - Expected: `"symbol":"AAPL"`, real dates, `"decision":"buy"`, `history` 252, `future` 63, `correct` `true` exactly when `r` is above 0, and the streak.
+   - If it fails: `404` means the id variable is empty or belongs to another user; `500` points at the reveal's SQL.
+5. **Decide again with the other option.**
+   ```sh
+   curl -s -X POST "$API/rounds/$ID/decision" -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{"decision":"pass"}' | jq -c '{decision: .reveal.decision, r: .reveal.forwardReturn}'
+   ```
+   - Expected: `"decision":"buy"` and the same `r` as in step 4.
+   - If it fails: `pass` means a decision was changed (invariant 2).
+6. **Ask for that round as the other user,** next to a made-up id.
+   ```sh
+   curl -s -X POST "$API/rounds/$ID/decision" -H "Authorization: Bearer $OTHER" -H 'Content-Type: application/json' -d '{"decision":"pass"}' -w ' %{http_code}\n'
+   curl -s -X POST "$API/rounds/00000000-0000-4000-8000-000000000000/decision" -H "Authorization: Bearer $OTHER" -H 'Content-Type: application/json' -d '{"decision":"pass"}' -w ' %{http_code}\n'
+   ```
+   - Expected: both lines `{"error":{"code":"NOT_FOUND","message":"Round not found"}} 404`.
+   - If it fails: a reveal is a broken ownership check; a different body tells the other user that the round exists (V9).
+7. **The real race,** now that no round is open (step 3 only resumed one).
+   ```sh
+   for i in 1 2; do curl -s -X POST "$API/rounds" -H "Authorization: Bearer $TOKEN" | jq -c '{id: .round.id, resumed}' & done; wait
+   ```
+   - Expected: two lines with the same new id, one `"resumed":false` and one `"resumed":true`. Over a real network one request may simply arrive after the other; the same id is what matters.
+   - If it fails: two different ids mean two open rounds; a `500` means the conflicting insert was not absorbed.
+
+Clean up after: `unset TOKEN OTHER R1 R2 ID`.
 
 ## Log
 
@@ -117,3 +177,4 @@ La sesión registrada en prompts/sessions/04-rounds.md.
 ````
 
 - **L2** (2026-11-20). Exploration, no code. Read 01 §6–§8, §10, §12–§14, 02 §3, §6, §7, §9, the unit 2 repositories and `seedCheck`. Production `/status`: `{"ok":true,"db":true,"symbolsReady":1,…}`, so not zero (S6) but one stock only (V13). Local Postgres tools exist (`psql`, `pg_ctl`), so the SQL can be run for real without touching production (A9). The anonymity list (V1–V16) was written before any code; none of it needs a change to the 02 §7 contract.
+- **L3** (2026-11-20). T1–T6 committed with TDD on the domain (RED 5/5, 8/9, 7/7). The `NO_DATA` test found that the unit 3 error handler turned any `ApiError` of 500 or more into `500 INTERNAL` (fixed in T5). The local Postgres found the reserved alias `window` in the resume query (fixed in `964ce93`). Each commit was assessed against the last boundary `97b50a9`: `medium`, `under_budget` up to 1,109 lines. The AI raised the slice with `--escalate-item 4` (the concurrent-create race, and the ownership guard that must not reveal another user's round), which made the review due. With the author's standing consent (A10), it ran four lenses (risk, resilience, readability, reliability): `approved` and acknowledged (lineage `review-b43fb569026903d3`); risk found nothing; seven non-blocking findings, none blocking, written to `DECISIONS.md` as pending with their proposed fixes.
