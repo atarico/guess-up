@@ -10,6 +10,7 @@ import type { UsersRepository } from './repositories/users.js';
 import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
 import { roundsRouter } from './routes/rounds.js';
+import { statsRouter } from './routes/stats.js';
 
 /** Everything the app needs from outside. Tests pass fakes; index.ts passes the real ones. */
 export type AppDeps = {
@@ -41,6 +42,7 @@ export function createApp(deps: AppDeps) {
   app.use(healthRouter(deps));
   app.use(authRouter(deps));
   app.use(roundsRouter(deps));
+  app.use(statsRouter(deps));
   app.use(notFound);
   app.use(errorHandler);
   return app;

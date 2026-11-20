@@ -308,7 +308,7 @@ Decided rounds, newest first: `[{ id, symbol, name, cutoffDate, decision, forwar
 }
 ```
 
-`avgPicks`, `avgPassed`, `edge` and `coin` are `null` when undefined (no buys, no passes, or too few rounds).
+`avgPicks`, `avgPassed`, `edge` and `coin` are `null` when undefined (no buys, no passes, or too few rounds). Precisely: `avgPicks` and `edge` with no buys, `avgPassed` with no passes, `avgAll` and `hitRate` with no decided rounds, and `coin` unless there is a verdict against it (at least 10 rounds, some buys and some passes). `roundsUntilVerdict` is `max(0, 10 − rounds)`. The coin's range is seeded from the user id and the number of decided rounds, so it is the same on every reload and changes when a round is decided.
 
 Every figure is computed from decided rounds only. The open round's frozen return never enters any of them: counted in "buy everything", it would reveal the direction of a chart the user has not answered yet.
 
