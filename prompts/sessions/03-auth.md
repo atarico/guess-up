@@ -3,7 +3,7 @@
 - **Date:** 2026-11-20, 09:35 to about 11:20 UTC, in one Claude Code session. About 1 h 45 min of session time, including the waits for deploys and the author's steps on Render.
 - **Tool:** Claude Code 2.1.329, with the Gentle AI ODD rules, RDD reviews and Engram memory. One sub-agent: the independent verifier (Opus, fresh context, read-only). Plugins and MCP servers used: Playwright (the manual pass at 390 px), Context7 (express-rate-limit, Zod and Next.js docs), Engram. A Vercel MCP server was configured but not authenticated, and the Render plugin was not loaded in this session; neither was used.
 - **Model:** Claude Opus 5.5 (`claude-opus-5-5`).
-- **Plan and logbook:** `odd/tasks/03-auth.md`: specs S1–S11 quoting the author, assumptions A1–A16, question Q1, tasks T1–T11, the author steps (measuring `TRUST_PROXY_HOPS`, the production checklist) and the log L1–L14.
+- **Plan and logbook:** `odd/tasks/03-auth.md`: specs S1–S11 quoting the author, assumptions A1–A16, question Q1, tasks T1–T11, the author steps (measuring `TRUST_PROXY_HOPS`, the production checklist) and the log L1–L16.
 - **Time against the budget:** 01 §15 gives unit 3 25 minutes, for the backend part only. The author's brief added the welcome and log-in screens and the client session, and measuring `TRUST_PROXY_HOPS` needed deploys and the author's checks on Render. `DECISIONS.md` records the scope change.
 - **Secrets and privacy:** no key, password, JWT secret or database URL is in this file. The author's public IP appears in two prompts; it is replaced with `[author's public IP, redacted]` and nothing else in them was changed. No visitor address entered the repository's history (checked with `git log -p --all`).
 
@@ -150,6 +150,11 @@ Después cerrá la unidad: tests, typecheck, lint y build en verde, el log de la
 - **B1:** the probe of the B1 fix ran with Next's JS chunks blocked, at 390 px. Before the fix: `GET /login?email=probe%40example.com&password=…`. After: `POST /login`, the URL is `/login`, and there were no API calls. With the JS loaded, the submit stays in the page.
 - **Docs:** 03 §7 now matches A10 and Q1. `DECISIONS.md` lists the deferred findings for the README.
 
+**After the push, the same probe against production.**
+- **First run, invalid:** the URL came back clean, but the run was not testing B1. The probe blocked scripts under `/_next/static/chunks/`, and Vercel serves them from `/_next/static/immutable/chunks/`. So the page hydrated, and the form's handler sent the fake log-in to the API (401). That run and the run that found the cause used 2 of the author's 20 attempts for 15 minutes.
+- **With every script blocked:** `POST /login`, final URL `/login`, no email and no password in it, no API calls.
+- **The local runs were valid:** `next start` serves the scripts from `/_next/static/chunks/`, and the before and after results show the block worked (a GET with the fields, then a POST).
+
 **Answer in the question dialog — 11:14 UTC.** On the RDD consent for the B1 fix and the docs commit together: "Revisar este cambio". It was approved with three advisory findings on the new docs, not fixed (see below).
 
 ## Verifier findings and what happened to them
@@ -170,9 +175,10 @@ The verifier had a fresh context and was read-only. It ran probes in scratch cop
 
 | Candidate | Lenses | Result | Findings and outcome |
 | --- | --- | --- | --- |
-| T1–T5 together | risk, resilience, readability, reliability | approved | 6 advisory. Two warnings that every visitor shares one counter while `TRUST_PROXY_HOPS` is unset: resolved by setting it to 3. `/ip` to be removed: done in T6. Three readability points and a boot log line with the hop count: deferred (`DECISIONS.md`). |
+| T1–T5 together | risk, resilience, readability, reliability | approved | 6 advisory. Two warnings, one from risk and one from resilience, that every visitor shares one counter while `TRUST_PROXY_HOPS` is unset: resolved by setting it to 3. The resilience one also suggests a boot log line with the hop count: deferred. One risk point, that `/ip` must be removed: done in T6. Three readability points: deferred (`DECISIONS.md`). |
 | T6 | readability | approved | 3 advisory on the AI's own checklist (the order of items 4 and 7, item 1's guidance) and on 02 §4: deferred (`DECISIONS.md`) |
 | B1 fix + docs | risk, readability | approved | Risk: none. Readability, 3 advisory on the new docs: the checklist itself has no note about the order; the A5 line says "this file"; the entry's header says "A1–A6" though A3 was fixed. Not fixed: outside the two commits the author asked for. |
+| This log (T9) | readability | approved | 3 advisory on this log: the header said L1–L14; the T1–T5 row read as seven findings for six; two versions of the checklist workaround. Fixed in the commit after the log. |
 
 Every commit was assessed by RDD right after it. The doc-only commits came out `high` because the feature document's name, `03-auth.md`, matches the auth signal.
 
@@ -181,7 +187,8 @@ Every commit was assessed by RDD right after it. The doc-only commits came out `
 - **B1 was the AI's own regression.** The web-design-guidelines audit said inputs need a `name`. The AI added the names and did not check what the form does before the JavaScript loads. The independent verifier found it.
 - **A `DECISIONS.md` edit split an entry from unit 2.** It was caught before the commit, reverted, and the unit 3 section was appended at the end instead.
 - **The browser tool wrote `.playwright-mcp/` into the worktree,** which git does not ignore. It was removed before the commit.
-- **The production checklist the AI wrote has an ordering problem and loose guidance in item 1** (R2-001, R2-002). The author deferred both. Until they are fixed, run item 4 last, or wait 15 minutes before it.
+- **The production checklist the AI wrote has an ordering problem and loose guidance in item 1** (findings R2-001 and R2-002 of the T6 review). The author deferred both. Until they are fixed, run item 4 last, from a network not used for the other items, or after waiting 15 minutes.
+- **The AI's first production run of the B1 probe tested nothing.** Its script-block pattern missed Vercel's path, so the page hydrated; the AI saw that no document POST had happened and that one API call had gone out, and traced it before reporting. Corrected by blocking every script by resource type.
 - **The first `/ip` reading was written into the uncommitted feature document with the WARP exit address.** It was redacted before any commit.
 - **RDD could not review each commit alone for T1–T5.** The reviews were blocked until the author ran `gentle-ai sync`, and by then the tool reviewed the range up to `HEAD`. The open slice from units 1 and 2 (base `83757d7`) was not reviewed before the first high-risk commit, as the protocol asks.
 - **One `git add` named paths already deleted with `git rm` and failed.** It was rerun without them.
@@ -201,5 +208,6 @@ On `main`:
 - `23f4f1c` chore(backend): remove the temporary /ip endpoint
 - `1a85d97` fix(frontend): post the log-in form when it runs without JavaScript
 - `97b8fb1` docs: bring 03 §7 up to date and record the deferred unit 3 findings
+- `68c6888` docs(prompts): log session 03, work unit 3
 
-This log is one more commit, made afterwards. The first six were pushed during the session; the last two and this log are pushed together at the close.
+The first six were pushed during the session, and the next two together with the log (`68c6888`). The correction of this log, prompted by its RDD review and adding the production B1 check, is one more commit, made afterwards.
