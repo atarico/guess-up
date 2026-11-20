@@ -1,0 +1,25 @@
+# Decisions
+
+Running log of trade-offs and deviations from the specs. It feeds the README. One line per decision; the number is the point in the spec review (`prompts/sessions/00-spec-review.md`).
+
+## 2026-11-20 — Spec review
+
+- **4. `CORS_ORIGIN` is a comma-separated list**, starting as `http://localhost:3000`; the Vercel URL is added after the first deploy (02 §8, 03 §12). Why: `env.ts` requires it at boot, before the frontend URL exists.
+- **5. Supabase: RLS on every table with no policies, and the Data API off** (02 §3). Why: belt and braces; `users.password_hash` must never be readable with the anon key, and either measure alone depends on one setting staying right.
+- **6. Tooling approved** (02 §2, 03 §2): Node 26 (current LTS, pinned in `engines` and `.nvmrc`), ESM, `typescript`, `tsx`, `@types/*`, ESLint with `typescript-eslint`, `supertest`, `node --env-file` instead of `dotenv`; Tailwind 4 as installed by `create-next-app`. Why: unit 1 cannot start without them, and `--env-file` saves a dependency.
+- **7. One env file per package**: `backend/.env` and `frontend/.env.local` (git-ignored), each with a `.env.example`; the root `.env.example` goes away (02 §8, 03 §12). Why: the repo had three files with mixed contents and no rule for which one loads.
+- **8. `/health` answers 200 while the process is up, with `db: false` when `select 1` fails**; the cold-start screen then stops waiting and shows the generic error (02 §7, 03 §8). Why: a 503 would keep Render from bringing a deploy live and leave the waiting screen spinning forever.
+- **9. `TRUST_PROXY_HOPS` is measured in work unit 3, with the `/auth` rate limit**, not at the first deploy (02 §4). Why: the number only matters once the rate limit exists.
+- **10. Added `npm run migrate` (`scripts/migrate.ts`) to the backend and `npm run test` to the frontend** (CLAUDE.md, 02 §2, 03 §11). Why: 02 §3 already used `migrate` and 03 §11 already asked for `format.ts` tests.
+- **11. `app.ts` exports `createApp(deps)` from unit 1** (02 §2, §9). Why: route tests need in-memory repositories; building it in from the start avoids rewriting the app in unit 3.
+- **12. `daily_closes.close` is `numeric(18,6)`, not `numeric(14,4)`** (02 §3). Why: the provider sends 5 decimals and old split-adjusted prices are a few cents, so 4 decimals lose precision.
+- **13. The Play top bar reads streak and round count from `GET /stats` on load**, then takes the streak from each decision response (03 §5.3). Why: `POST /rounds` cannot carry them without breaking the no-leak rule, and no spec said where they came from.
+- **14. Name and sector come from `universe.ts`; the exchange comes from `meta.exchange` in `time_series`** (02 §5.5, 03 §3). Why: `symbols.exchange` had no source.
+- **15. Large spin-offs left out of the universe; small ones stay and are listed as a known limitation** (01 §12). Why: prices are adjusted for splits only, so a spin-off can show as a fake drop; filtering the small ones (MRK, PFE, BIIB, APD, O) would thin the universe for a minor effect.
+- **16. The reveal card shows `Precios ajustados por splits.` below the prices, muted** (03 §5.3). Why: an adjusted price (NVDA at about USD 4 in 2019) contradicts what the user remembers; the note belongs next to the number, not in the stats small print.
+- **17. Acceptance criterion 8 (first chart in 30 s) is measured with the backend awake** (01 §13). Why: a cold start alone can take about a minute on the free host.
+- **18. The spec review session is logged as `prompts/sessions/00-spec-review.md`** (01 §15). Why: it happened before unit 1, whose log is `01-setup.md`.
+
+## 2026-11-20 — Twelve Data checked against real calls
+
+- **02 §5.1 confirmed and made precise, no design change**: `order=asc` with `outputsize=5000` returns the most recent 5,000 bars; `adjust=splits` is applied; quote `datetime` is a date only; errors come as real HTTP statuses (404 unknown symbol, charged; 401 bad key, free; 429 minute limit); `/stocks` was free and all 60 universe symbols are on NYSE or NASDAQ and covered by the Basic plan. Why: 02 §5.1 asked for these facts to be checked before relying on them. Cost: 12 credits confirmed by `/api_usage`.
