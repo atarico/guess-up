@@ -85,9 +85,17 @@ export function inMemoryMarket(stocks: SymbolInfo[] = FAKE_STOCKS) {
 
 type Row = StoredRound & { userId: string; decidedAt: number | null };
 
+/** Postgres refuses a malformed value for a `uuid` column with an error; the fake does the same. */
+function assertUuid(id: string) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    throw new Error(`invalid input syntax for type uuid: "${id}"`);
+  }
+}
+
 /**
  * In-memory rounds table. Like the partial unique index, it refuses a second open round per user;
- * like `numeric(9,6)`, it keeps the forward return to six decimals.
+ * like `numeric(9,6)`, it keeps the forward return to six decimals; like a `uuid` column, it
+ * throws on a malformed id.
  */
 export function inMemoryRounds(): RoundsRepository & { rows: Map<string, Row> } {
   const rows = new Map<string, Row>();
@@ -106,6 +114,7 @@ export function inMemoryRounds(): RoundsRepository & { rows: Map<string, Row> } 
       return id;
     },
     async decide(id, userId, decision) {
+      assertUuid(id);
       const row = rows.get(id);
       if (!row || row.userId !== userId || row.decision !== null) return null;
       row.decision = decision;
@@ -113,6 +122,7 @@ export function inMemoryRounds(): RoundsRepository & { rows: Map<string, Row> } 
       return stored(row);
     },
     async findOwn(id, userId) {
+      assertUuid(id);
       const row = rows.get(id);
       return row && row.userId === userId ? stored(row) : null;
     },

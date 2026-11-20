@@ -1,5 +1,6 @@
 import { normalise } from '../domain/normalise.js';
-import { L, pickRound } from '../domain/pickRound.js';
+import { H, L, pickRound } from '../domain/pickRound.js';
+import { type Decision, isCorrect, streaks } from '../domain/stats.js';
 import { ApiError } from '../middleware/errors.js';
 import type { ClosesReads } from '../repositories/closes.js';
 import type { OpenRound, RoundsRepository } from '../repositories/rounds.js';
@@ -7,6 +8,24 @@ import type { SymbolReads } from '../repositories/symbols.js';
 
 /** What a round is allowed to say before the decision (01 §6, invariant 1). */
 export type RoundView = { id: string; points: number[]; resumed: boolean };
+
+/** Everything the decision reveals (01 §7, 02 §7). */
+export type Reveal = {
+  symbol: string;
+  name: string;
+  sector: string | null;
+  exchange: string | null;
+  startDate: string;
+  cutoffDate: string;
+  endDate: string;
+  history: { d: string; c: number }[];
+  future: { d: string; c: number }[];
+  forwardReturn: number;
+  decision: Decision;
+  correct: boolean;
+};
+
+export type DecisionResult = { reveal: Reveal; streak: { current: number; best: number } };
 
 type Deps = {
   rounds: RoundsRepository;
@@ -60,6 +79,46 @@ export function roundService(deps: Deps) {
         return resume(winner);
       }
       return { id, points: normalise(picked.shown), resumed: false };
+    },
+
+    /**
+     * Records the decision once and reveals the round (02 §7). A second decision changes nothing:
+     * it gets the reveal with the stored decision. An unknown id and someone else's round get the
+     * same 404, so the answer never says whether a round exists (anonymity V9).
+     */
+    async decide(userId: string, roundId: string, decision: Decision): Promise<DecisionResult> {
+      const round = (await deps.rounds.decide(roundId, userId, decision)) ?? (await deps.rounds.findOwn(roundId, userId));
+      // An own round that is still open here would mean the update above failed on it; never reveal it.
+      if (!round || round.decision === null) throw new ApiError(404, 'NOT_FOUND', 'Round not found');
+
+      const [info, history, future] = await Promise.all([
+        deps.symbols.find(round.symbol),
+        deps.closes.upTo(round.symbol, round.cutoffDate, L),
+        deps.closes.after(round.symbol, round.cutoffDate, H),
+      ]);
+      if (!info || history.length !== L || future.length !== H) {
+        throw new Error('A decided round could not be rebuilt from the stored data');
+      }
+
+      return {
+        // Field by field, never a spread row (02 §7).
+        reveal: {
+          symbol: info.symbol,
+          name: info.name,
+          sector: info.sector,
+          exchange: info.exchange,
+          startDate: history[0].d,
+          cutoffDate: round.cutoffDate,
+          endDate: future[H - 1].d,
+          history: history.map((bar) => ({ d: bar.d, c: bar.close })),
+          future: future.map((bar) => ({ d: bar.d, c: bar.close })),
+          // The return frozen at creation, never recomputed (invariant 5).
+          forwardReturn: round.forwardReturn,
+          decision: round.decision,
+          correct: isCorrect(round.decision, round.forwardReturn),
+        },
+        streak: streaks(await deps.rounds.decidedInOrder(userId)),
+      };
     },
   };
 }
