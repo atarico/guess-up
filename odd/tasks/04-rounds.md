@@ -60,7 +60,7 @@ None of these needs a change to the 02 §7 contract.
 | ID | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- | --- |
 | T1 | This document, the anonymity list; 01 §12 and 02 §7 clarifications (A11) with `DECISIONS.md` | S4, S7 | inline | done | `docs: map how a round could leak its stock or date`; V1–V16 classified; list sent in the chat before any code; 01 §12 gains "A chart can be matched"; 02 §7: one `404` for unknown, foreign and non-UUID ids, body validated first, resume reads 252 rows, stats from decided rounds only |
-| T2 | `normalise`, test-first (range, flat, length, scale invariance) | S2 | inline | pending | |
+| T2 | `normalise`, test-first (range, flat, length, scale invariance) | S2 | inline | done | `feat(backend): add normalise to the domain`; RED 5 of 5 failed against a stub that threw "not implemented" / GREEN 5 passed; typecheck, lint green |
 | T3 | `pickRound`, test-first (both bounds, too short, arithmetic, never reads past `t + H`) | S2, S5 | inline | pending | |
 | T4 | `isCorrect` and `streaks`, test-first | S2 | inline | pending | |
 | T5 | Repositories, `roundService.createOrResume`, `POST /rounds`; tests V1–V7, V10, V16 on the API, S5 items 1–3 | S3, S4, S5 | inline | pending | |
