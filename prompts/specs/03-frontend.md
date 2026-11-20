@@ -203,11 +203,12 @@ Top to bottom (the design canvas, artboard "Estadísticas"):
 2. For the demo account (`user.isDemo`), a gold dashed banner. The client keeps only the token (§7), so this screen asks `GET /auth/me` together with `GET /stats` and shows the scoreboard when both have answered. If `/auth/me` fails, there is no banner and the scoreboard still shows.
 3. **The verdict**: an overline with the number of decided charts, then the verdict sentence, your picks in `accent`, the cost in `down` or the gain in `up`.
 4. **The verdict card**, only when there is a verdict against the coin: a coin icon, the short verdict and the counts.
-5. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`).
-6. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
-7. **Hits card**: a ring with the hit rate, the count, and the current and best streak.
-8. (P1) **Recent card**, from `GET /rounds?limit=20`: a strip of bars (filled when bought, outlined when passed, height by the size of the return, newest on the right) and a row per chart: ticker, cutoff month, the call, the return, a check or a cross. Left out when the call fails or there is no decided chart.
-9. Small print, `Jugar otra gráfica`, `Cerrar sesión`.
+5. `Jugar otra gráfica`, the same button as at the bottom, so the game is one tap away after the verdict without scrolling.
+6. **Averages card**: a bar each for your picks, buying all and what you passed, with counts and values; then your edge in points, its arrow and colour read from the number as shown (the rule of `headline`).
+7. **Coin card**: the histogram of the coin's 2,000 edges (`coin.histogram`), the 90% band from p5 to p95 in `gold`, bins outside it in `off`, your edge as an `accent` marker with its value; the scale always includes p5, p95, 0 and your edge. Then the coin sentence. Left out when there is no verdict against the coin, or when the guard finds a number that is not one.
+8. **Hits card**: a ring with the hit rate, the count, and the current and best streak.
+9. (P1) **Recent card**, from `GET /rounds?limit=20`: a strip of bars (filled when bought, outlined when passed, height by the size of the return, newest on the right) and a row per chart: ticker, cutoff month, the call, the return, a check or a cross. Left out when the call fails or there is no decided chart.
+10. Small print, `Jugar otra gráfica` again, `Cerrar sesión`.
 
 | Element | Text |
 | --- | --- |
@@ -219,7 +220,7 @@ Top to bottom (the design canvas, artboard "Estadísticas"):
 | Hits card | `Aciertos y rachas` · `23 de 48 aciertos` · `Comprar y que suba, o pasar y que no suba` · `Racha actual` · `Mejor` |
 | (P1) Recent card | `Últimas 20 gráficas` (`Tu última gráfica` for one) · `Barra llena: compraste. Barra vacía: pasaste. La más reciente, a la derecha.` · `Compraste` / `Pasaste` · marks `Acierto` / `Fallo` |
 | Small print | `Rendimiento de precio a tres meses, sin dividendos, comisiones ni impuestos. Las acciones que aparecen siguen cotizando hoy, lo que favorece a "comprar todas". Con pocas gráficas, el rango de la moneda es amplio: todavía no hay forma de saber si es habilidad.` |
-| Back to the game | `Jugar otra gráfica` |
+| Back to the game, below the verdict and at the bottom | `Jugar otra gráfica` |
 | Log out | `Cerrar sesión` |
 
 **Verdict sentences.** Approved wording; do not rephrase. Bold marks the figures, set bold with tabular figures (§4).

@@ -134,6 +134,11 @@ function Scoreboard({ stats, isDemo, recent, onLogOut }: { stats: StatsResponse;
         </div>
       )}
 
+      {/* The way back to the game, also here, so it is one tap away after the verdict without scrolling (03 §5.4). */}
+      <Link href="/play" className="button button-primary">
+        {text.keepPlaying}
+      </Link>
+
       <AveragesCard stats={stats} />
       <CoinCard stats={stats} />
       <HitsCard stats={stats} />
