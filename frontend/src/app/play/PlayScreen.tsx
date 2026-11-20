@@ -9,6 +9,7 @@ import { RevealCard } from '@/components/RevealCard';
 import { api, ApiError } from '@/lib/api';
 import type { DecisionResponse, RoundResponse, Reveal, StatsResponse } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
+import { chartNumberAfter } from '@/lib/chartNumber';
 import { copy } from '@/lib/copy';
 import { percent } from '@/lib/format';
 import { callLine, direction } from '@/lib/reveal';
@@ -30,12 +31,12 @@ export function PlayScreen() {
   const router = useRouter();
   const token = auth.status === 'signedIn' ? auth.token : null;
   const [screen, setScreen] = useState<Screen>({ kind: 'loading' });
-  // The top bar: GET /stats gives the first streak and the chart number on load (03 §5.3); after a
-  // decision the streak comes from its response, and the number goes up with the next chart.
+  // The top bar: GET /stats gives the first streak and the chart number (03 §5.3); after a decision the
+  // streak comes from its response, and the number goes up with the next chart (lib/chartNumber.ts).
   const [streak, setStreak] = useState<number | null>(null);
   const [chartNumber, setChartNumber] = useState<number | null>(null);
-  // Once a decision has happened here, a late /stats answer must not overwrite its streak.
-  const decidedHere = useRef(false);
+  // Decisions sent from this page, so a /stats answer can tell whether one was sent after it was asked.
+  const decisionsSent = useRef(0);
   // State reaches the buttons on the next render; the ref stops a second decision in between.
   const deciding = useRef(false);
   const nextButton = useRef<HTMLButtonElement>(null);
@@ -50,6 +51,22 @@ export function PlayScreen() {
     }
   }, []);
 
+  /**
+   * GET /stats for the top bar. It is optional: if it fails, the labels stay hidden and the game goes on.
+   * An answer that comes back after a decision was sent keeps the streak from that decision.
+   */
+  const askStats = useCallback((bearer: string) => {
+    const asked = decisionsSent.current;
+    api<StatsResponse>('/stats', { token: bearer }).then(
+      (stats) => {
+        const decidedSinceAsked = decisionsSent.current !== asked;
+        if (!decidedSinceAsked) setStreak(stats.streak.current);
+        setChartNumber((n) => chartNumberAfter(n, { kind: 'stats', rounds: stats.rounds, decidedSinceAsked }));
+      },
+      () => setChartNumber((n) => chartNumberAfter(n, { kind: 'statsFailed' })),
+    );
+  }, []);
+
   // No token: plain /login, no notice (03 §7). A rejected token is handled by api.ts.
   useEffect(() => {
     if (auth.status === 'signedOut') router.replace('/login');
@@ -59,29 +76,23 @@ export function PlayScreen() {
     if (!token) return;
     let current = true;
     fetchRound(token).then((next) => current && setScreen(next));
-    // The top bar is optional: if /stats fails, it stays empty and the game goes on.
-    api<StatsResponse>('/stats', { token }).then(
-      (stats) => {
-        if (!current || decidedHere.current) return;
-        setStreak(stats.streak.current);
-        setChartNumber(stats.rounds + 1);
-      },
-      () => {},
-    );
+    askStats(token);
     return () => {
       current = false;
     };
-  }, [token, fetchRound]);
+  }, [token, fetchRound, askStats]);
 
+  /** Loads the chart again; without a chart number yet, asks /stats again too (03 §5.3). */
   const reload = useCallback(() => {
     if (!token) return;
     setScreen({ kind: 'loading' });
     void fetchRound(token).then(setScreen);
-  }, [token, fetchRound]);
+    if (chartNumber === null) askStats(token);
+  }, [token, fetchRound, chartNumber, askStats]);
 
   /** The next chart: one more in the count. A retry after an error is `reload` alone. */
   const next = useCallback(() => {
-    setChartNumber((n) => (n === null ? null : n + 1));
+    setChartNumber((n) => chartNumberAfter(n, { kind: 'next' }));
     reload();
   }, [reload]);
 
@@ -89,10 +100,11 @@ export function PlayScreen() {
     async (decision: 'buy' | 'pass') => {
       if (screen.kind !== 'sealed' || !token || deciding.current) return;
       deciding.current = true;
+      // Counted when sent, not when answered: a decision whose answer is lost may still be recorded.
+      decisionsSent.current += 1;
       setScreen({ ...screen, pending: true, failed: false });
       try {
         const result = await api<DecisionResponse>(`/rounds/${screen.id}/decision`, { method: 'POST', body: { decision }, token });
-        decidedHere.current = true;
         setStreak(result.streak.current);
         setScreen({ kind: 'revealed', id: screen.id, points: screen.points, reveal: result.reveal });
       } catch {

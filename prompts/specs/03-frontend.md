@@ -129,7 +129,7 @@ Layout at 390 × 844, top to bottom:
 | Right button | `Comprar` |
 | Key hints | `← Pasar · → Comprar` |
 
-The top bar's numbers come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart.
+The top bar's numbers come from `GET /stats`, called when `/play` loads: the streak is `streak.current` and the round count is `rounds + 1`. After a decision the streak is taken from the decision response, and the count goes up by one with the next chart. A `/stats` answer is used only if no decision was sent after it was asked; a later one may or may not count that decision, so it is dropped. The round count is never shown blank or wrong: while it is unknown (no answer yet, a dropped answer, or a failed request) the label is not shown, and `/stats` is asked again when the next chart loads, or when a retry loads the same one. `/stats` covers decided rounds only, so none of this asks about the open round.
 
 Button rules: identical size, weight, border and fill. At least 56 px tall with 12 px between them. No "primary" styling on either. Disabled the instant one is pressed.
 
@@ -309,7 +309,7 @@ Accessibility labels and titles, also from `copy.ts`:
 ## 11. Checks
 
 - `pnpm typecheck`, `pnpm lint`, `pnpm build` clean.
-- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3. Components are checked by hand; there is no time budget for a browser test suite.
+- Unit tests for the pure functions in `lib/` only (`pnpm test`, Vitest): `format.ts`, asserting the exact strings in §9: signs, rounding, the zero case, `USD 1,234.56`, and `12 mar 2019` for the input `2019-03-12` with the process time zone set to `America/Mexico_City`; `verdict.ts`, the sentences of §5.4; `reveal.ts`, the call line and the headline arrow of §5.3; `chartNumber.ts`, the round count of §5.3. Components are checked by hand; there is no time budget for a browser test suite.
 - Copy check before each deploy: search the frontend source for a bare `$` followed by a digit, for English interface text, and for voseo forms. All three searches come back empty.
 - Manual pass before each deploy, at 390 px and at desktop width: sign up → play three rounds → stats → log out → demo account → stats. Then once with the backend stopped, to see every error state.
 
