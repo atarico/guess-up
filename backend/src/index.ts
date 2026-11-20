@@ -2,6 +2,8 @@ import { createApp } from './app.js';
 import { createPool } from './db.js';
 import { loadEnv } from './env.js';
 import { apiUsageRepository } from './repositories/apiUsage.js';
+import { closesRepository } from './repositories/closes.js';
+import { roundsRepository } from './repositories/rounds.js';
 import { symbolsRepository } from './repositories/symbols.js';
 import { usersRepository } from './repositories/users.js';
 
@@ -20,6 +22,9 @@ const app = createApp({
   symbols: symbolsRepository(pool),
   apiUsage: apiUsageRepository(pool),
   users: usersRepository(pool),
+  closes: closesRepository(pool),
+  rounds: roundsRepository(pool),
+  random: Math.random,
 });
 
 app.listen(env.PORT, () => {

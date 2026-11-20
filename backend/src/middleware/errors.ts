@@ -1,9 +1,9 @@
 import type { ErrorRequestHandler, RequestHandler } from 'express';
 
 /**
- * A client error that carries its own code from 02 §7, for the codes the status alone cannot
- * tell apart (`UNAUTHORIZED` and `INVALID_CREDENTIALS` are both 401). The message is ours and
- * never quotes what the client sent.
+ * An expected error that carries its own code from 02 §7: the codes the status alone cannot tell
+ * apart (`UNAUTHORIZED` and `INVALID_CREDENTIALS` are both 401), and `503 NO_DATA`. The message
+ * is ours and never quotes what the client sent.
  */
 export class ApiError extends Error {
   readonly status: number;
@@ -54,8 +54,9 @@ function typeOf(err: unknown): string {
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   const status = statusOf(err);
 
-  if (err instanceof ApiError && status < 500) {
-    console.warn(`Client error: ${status} ${err.code}`);
+  // Expected errors, 503 NO_DATA included: our code and message, a one-line log, no stack.
+  if (err instanceof ApiError) {
+    console.warn(`${status < 500 ? 'Client error' : 'Unavailable'}: ${status} ${err.code}`);
     res.status(status).json({ error: { code: err.code, message: err.message } });
     return;
   }
