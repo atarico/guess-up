@@ -28,6 +28,12 @@ describe('format (03 §9)', () => {
       expect(percent(0.0004)).toBe('0.0%');
     });
 
+    it('shows floating-point noise around zero as 0.0%, never −0.0% (the average of case 6, unit 6)', () => {
+      expect(percent(-4.336808689942018e-19)).toBe('0.0%');
+      expect(percent(4.336808689942018e-19)).toBe('0.0%');
+      expect(percent(-0)).toBe('0.0%');
+    });
+
     it('groups thousands with a comma, as es-MX does', () => {
       expect(percent(3.1)).toBe('+310.0%');
       expect(percent(12.345)).toBe('+1,234.5%');

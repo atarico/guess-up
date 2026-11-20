@@ -63,6 +63,12 @@ describe('verdictParts (03 §5.4)', () => {
     expect(plain(parts)).toBe('Tus selecciones y comprar todas las gráficas rindieron lo mismo: +3.4% en promedio. Tu criterio no cambió el resultado.');
   });
 
+  it('an average with floating-point noise around zero shows 0.0%, never −0.0%', () => {
+    const parts = verdictParts(stats({ avgPicks: -4.336808689942018e-19, avgAll: 0, edge: -4.336808689942018e-19 }));
+    expect(plain(parts)).toBe('Tus selecciones y comprar todas las gráficas rindieron lo mismo: 0.0% en promedio. Tu criterio no cambió el resultado.');
+    expect(plain(parts)).not.toContain(MINUS);
+  });
+
   it('negative averages use the real minus sign', () => {
     const parts = verdictParts(stats({ avgPicks: -0.124, avgAll: -0.031, edge: -0.093 }));
     expect(figures(parts)).toEqual([`${MINUS}12.4%`, `${MINUS}3.1%`, '9.3 puntos porcentuales']);
