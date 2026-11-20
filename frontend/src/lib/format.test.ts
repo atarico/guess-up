@@ -2,7 +2,7 @@
 process.env.TZ = 'America/Mexico_City';
 
 import { describe, expect, it } from 'vitest';
-import { dateFull, money, percent, points, signedPoints } from './format';
+import { dateFull, money, percent, points, share, signedPoints } from './format';
 
 const MINUS = '−';
 const NBSP = ' ';
@@ -70,6 +70,17 @@ describe('format (03 §9)', () => {
 
     it('reads the API date as UTC, so a browser behind UTC does not show the previous day', () => {
       expect(dateFull('2019-01-01')).toBe('1 ene 2019');
+    });
+  });
+
+  describe('share', () => {
+    it('is a whole percent, rounded down so a claim is never overstated', () => {
+      expect(share(0.96)).toBe('96%');
+      expect(share(0.9599)).toBe('95%');
+      expect(share(0.995)).toBe('99%');
+      expect(share(1)).toBe('100%');
+      expect(share(0)).toBe('0%');
+      expect(share(0.52)).toBe('52%');
     });
   });
 });

@@ -1,4 +1,9 @@
 // Every user-facing string, in Spanish (03 §3). Components never hold Spanish literals.
+
+/** A piece of a sentence: plain text, or a figure set in the monospace face (bold in the verdict, 03 §5.4). */
+export type Part = { text: string; figure: boolean };
+const text = (t: string): Part => ({ text: t, figure: false });
+const figure = (t: string): Part => ({ text: t, figure: true });
 export const copy = {
   appTitle: 'Guess-Up',
   tagline: 'Una gráfica real de una acción, sin nombre ni fechas. Comprar o pasar. Después, la verdad.',
@@ -64,6 +69,66 @@ export const copy = {
       buyDown: 'Compraste. Bajó.',
       passDownOrFlat: 'Pasaste. Buena decisión.',
       passUp: 'Pasaste. Subió sin ti.',
+    },
+  },
+  // 03 §5.4. Approved wording: do not rephrase. Figures arrive already formatted (lib/verdict.ts).
+  stats: {
+    verdict: {
+      cost: (picks: string, all: string, points: string) => [
+        text('Tus selecciones rindieron '),
+        figure(picks),
+        text(' en promedio. Comprar todas las gráficas rindió '),
+        figure(all),
+        text('. Tu criterio te costó '),
+        figure(`${points} puntos porcentuales`),
+        text(' por compra.'),
+      ],
+      gain: (picks: string, all: string, points: string) => [
+        text('Tus selecciones rindieron '),
+        figure(picks),
+        text(' en promedio. Comprar todas las gráficas rindió '),
+        figure(all),
+        text('. Tu criterio te sumó '),
+        figure(`${points} puntos porcentuales`),
+        text(' por compra.'),
+      ],
+      same: (all: string) => [
+        text('Tus selecciones y comprar todas las gráficas rindieron lo mismo: '),
+        figure(all),
+        text(' en promedio. Tu criterio no cambió el resultado.'),
+      ],
+      remaining: (n: number) =>
+        n === 1
+          ? [text('Falta '), figure('1 gráfica'), text(' para tu primer veredicto.')]
+          : [text('Faltan '), figure(`${n} gráficas`), text(' para tu primer veredicto.')],
+      boughtAll: [
+        text('Compraste todas las gráficas, así que tu resultado es el mismo que el de comprar todo. Prueba dejar pasar las que no te convenzan.'),
+      ],
+      boughtNone: [text('Todavía no has comprado ninguna gráfica. Aún no hay nada que medir.')],
+    },
+    coin: {
+      opening: (buys: string, rounds: string, low: string, high: string) => [
+        text('Una moneda que compra al azar '),
+        figure(buys),
+        text(' de estas '),
+        figure(rounds),
+        text(' gráficas queda entre '),
+        figure(low),
+        text(' y '),
+        figure(high),
+        text(' puntos nueve de cada diez veces.'),
+      ],
+      within: [text('Tu resultado está dentro de ese rango. Por ahora, tu criterio no se distingue de lanzar una moneda.')],
+      above: (share: string) => [
+        text('Tu resultado está por encima de ese rango. Por ahora, mejor que una moneda: superas al '),
+        figure(share),
+        text(' de los lanzamientos.'),
+      ],
+      below: (share: string) => [
+        text('Tu resultado está por debajo de ese rango. Por ahora, peor que una moneda: la moneda te gana el '),
+        figure(share),
+        text(' de las veces.'),
+      ],
     },
   },
   // 03 §6, §10

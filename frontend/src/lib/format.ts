@@ -49,3 +49,13 @@ export function money(price: number): string {
 export function dateFull(iso: string): string {
   return fullDate.format(new Date(`${iso}T00:00:00Z`));
 }
+
+const wholePercent = new Intl.NumberFormat('es-MX', { style: 'percent', maximumFractionDigits: 0 });
+
+/**
+ * A share as a decimal (0.96) → `96%`, rounded down, so a claim such as "superas al 96%" is never
+ * overstated. The tiny epsilon keeps 0.96, stored as 0.95999…, at 96.
+ */
+export function share(p: number): string {
+  return wholePercent.format(Math.floor(p * 100 + 1e-9) / 100);
+}

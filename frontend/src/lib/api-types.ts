@@ -46,3 +46,19 @@ export type ErrorCode =
   | 'RATE_LIMITED'
   | 'NO_DATA'
   | 'INTERNAL';
+
+/** `GET /stats` (02 §7). Returns are decimals; null where a figure is undefined. */
+export type StatsResponse = {
+  rounds: number;
+  buys: number;
+  passes: number;
+  avgPicks: number | null;
+  avgAll: number | null;
+  avgPassed: number | null;
+  edge: number | null;
+  coin: { p5: number; p95: number; percentile: number; trials: number } | null;
+  verdict: 'insufficient' | 'bought_none' | 'bought_all' | 'worse' | 'better' | 'coin';
+  roundsUntilVerdict: number;
+  hitRate: number | null;
+  streak: { current: number; best: number };
+};

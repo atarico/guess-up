@@ -203,6 +203,8 @@ Top to bottom:
 | `bought_all` | Compraste todas las gráficas, así que tu resultado es el mismo que el de comprar todo. Prueba dejar pasar las que no te convenzan. |
 | `bought_none` | Todavía no has comprado ninguna gráfica. Aún no hay nada que medir. |
 
+The figures in these sentences (approved by the author in work unit 6): each percentage is rounded once, to one decimal, and the points are the difference of the two rounded percentages shown in the same sentence, so the sum checks on screen. When that difference is 0.0, the "no cambió el resultado" sentence applies. The verdict against the coin (`worse`, `better`, `coin`) uses the raw edge.
+
 **Coin sentences.** Approved wording. All three start with the same sentence, then continue by verdict:
 
 > Una moneda que compra al azar 19 de estas 42 gráficas queda entre −2.1 y +2.0 puntos nueve de cada diez veces.
@@ -268,6 +270,7 @@ All in `format.ts`, all via `Intl` with the locale `es-MX`. This is formatting o
 | Percent | One decimal, sign shown on every value except zero (`signDisplay: "exceptZero"`), real minus sign `−` | `+2.1%`, `−12.4%`, `0.0%` |
 | Points | Absolute value, one decimal; the verb (costó / sumó) carries the direction | `1.3 puntos porcentuales`, `1.3 puntos` |
 | Range bounds | Signed, one decimal | `−2.1`, `+2.0` |
+| Share | A whole percent, rounded down so a claim is never overstated; the coin's "superas al" and "te gana el", and the hit rate | `96%` |
 | Money | Number with two decimals and `es-MX` grouping, prefixed with `USD` and a non-breaking space. Never a bare `$`. | `USD 184.20`, `USD 1,234.56` |
 | Date, full | Day, short month, year | `12 mar 2019` |
 | (P1) Date, list | Short month, year; used only by the last-20 list | `mar 2019` |
