@@ -6,7 +6,6 @@ import { requestLog } from './middleware/requestLog.js';
 import type { UsersRepository } from './repositories/users.js';
 import { authRouter } from './routes/auth.js';
 import { healthRouter } from './routes/health.js';
-import { ipRouter } from './routes/ip.js';
 
 /** Everything the app needs from outside. Tests pass fakes; index.ts passes the real ones. */
 export type AppDeps = {
@@ -33,7 +32,6 @@ export function createApp(deps: AppDeps) {
   app.use(express.json());
   app.use(healthRouter(deps));
   app.use(authRouter(deps));
-  app.use(ipRouter()); // temporary, see routes/ip.ts
   app.use(notFound);
   app.use(errorHandler);
   return app;

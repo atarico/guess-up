@@ -127,6 +127,7 @@ Our backend issues the token. Supabase Auth is not used: the brief asks for JWT 
   - Never set it to `true`. That makes the address depend on a header the client can send, and Render appends to that header instead of replacing it.
   - **The number is measured, not assumed.** Render does not document it. In work unit 3 (`01-product.md` §15), together with the `/auth` rate limit, temporarily expose `GET /ip` returning `req.ip` and the raw `X-Forwarded-For` header, start at 1 and raise `TRUST_PROXY_HOPS` until `req.ip` equals your own public IP. One request captured on Render in 2025 carried three addresses in that header (client, edge, internal), so expect 3, but the measured value wins. Too low and visitors still share a bucket; too high and a client can forge its address.
   - Remove `/ip` afterwards. Record the number and the date in `DECISIONS.md`.
+  - **Measured on 2026-11-20: `TRUST_PROXY_HOPS=3`.** The header carried the visitor, a Cloudflare edge address and a Render-internal address, and the socket was a proxy on the same host. `GET /ip` returned a count of 3, and was then removed (`DECISIONS.md`).
   - Check: requests from two different networks show different `req.ip`, and the logs contain neither `ERR_ERL_UNEXPECTED_X_FORWARDED_FOR` nor `ERR_ERL_PERMISSIVE_TRUST_PROXY`.
 
 Trade-offs to record in `DECISIONS.md`: no refresh token (a 7-day access token is acceptable for a game with no money in it); no email verification or reset; the frontend keeps the token in `localStorage` (see `03-frontend.md` §7).
