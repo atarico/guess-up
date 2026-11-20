@@ -518,3 +518,174 @@ On `main`, all pushed by the author except where noted:
 - `b210162` docs(odd): record the unit 1 deploy checklist results (not pushed yet)
 
 This log is a separate commit made afterwards.
+
+## Continuation: independent verification and fixes (07:56 to about 09:05 UTC)
+
+Added after the sections above, which are left as they were. Same session, tool and model. One more sub-agent ran in this part: an independent verifier (general-purpose, Opus), read-only, with a clean context (the repository, the specs and `DECISIONS.md`; not the AI's summary).
+
+### Prompt 25 — 07:56 UTC (pasted text)
+
+````text
+Sí, lanzá el verificador independiente antes de la unidad 2 y antes de que yo pushee los 4 commits.
+
+Condiciones
+- Contexto limpio: que reciba el repo, las specs y DECISIONS.md. No le pases tu resumen ni tus conclusiones.
+- Solo lectura: no edita, no commitea, no llama a Twelve Data y no toca Render, Vercel ni Supabase. No abre ningún .env.
+- Alcance: el repo tal como queda con los 4 commits. Para la búsqueda de secretos, el historial completo.
+
+Qué tiene que responder, con archivo y línea
+1. Secretos: ¿hay algún valor secreto en el árbol o en el historial de git, incluidos los 4 commits y prompts/sessions/? Que busque por patrón y reporte archivo y commit, sin mostrar el valor.
+2. TLS a Postgres: ¿la verificación del certificado está realmente activa? ¿Hay algún camino (variable, flag u opción de la cadena de conexión) que la apague?
+3. CORS: ¿la lista compara orígenes exactos? ¿Hay comodín, coincidencia parcial o reflejo del origen que llega? ¿Qué pasa con una barra final o con la lista vacía?
+4. Entorno: ¿la validación falla al arrancar con un mensaje claro y sin imprimir valores? ¿Coincide con 02 §8?
+5. /status y errores: ¿alguna respuesta filtra el host de la base, variables o un stack trace? ¿Se cumple el 200 con db: false cuando la base no responde?
+6. Schema: ¿001_init.sql coincide con 02 §3 (cinco tablas, restricciones, índice parcial, RLS)? Que opine si conviene quitar los permisos por defecto de anon y authenticated (L20).
+7. Deploy y dependencias: ¿lo que está en el repo coincide con las specs y DECISIONS.md (gestor de paquetes, versión de Node, comandos de build y de arranque)? ¿Hay alguna dependencia fuera de la lista aprobada?
+8. Renombre: ¿queda alguna mención de /health en specs, código o documentación?
+
+Formato del informe
+Una tabla: hallazgo, severidad (bloquea el push / arreglar antes de la unidad 2 / puede esperar), archivo y línea, y evidencia. Si un punto está bien, que lo diga en una línea con su evidencia.
+
+No arregles nada de lo que encuentre: mostrame el informe y esperá.
+````
+
+**Outcome:** the verifier ran in the background. Nothing blocked the push; three findings were "fix before unit 2". The AI reproduced one of them (malformed JSON logged with its body) before relaying the report, and deleted the verifier's scratch files.
+
+### Prompt 26 — 08:19 UTC (pasted text)
+
+````text
+Arreglá los hallazgos del verificador. De a uno, en este orden, cada uno con su commit. Sumalos como tareas a odd/tasks/01-setup.md, no abras otro documento.
+
+Para los puntos 1 a 4: primero el test que reproduce el problema, en rojo; después el arreglo. Si el arreglo cambia algo que una spec describe, la spec y la línea de DECISIONS.md van en el mismo commit. Evaluación de RDD en cada commit.
+
+1. Manejador de errores
+- JSON mal formado responde 400 VALIDATION con un mensaje nuestro, nunca el del parser.
+- Un error con status menor a 500 conserva su status. Si para alguno hace falta un código que la spec no tiene, proponémelo: no lo agregues solo.
+- Logs: para errores 4xx, solo status y tipo. Ni el body, ni el objeto de error entero, ni el mensaje, ni el stack: el mensaje de un JSON inválido trae un pedazo de lo que mandó el cliente, que puede ser parte de una contraseña. Para 5xx, el stack.
+- El test manda un body inválido con un texto reconocible y comprueba que ese texto no aparece en lo que se loguea.
+
+2. Timeouts de la base
+- Timeout de conexión en el pool y timeout de consulta, para que /status responda 200 con db: false si la base no contesta.
+- El timeout corto es solo del chequeo de /status. El general tiene que dejar pasar la transacción del seed, que inserta unas 5.000 filas.
+- Proponé los valores y justificalos contra el timeout del health check de Render, verificado en su documentación.
+
+3. SSL de la base
+- Si DATABASE_URL trae parámetros de SSL, el backend no arranca. El mensaje nombra el parámetro, nunca la URL ni sus valores. rejectUnauthorized: true explícito.
+- Vale igual para migrate y seed: que usen la misma fábrica de conexión.
+- Antes de commitear, comprobá sin mostrarla si la DATABASE_URL local trae alguno de esos parámetros. Si lo trae, avisame: la tengo que corregir también en Render antes del deploy.
+
+4. CORS_ORIGIN
+- Cada origen, ya sin espacios alrededor, se valida con new URL(o).origin === o. La lista no puede quedar vacía. Si falla, no arranca y el mensaje dice cuál entrada está mal.
+- Casos del test: barra final, ruta, comodín, entrada vacía y lista vacía.
+
+5. Menores (un solo commit, sin test)
+- El npm del .env.example, las dos dependencias en DECISIONS.md y los /health viejos del documento ODD, con una nota de que ahora es /status. El documento ODD es un registro: agregá la nota, no reescribas lo que ya estaba.
+
+6. Permisos de anon y authenticated (al final y aparte)
+Frená antes de escribir y mostrame dos cosas:
+- Qué dice hoy information_schema.role_table_grants para las cinco tablas.
+- Cómo vas a hacer que migrate.ts aplique todos los archivos en orden. La condición es que correrlo dos veces seguidas sea seguro, teniendo en cuenta que el 001 ya está aplicado en producción.
+Con mi ok:
+- El 002 quita los permisos sobre las tablas actuales y también los permisos por defecto para tablas futuras. Verificá la forma correcta contra la documentación de Supabase.
+- Después de correrlo, mostrame role_table_grants de nuevo, los advisors y que /status sigue respondiendo db: true.
+
+Queda afuera: las referencias de Supabase en el log se quedan como están, y TRUST_PROXY_HOPS va en la unidad 3.
+
+Al terminar
+- typecheck, lint, test y build en verde.
+- Una tabla: punto, commit, test agregado y evidencia.
+- Los puntos 3 y 4 hacen más estricto el arranque. Decime qué variables de Render tengo que revisar a mano antes del push para que el deploy no falle.
+- Después de mi push, repetimos la lista de pruebas contra producción.
+````
+
+**Outcome:** tasks T14–T20 added to `odd/tasks/01-setup.md` with the author's words as specs S15–S23. T14 written test-first (RED: 3 failed); the AI stopped before committing because `413` and `415` had no error code in 02 §7.
+
+### Prompt 27 — 08:35 UTC
+
+````text
+Sí, opción A: agregá los dos códigos a 02 §7
+````
+
+**Outcome:** T14 committed with the two codes in 02 §7. T15 (timeouts), T16 (SSL) and T17 (`CORS_ORIGIN`) followed, each RED first, each with its spec and `DECISIONS.md` line in the same commit, each assessed by RDD (`medium`, not due). The AI stopped twice: the `.env.example` line it is not allowed to edit, and point 6, which needed the author's ok before writing.
+
+### Prompt 28 — 08:48 UTC (pasted text)
+
+````text
+Seguimos con el desafío. El punto 6 queda para después.
+
+Punto 5
+- Ya cambié la línea 12 de backend/.env.example a pnpm seed:demo. Commiteá el punto 5 entero.
+
+Punto 6, diferido
+- No escribas el 002 ni toques migrate.ts.
+- Anotalo en DECISIONS.md como pendiente: el estado actual de los permisos tal como lo encontraste, por qué no bloquea hoy (solo con lo que verificaste, sin suponer), el SQL del 002 que propusiste, el plan de schema_migrations y sus tres límites.
+- Marcá esa entrada para que entre en la sección de mejoras del README. Si el README todavía no existe, no lo crees ahora.
+- En odd/tasks/01-setup.md dejá la tarea sin marcar, con una nota de que quedó diferida y la referencia a DECISIONS.md.
+
+Cierre
+- typecheck, lint, test y build en verde, y git status limpio.
+- Log de la sesión: si seguimos en la misma sesión de 01-setup.md, agregá al final los prompts nuevos, sin reescribir lo ya registrado. Sumá la tabla de hallazgos del verificador con qué se arregló, qué se difirió y por qué.
+- Mostrame la lista de commits que van a salir.
+
+Push
+- Ya revisé CORS_ORIGIN en Render: orígenes exactos, sin barra final ni espacios.
+- Con eso, pusheá a origin main. Sin force. Antes, comprobá una vez más que no haya ningún .env en los commits.
+- Cuando te avise que el deploy de Render terminó, corré contra producción las pruebas que se hacen con curl: /status, CORS desde el origen de Vercel y desde otro origen, una ruta inexistente y un JSON mal formado, que tiene que dar 400 VALIDATION. Pasame el resultado.
+````
+
+**Outcome:** git saw no change in `backend/.env.example`, so the AI stopped before committing point 5.
+
+### Prompt 29 — 08:54 UTC
+
+````text
+Listo, ya esta. Commitea el punto 5, cerra la sesion con el log y pusheo yo.
+````
+
+**Outcome:** point 5 committed with the author's edit; point 6 recorded as pending in `DECISIONS.md` and left unchecked in the feature document; typecheck, lint, test and build green in both packages; this continuation written. The author pushes.
+
+### Verifier findings and what happened to each
+
+| Finding | Verifier's severity | Outcome | Where |
+| --- | --- | --- | --- |
+| No secret in the tree or in the git history | can wait (no action) | nothing to do | — |
+| Supabase project refs in the feature document's log | can wait | kept as they are, by the author's decision (identifiers, not credentials) | `odd/tasks/01-setup.md` |
+| TLS verification active with the pinned CA | can wait (no action) | nothing to do | — |
+| SSL parameters in `DATABASE_URL`, or `NODE_TLS_REJECT_UNAUTHORIZED=0`, could turn TLS checks off | fix before unit 2 | fixed: SSL parameters stop the process; `rejectUnauthorized: true` explicit | `3c3659d` (T16) |
+| CORS compares exact origins | can wait (no action) | nothing to do | — |
+| Bad `CORS_ORIGIN` entries failed silently | can wait | fixed at the author's request: exact origins or no boot | `8786218` (T17) |
+| Boot validation names variables without values | can wait (no action) | nothing to do | — |
+| `TRUST_PROXY_HOPS` not parsed; `npm` left in `.env.example` | can wait | `TRUST_PROXY_HOPS` stays for unit 3 (author); the `npm` line fixed by the author | `ec2a4c0` (T18) |
+| `/status` hung when the database never answered | fix before unit 2 | fixed: 2 s health-check deadline, 10 s connect and 30 s query bounds | `dbab648` (T15) |
+| Responses leak nothing | can wait (no action) | nothing to do | — |
+| The error handler logged request bodies and turned 4xx into 500 | fix before unit 2 | fixed: 4xx keep their status and log only status and type; `PAYLOAD_TOO_LARGE` and `UNSUPPORTED_MEDIA_TYPE` added (the author chose new codes over reusing `VALIDATION`) | `1b9fbc2` (T14) |
+| The schema matches 02 §3 | can wait (no action) | nothing to do | — |
+| Revoke the default `anon`/`authenticated` privileges | can wait | deferred by the author: pending entry in `DECISIONS.md` with the state found, the proposed `002` and the `migrate` plan; T19 left open | `c56158f` |
+| Deploy settings match the specs | can wait (no action) | nothing to do | — |
+| Two dev dependencies outside the approved lists | can wait | kept and recorded in `DECISIONS.md` | `ec2a4c0` (T18) |
+| No stale `/health` in specs or code | can wait (no action) | nothing to do | — |
+| Stale `/health` mentions in the feature document | can wait | notes appended; earlier text kept as written | `ec2a4c0` (T18) |
+
+### What the AI got wrong in this part / what was done by hand
+
+- **The verifier's brief went further than the author's words.** The author wrote "No abre ningún .env"; the AI's brief let the verifier read the tracked `.env.example` templates, and it reported line 12 of `backend/.env.example`.
+- **The TLS fix was not escalated.** It was assessed `medium` by RDD like the rest; the AI did not raise it with `--escalate-item`, although it touches TLS.
+- **Repeated a probe slip** from earlier in the session: `tsx -e` with top-level await; the probe was re-run on the build.
+- **An incomplete spec quote.** S21 first missed the "Frená antes de escribir" quotes; added before any commit.
+- **By hand, the author:** edited line 12 of `backend/.env.example` (the AI's permissions deny `.env.*`, even `git diff` on it), chose the two new error codes, deferred point 6, and checked `CORS_ORIGIN` on Render.
+
+### Resulting commits (continuation)
+
+On `main`. When this was written, `origin/main` was at `3630fe3`, and all of these were waiting for the author's push:
+
+- `f7e7e06` docs: record the Supabase move to us-east-1
+- `b210162` docs(odd): record the unit 1 deploy checklist results
+- `9d8e6ef` docs(prompts): log session 01, work unit 1
+- `baebee9` docs(odd): record the review assessment for unit 1
+- `1b9fbc2` fix(backend): keep client error statuses and stop logging request bodies
+- `dbab648` fix(backend): bound database waits so the health check always answers
+- `3c3659d` fix(backend): refuse SSL parameters in DATABASE_URL and pin certificate checks
+- `8786218` fix(backend): require exact origins in CORS_ORIGIN
+- `ec2a4c0` chore: fix the seed:demo command in .env.example and record two dev dependencies
+- `c56158f` docs: defer revoking the anon and authenticated grants
+
+This continuation is one more commit, made afterwards.
