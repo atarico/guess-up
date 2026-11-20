@@ -48,6 +48,8 @@ export const copy = {
   },
   // 03 §8: offline, 5xx or any code without its own text.
   genericError: 'Algo salió mal. Intenta de nuevo.',
+  // 03 §8: a call has waited 3 s for a sleeping server (components/ServerWaking.tsx).
+  serverWaking: 'Despertando el servidor. El alojamiento gratuito se duerme tras 15 minutos sin uso; esto puede tardar hasta un minuto.',
   retry: 'Reintentar',
   // 03 §5.3, §8, §10
   play: {
