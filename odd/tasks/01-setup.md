@@ -34,8 +34,8 @@ Assumptions, accepted by the author in L4 ("Ok al plan"), with A2, A3 and A4 set
 
 | ID | Task | Specs | Route | Status | Commit / evidence |
 | --- | --- | --- | --- | --- | --- |
-| T0 | Spec update for S11 and S12: Node 24 and pnpm in 02 §2, §3, §5.5, §10, 03 §11 and `CLAUDE.md` (with the `prompts/system` copy); two `DECISIONS.md` lines; this document | S11, S12 | inline | done | this commit: `docs(specs): switch to Node 24 and pnpm` |
-| T1 | Backend tooling and app skeleton: `package.json` (ESM, Node 24, `packageManager` pnpm, scripts), `pnpm-lock.yaml`, `tsconfig`, ESLint with `typescript-eslint`, Vitest, `.nvmrc`, `env.ts`, `app.ts` exporting `createApp(deps)` (helmet, CORS list, JSON, 404 and error handler), `index.ts`; route tests for 404 and CORS | S1, S3 | inline | pending | |
+| T0 | Spec update for S11 and S12: Node 24 and pnpm in 02 §2, §3, §5.5, §10, 03 §11 and `CLAUDE.md` (with the `prompts/system` copy); two `DECISIONS.md` lines; this document | S11, S12 | inline | done | `4d20746` docs(specs): switch to Node 24 and pnpm |
+| T1 | Backend tooling and app skeleton: `package.json` (ESM, Node 24, `packageManager` pnpm, scripts), `pnpm-lock.yaml`, `tsconfig`, ESLint with `typescript-eslint`, Vitest, `.nvmrc`, `env.ts`, `app.ts` exporting `createApp(deps)` (helmet, CORS list, JSON, 404 and error handler), `index.ts`; route tests for 404 and CORS | S1, S3 | inline | done | `feat(backend): scaffold express app with env validation`; typecheck, lint, 4 tests, build green; built server answers 404 with helmet headers and CORS only for the listed origin |
 | T2 | Schema and migration: `sql/001_init.sql` from 02 §3, pool helper with TLS (A3), `src/scripts/migrate.ts`, `pnpm migrate` | S1, S2 | inline | pending | |
 | T3 | `GET /health` per 02 §7, including `db: false`; wired in `index.ts`; supertest route test with in-memory deps | S3 | inline | pending | |
 | T4 | Frontend scaffold with `create-next-app` (Next.js 16, Tailwind 4, ESLint, App Router, `src/`, pnpm), Node 24, `pnpm test` with Vitest, provisional page that calls `/health` and shows the response, strings in `copy.ts` | S1, S4 | inline | pending | |
